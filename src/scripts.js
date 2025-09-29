@@ -3148,7 +3148,7 @@ async function cargarMonitores() {
 
   const optionCerrar = document.createElement("option");
   optionCerrar.value = -1;
-  optionCerrar.textContent = "❌ Desactivar ventana secundaria";
+  optionCerrar.textContent = "❌ Desactivar monitor";
   select.appendChild(optionCerrar);
 
   const monitores = await window.electronAPI.obtenerMonitores();

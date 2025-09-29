@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
-    "release": "npm version patch && npx electron-builder --publish always"
+    "release": "npm version patch && electron-builder --publish always"
   },
   "keywords": [],
   "build": {
