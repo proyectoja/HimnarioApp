@@ -78,7 +78,7 @@
       "uninstallDisplayName": "Himnario Adventista Pro Desinstalador",
       "perMachine": false,
       "allowElevation": true,
-      "deleteAppDataOnUninstall": true,
+      "deleteAppDataOnUninstall": false,
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
