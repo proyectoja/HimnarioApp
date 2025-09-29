@@ -1495,9 +1495,9 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
-      const videoPath = window.resources.getPath(`videosHimnosPianoPista/${numero}.mp4`);
+      const videoPath = `videosHimnosPianoPista/${numero}.mp4`;
       const titulo = tituloHimnosPianoPista[i];
-      const imagePath = window.resources.getPath(`portadasHimnosPianoPista/001.jpg`);
+      const imagePath = `portadasHimnosPianoPista/001.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -1505,7 +1505,7 @@ function mostrarCategoria(categoria) {
     }
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = window.resources.getPath('url("portadas/fondo1.jpg")');
+    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
   } else if (categoria === "himnosInfantiles") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";

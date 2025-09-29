@@ -1,6 +1,6 @@
 {
   "name": "himnarioadventistapro",
-  "version": "1.0.12",
+  "version": "1.0.7",
   "description": "Himnario Adventista optimizado y fácil de usar, creado por PROYECTO JA",
   "author": "PROYECTO JA | FUNDADOR KENDALL TORRES",
   "main": "main.js",
@@ -53,7 +53,6 @@
       "logHelper.js",
       "main.js",
       "package.json",
-      "pathHelper.js",
       "preload.js",
       "verificarWrapper.js"
     ],
@@ -78,7 +77,7 @@
       "uninstallDisplayName": "Himnario Adventista Pro Desinstalador",
       "perMachine": false,
       "allowElevation": true,
-      "deleteAppDataOnUninstall": false,
+      "deleteAppDataOnUninstall": true,
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
