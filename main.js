@@ -16,6 +16,7 @@ const { verificarCarpetasYReiniciarSiFaltan } = require("./verificarWrapper");
 let tray = null; // Bandeja del sistema
 let win = null; // Ventana principal
 const express = require("express");
+const baseDir = path.join(app.getPath("userData"), "resources");
 
 app.commandLine.appendSwitch("disable-features", "CrossOriginOpenerPolicy");
 app.commandLine.appendSwitch("disable-features", "CrossOriginEmbedderPolicy");
@@ -44,6 +45,7 @@ function createWindow() {
       nodeIntegration: true,
       webSecurity: false,
       devTools: false, // Desactiva devTools
+      additionalArguments: [`--baseDir=${baseDir}`],
     },
   });
   // Maximizar la ventana al iniciar
@@ -129,6 +131,7 @@ function crearVentanaLogs() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: true,
+      additionalArguments: [`--baseDir=${baseDir}`],
     },
   });
 
@@ -219,6 +222,7 @@ function abrirVentanaSecundaria(monitorIndex) {
       nodeIntegration: true,
       webSecurity: false,
       devTools: false, // Desactiva devTools
+      additionalArguments: [`--baseDir=${baseDir}`],
     },
   });
 

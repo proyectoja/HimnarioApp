@@ -9,14 +9,21 @@ const { app } = require("electron");
 // Carpeta base donde se almacenan los archivos
 //const BASE_DIR = path.join(__dirname, "src");
 //const BASE_DIR = path.join(app.getPath("userData"), "resources");
-const BASE_DIR = path.join(app.getPath("userData"), "resources");
+// 👉 Leemos el argumento que main pasó al preload y lo reenviamos acá
+const argBaseDir = process.argv.find(arg => arg.startsWith("--baseDir="));
+const BASE_DIR = argBaseDir ? argBaseDir.replace("--baseDir=", "") : "";
 
-// Crear la carpeta si no existe
-fs.mkdirSync(BASE_DIR, { recursive: true });
+// Carpeta donde se guardarán los archivos descargados
+const DOWNLOAD_DIR = path.join(BASE_DIR, "videos"); // puedes cambiar "videos" por la carpeta que quieras
 
-module.exports = {
-  BASE_DIR
-};
+// Asegura que exista
+fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
+
+/**
+ * Descarga un archivo y lo guarda en el directorio persistente
+ * @param {string} url - URL del archivo remoto
+ * @param {string} filename - Nombre con el que se guardará
+ */
 
 
 // Configuración de carpetas remotas
@@ -49,12 +56,12 @@ const CARPETAS = {
 // FUNCIONES DE MARCA DE COMPLETADO
 // -----------------------------
 function markFolderComplete(carpeta) {
-  const marker = path.join(BASE_DIR, carpeta, ".complete");
+  const marker = path.join(DOWNLOAD_DIR, carpeta, ".complete");
   fs.writeFileSync(marker, "ok", "utf-8");
 }
 
 function isFolderComplete(carpeta) {
-  const marker = path.join(BASE_DIR, carpeta, ".complete");
+  const marker = path.join(DOWNLOAD_DIR, carpeta, ".complete");
   return fs.existsSync(marker);
 }
 
@@ -94,7 +101,7 @@ async function descargarArchivo(file, carpeta, baseUrl) {
   return new Promise(async (resolve, reject) => {
     try {
       const url = `${baseUrl}${baseUrl.endsWith("/") ? "" : "/"}${encodeURIComponent(file)}`;
-      const carpetaPath = path.join(BASE_DIR, carpeta);
+      const carpetaPath = path.join(DOWNLOAD_DIR, carpeta);
       const filePath = path.join(carpetaPath, file);
 
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -188,7 +195,7 @@ async function descargarTodo() {
 
     try {
       const downloadBase = pageUrl.replace("/details/", "/download/");
-      const carpetaPath = path.join(BASE_DIR, carpeta);
+      const carpetaPath = path.join(DOWNLOAD_DIR, carpeta);
       fs.mkdirSync(carpetaPath, { recursive: true });
 
       const archivos = await obtenerListaArchivos(pageUrl);
@@ -225,7 +232,7 @@ async function verificarCarpetasYReiniciarSiFaltan() {
     if (isFolderComplete(carpeta)) continue;
 
     const downloadBase = pageUrl.replace("/details/", "/download/");
-    const carpetaPath = path.join(BASE_DIR, carpeta);
+    const carpetaPath = path.join(DOWNLOAD_DIR, carpeta);
     fs.mkdirSync(carpetaPath, { recursive: true });
 
     const archivosLocales = fs.readdirSync(carpetaPath).filter(f => f !== ".complete");

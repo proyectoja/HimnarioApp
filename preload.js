@@ -1,13 +1,15 @@
-const { contextBridge } = require("electron");
+const { contextBridge, ipcRenderer } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { app } = require("electron").remote || require("@electron/remote"); 
 
-// Carpeta persistente
-const BASE_DIR = path.join(app.getPath("userData"), "resources");
+// Obtener el argumento pasado desde main
+const argBaseDir = process.argv.find(arg => arg.startsWith("--baseDir="));
+const BASE_DIR = argBaseDir ? argBaseDir.replace("--baseDir=", "") : "";
 
 // Asegura que exista
-fs.mkdirSync(BASE_DIR, { recursive: true });
+if (BASE_DIR) {
+  fs.mkdirSync(BASE_DIR, { recursive: true });
+}
 
 function getResourcePath(relativePath) {
   const userPath = path.join(BASE_DIR, relativePath);
@@ -16,7 +18,7 @@ function getResourcePath(relativePath) {
   if (fs.existsSync(userPath)) return userPath;
   return appPath;
 }
-// Exponer a renderer
+
 contextBridge.exposeInMainWorld("resources", {
   getPath: (relativePath) => getResourcePath(relativePath),
   baseDir: BASE_DIR
@@ -31,16 +33,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
         else resolve(data.toString("base64"));
       });
     }),
-
-  onLog: (callback) => {
-    // callback recibe el mensaje (string)
-    ipcRenderer.on("log-message", (evt, msg) => callback(msg));
-  },
+  onLog: (callback) => ipcRenderer.on("log-message", (_, msg) => callback(msg)),
   enviarDatos: (data) => ipcRenderer.send("enviar-a-ventana", data),
   onActualizarDatos: (callback) => ipcRenderer.on("actualizar-datos", callback),
-
   obtenerMonitores: () => ipcRenderer.invoke("obtener-monitores"),
   abrirVentanaSecundaria: (monitorIndex) => ipcRenderer.send("abrir-ventana", monitorIndex),
   onVentanaCerrada: (callback) => ipcRenderer.on("ventana-cerrada", callback),
-  onMonitoresActualizados: (callback) => ipcRenderer.on("monitores-actualizados", callback)
+  onMonitoresActualizados: (callback) => ipcRenderer.on("monitores-actualizados", callback),
 });
