@@ -8,7 +8,14 @@ const { log } = require("./logHelper"); // tu módulo de logs
 // Carpeta base donde se almacenan los archivos
 //const BASE_DIR = path.join(__dirname, "src");
 //const BASE_DIR = path.join(app.getPath("userData"), "resources");
-const BASE_DIR = window.resources.baseDir; 
+const BASE_DIR = path.join(app.getPath("userData"), "resources");
+
+// Crear la carpeta si no existe
+fs.mkdirSync(BASE_DIR, { recursive: true });
+
+module.exports = {
+  BASE_DIR
+};
 
 
 // Configuración de carpetas remotas
