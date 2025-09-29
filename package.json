@@ -23,7 +23,8 @@
         "provider": "github",
         "owner": "proyectoja",
         "repo": "HimnarioApp",
-        "private": true
+        "private": true,
+        "releaseType": "release"
       }
     ],
     "files": [
