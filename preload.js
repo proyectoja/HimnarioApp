@@ -1,5 +1,26 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge } = require("electron");
+const path = require("path");
 const fs = require("fs");
+const { app } = require("electron").remote || require("@electron/remote"); 
+
+// Carpeta persistente
+const BASE_DIR = path.join(app.getPath("userData"), "resources");
+
+// Asegura que exista
+fs.mkdirSync(BASE_DIR, { recursive: true });
+
+function getResourcePath(relativePath) {
+  const userPath = path.join(BASE_DIR, relativePath);
+  const appPath = path.join(process.resourcesPath, "src", relativePath);
+
+  if (fs.existsSync(userPath)) return userPath;
+  return appPath;
+}
+// Exponer a renderer
+contextBridge.exposeInMainWorld("resources", {
+  getPath: (relativePath) => getResourcePath(relativePath),
+  baseDir: BASE_DIR
+});
 
 contextBridge.exposeInMainWorld("electronAPI", {
   abrirDialogoMultimedia: () => ipcRenderer.invoke("abrir-dialogo-multimedia"),

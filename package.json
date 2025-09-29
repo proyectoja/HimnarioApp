@@ -53,6 +53,7 @@
       "logHelper.js",
       "main.js",
       "package.json",
+      "pathHelper.js",
       "preload.js",
       "verificarWrapper.js"
     ],
