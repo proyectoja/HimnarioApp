@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const { log } = require("./logHelper"); // tu módulo de logs
+const { app } = require("electron");
 
 // Carpeta base donde se almacenan los archivos
 //const BASE_DIR = path.join(__dirname, "src");
