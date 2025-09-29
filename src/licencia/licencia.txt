@@ -1,0 +1,34 @@
+**Términos y Condiciones de Uso del Himnario Adventista Pro**
+
+**1. Licencia de Uso Personal y Religioso**
+   - Este software está licenciado únicamente para uso personal y en eventos, iglesias, asociaciones o reuniones de la Iglesia Adventista del Séptimo Día. Queda prohibido el uso con fines comerciales o para cualquier otra finalidad sin el consentimiento previo y expreso del autor.
+
+**2. Derechos de Autor y Propiedad Intelectual**
+   - El Himnario Adventista Pro, incluyendo su código fuente, diseño, recursos gráficos y contenido multimedia, es propiedad exclusiva de PROYECTO JA y de su fundador, Kendall Torres a nombre de la Iglesia Adventista Del Séptimo Día. Todos los derechos están reservados bajo las leyes aplicables de derechos de autor e propiedad intelectual.
+   - Se prohíbe estrictamente la reproducción, copia, modificación, distribución o desensamblaje del código fuente, así como la creación de trabajos derivados, sin autorización explícita y por escrito del autor o de una autorización oficial de PROYECTO JA.
+
+**3. Distribución y Prohibiciones**
+   - No está permitido distribuir este software de ninguna forma, ya sea gratuita o con costo, sin la autorización expresa de PROYECTO JA o a través de una publicación oficial en las redes sociales de PROYECTO JA. Cualquier incumplimiento de esta disposición será considerado una infracción a los derechos de autor.
+   - Asimismo, está prohibido compartir, vender, alquilar, sublicenciar, o ceder este software, así como usarlo en plataformas de distribución de software de terceros sin el consentimiento oficial.
+
+**4. Exoneración de Responsabilidad**
+   - El autor y PROYECTO JA no asumen ninguna responsabilidad por daños, pérdidas o perjuicios que puedan derivarse directa o indirectamente del uso de este software. El software se proporciona "tal cual", sin garantías de ningún tipo, ya sean expresas o implícitas.
+   
+**5. Prohibición de Ingeniería Inversa y Protección del Código**
+   - Cualquier intento de descompilar, desensamblar, realizar ingeniería inversa o vulnerar la seguridad de este software con el fin de acceder al código fuente, modificarlo o copiarlo sin autorización constituye una violación de estos términos y condiciones y de los derechos de propiedad intelectual del autor.
+
+**6. Actualizaciones y Modificaciones**
+   - PROYECTO JA se reserva el derecho de realizar modificaciones, actualizaciones o mejoras en el software en cualquier momento y sin previo aviso. Los usuarios podrán recibir dichas actualizaciones siempre y cuando cumplan con estos términos y condiciones.
+
+**7. Contacto y Autorización**
+   - Para obtener permisos adicionales o aclaraciones sobre el uso de este software, puedes contactarnos en nuestras redes sociales oficiales de PROYECTO JA. Solo a través de estos canales se autorizarán permisos o uso extendido del software.
+
+**8. Aceptación de los Términos y Condiciones**
+   - Al hacer clic en "Acepto" o al utilizar este software, confirmas haber leído, entendido y aceptado estos términos y condiciones. De no estar de acuerdo con alguno de estos términos, debes abstenerte de instalar o utilizar el Himnario Adventista Pro.
+
+**9. Mención de Propiedad y Reconocimientos**
+   - Todo el contenido, diseño y estructura de este himnario es propiedad de PROYECTO JA y está protegido bajo la iniciativa "De Joven A Joven". El reconocimiento de estos derechos es obligatorio en cualquier mención, cita o distribución autorizada del software.
+
+Gracias por descargar el Himnario Adventista Pro. Te invitamos a compartir nuestro proyecto y a seguirnos en nuestras redes sociales para conocer más sobre nuestras iniciativas. ¡Dios te bendiga!
+
+---

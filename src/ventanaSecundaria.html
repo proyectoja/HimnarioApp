@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Compartiendo esperanza!">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Para Internet Explorer -->
+  <link rel="icon" href="iconos/iconoWindows.ico" type="image/ico">
+  <title>Ventana Secundaria Reproductor Himnario PRO | PROYECTO JA</title>
+
+  <script type="text/javascript" charset="utf-8" src="clappr.js"></script>
+  <script type="text/javascript" charset="utf-8" src="clappr-playback-rate.js"></script>
+  <script type="text/javascript" charset="utf-8" src="clappr-youtube-playback.js"></script>
+  <script type="text/javascript" charset="utf-8" src="clappr-pip-plugin.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background-image: url('imagenes/fondoBienvenida.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+
+    }
+
+    * {
+      text-decoration: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    #contenedor-principal,
+    #videoPlayerContainer {
+      display: none;
+      /* Ambos contenedores inician ocultos */
+    }
+
+    #contenedor-principal {
+      background-color: brown;
+      width: 100%;
+      height: 100%;
+      margin: 0%;
+      padding: 0%;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: absolute;
+      z-index: 2;
+    }
+
+    #contenedorImg {
+      z-index: 6;
+      width: 100%;
+      height: 100vh;
+      display: none;
+      justify-content: center;
+      justify-items: center;
+      align-items: center;
+      background-color: black;
+      overflow: hidden;
+      display: none;
+    }
+
+    #contenedorImg img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+      margin: auto;
+    }
+
+    #vista-previaVS {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background-color: transparent;
+      overflow: hidden;
+      padding: 0;
+      justify-content: center;
+      padding: 20px;
+      width: 100%;
+      height: 100%;
+      color: #fff;
+      box-sizing: border-box;
+      background-position: bottom;
+      background-repeat: no-repeat;
+      background-size: cover;
+      z-index: 3;
+      transition: opacity 0.3s ease;
+
+      h3 {
+        position: relative;
+        z-index: 5;
+        margin: 0%;
+        font-weight: bold;
+        letter-spacing: 2px;
+      }
+
+      p {
+        position: relative;
+        z-index: 5;
+        margin: 0%;
+      }
+    }
+
+    #fondoVS {
+      display: flex;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+      background-color: #000;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      /* Nivel inicial de opacidad */
+      transition: opacity 0.3s ease;
+      /* Transición suave */
+      z-index: 4;
+    }
+
+    #fullscreenButton {
+      display: none;
+      position: absolute;
+      font-size: 50px;
+      font-weight: bold;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 6;
+    }
+
+    #fullscreenButton:hover {
+      border: 2px solid #ccc;
+    }
+
+    #fullscreenButton.hidden {
+      display: none;
+    }
+
+    #vista-previaVS img {
+      width: 450px;
+      height: auto;
+      display: flex;
+      position: absolute;
+      left: 20px;
+      bottom: 10px;
+      z-index: 4;
+    }
+
+    #player-container-youtube {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 7;
+      overflow: hidden;
+    }
+
+    #player-youtube {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #player-youtube iframe {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      /* para que no se recorte */
+      border: none;
+      z-index: 8;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="contenedor-principal">
+    <div id="vista-previaVS">
+      <div id="fondoVS"></div>
+      <p id="versiculoVS">Hola</p></br>
+      <h3 id="tituloVS"></h3>
+      <img id="waterMark">
+    </div>
+  </div>
+  <button id="fullscreenButton">Pantalla Completa</button>
+  <div id="videoPlayerContainer"></div>
+  <div id="contenedorImg"><img id="idImg"></div>
+  <div id="player-container-youtube" style='
+                    align-items:center; 
+                    width: 100%; 
+                    height: 100%;
+                    background-color: transparent;
+                    justify-content:center; 
+                    display:none;
+                    position:absolute;
+                    margin:auto;
+                    overflow:hidden;'>
+    <div id="player-youtube"></div>
+  </div>
+
+  <script>
+    let player = null;
+    let playerYouTube = null;
+    let waterMarkAux = "";
+    const fullscreenButton = document.getElementById("fullscreenButton");
+    const contenedorPrincipal = document.getElementById("contenedor-principal");
+    const vistaPrevia = document.getElementById("vista-previaVS");
+    const versiculoContainer = document.getElementById("versiculoVS");
+    const tituloLibro = document.getElementById("tituloVS");
+    const fondoContainer = document.getElementById("fondoVS");
+    const videoPlayerContainer = document.getElementById("videoPlayerContainer");
+    const waterMarkBiblia = document.getElementById("waterMark");
+    window.electronAPI.onActualizarDatos((event, data) => {
+      console.log("Datos recibidos:", data);
+      const { videoPath, imagePath, versiculo, libroAux, estilosAux, lista, fondoBody, imagen, waterMark } = data;
+
+      waterMarkAux = waterMark;
+      waterMarkBiblia.src = waterMark;
+      videoPlayerContainer.innerHTML = "";
+      contenedorPrincipal.style.display = "none";
+      videoPlayerContainer.style.display = "none";
+
+
+
+
+
+      if (fondoBody) {
+        if (player) {
+          player.destroy();
+          player = null;
+        }
+        if (playerYouTube) {
+          playerYouTube.destroy();
+          playerYouTube = null;
+        }
+        //document.getElementById("player-container-youtube").style.display = "none";
+        document.body.style.backgroundImage = "url('" + fondoBody + "')";
+        contenedorPrincipal.style.display = "none";
+        videoPlayerContainer.style.display = "none";
+
+      } else if (imagen) {
+        if (player) {
+          player.destroy();
+          player = null;
+        }
+        if (playerYouTube) {
+          playerYouTube.destroy();
+          playerYouTube = null;
+        }
+        //document.getElementById("player-container-youtube").style.display = "none";
+        document.getElementById("idImg").src = imagen;
+        document.getElementById("contenedorImg").style.display = "flex";
+        contenedorPrincipal.style.display = "none";
+        videoPlayerContainer.style.display = "none";
+      } else {
+        document.getElementById("contenedorImg").style.display = "none";
+      }
+
+      // Mostrar contenido según los datos enviados
+      if (versiculo) {
+        if (player) {
+          player.destroy();
+          player = null;
+        }
+        if (playerYouTube) {
+          playerYouTube.destroy();
+          playerYouTube = null;
+        }
+        //document.getElementById("player-container-youtube").style.display = "none";
+        if (versiculo === ".") { versiculoContainer.innerText = ""; } else { versiculoContainer.innerText = versiculo; }
+        tituloLibro.innerText = libroAux;
+        // Aplica estilos al versículo
+        Object.keys(estilosAux).forEach(key => {
+          if (key !== "opacity") {
+            vistaPrevia.style[key] = estilosAux[key];
+          } else if (key == "opacity") {
+            fondoContainer.style[key] = estilosAux[key];
+          } else {
+            fondoContainer.style.opacity = '0';
+          }
+
+          if (key == "fontSize") {
+            tituloLibro.style[key] = estilosAux[key];
+          } else if (key == "fontFamily") {
+            tituloLibro.style[key] = estilosAux[key];
+          } else if (key == "color") {
+            tituloLibro.style[key] = estilosAux[key];
+          }
+        });
+        contenedorPrincipal.style.display = "block";
+
+      } else if (lista) {
+        cargarReproductorAleatorioVS(lista);
+
+      } else if (videoPath.length <= 11) {
+        if (player) {
+          player.destroy();
+          player = null;
+        }
+        if (playerYouTube) {
+          playerYouTube.destroy();
+          playerYouTube = null;
+        }
+
+        document.body.style.backgroundImage = "url('imagenes/fondoBienvenida.jpg')";
+        console.log("Id ventana YouTube: " + videoPath);
+        document.getElementById("player-container-youtube").style.display = "flex";
+        const playerYoutube = document.getElementById("player-youtube");
+        playerYouTube = new Clappr.Player({
+          source: videoPath,
+          watermark: waterMarkAux,
+          position: "bottom-right",
+          autoPlay: true,
+          exitFullscreenOnEnd: false,
+          disableVideoTagContextMenu: true,
+          volume: 100,
+          poster: 'https://i.ytimg.com/vi/' + videoPath + '/hqdefault.jpg',
+          playbackNotSupportedMessage: "No se puede reproducir el contenido",
+          plugins: [YoutubePlugin, YoutubePluginControl],
+          //YoutubePluginControl
+          YoutubeVars: { "languageCode": "en" },
+          parentId: "#player-youtube"
+        });
+
+
+
+        console.log("Clappr version:", Clappr.version);
+
+        // Esperar a que el póster esté en el DOM
+        const observer = new MutationObserver(() => {
+          const poster = document.querySelector('.player-poster.clickable');
+          if (poster) {
+            poster.addEventListener('click', () => {
+              console.log("🟢 Clic en el póster detectado");
+
+              // Escuchar cuando el video haya avanzado al menos 2 segundos
+              playerYouTube.on(Clappr.Events.PLAYER_TIMEUPDATE, function checkTime(event) {
+                const currentTime = event.current || (event.progress && event.progress.current);
+                console.log("⏱ Tiempo actual:", currentTime);
+
+                if (currentTime >= 2) {
+                  console.log("✅ Verificando pantalla completa...");
+
+                  if (!document.fullscreenElement) {
+                    console.log("✅ Solicitando pantalla completa...");
+                    document.documentElement.requestFullscreen()
+                      .then(() => console.log("🟢 Fullscreen activado"))
+                      .catch(err => console.warn("❌ No se pudo activar fullscreen:", err));
+                  } else {
+                    console.log("🔁 Ya estás en pantalla completa, no se solicita nuevamente.");
+                  }
+
+                  playerYouTube.off(Clappr.Events.PLAYER_TIMEUPDATE, checkTime); // detener escucha
+                }
+
+              });
+            });
+
+            observer.disconnect(); // dejamos de observar
+          }
+        });
+
+        // Observar el DOM por si el póster aparece luego
+        observer.observe(document.body, { childList: true, subtree: true });
+        expandirIframeYouTube();
+
+
+
+
+
+
+
+
+      } else {
+        if (player) {
+          player.destroy();
+          player = null;
+        }
+        if (playerYouTube) {
+          playerYouTube.destroy();
+          playerYouTube = null;
+        }
+        videoPlayerContainer.style.display = "block";
+        player = new Clappr.Player({
+          source: videoPath,
+          parentId: "#videoPlayerContainer",
+          width: "100%",
+          height: "100vh",
+          preload: 'auto',
+          autoPlay: true,
+          exitFullscreenOnEnd: false,
+          disableVideoTagContextMenu: true,
+          volume: 100,
+          //plugins: [MediaControl.MainPlugin],
+          //mediaControl: {
+          //    disableBeforeVideoStarts: true
+          //},
+          poster: imagePath,
+          watermark: waterMarkAux,
+          playbackNotSupportedMessage: "No se puede reproducir el contenido",
+          position: "bottom-right"
+        });
+
+
+      }
+
+
+
+      function expandirIframeYouTube() {
+        const maxIntentos = 1000000;
+        let intentos = 0;
+
+        const intentarExpandir = () => {
+          const iframe = document.querySelector('#player-youtube iframe');
+
+          if (iframe) {
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.position = 'fixed';
+            iframe.style.top = '0';
+            iframe.style.left = '0';
+            iframe.style.border = 'none';
+            iframe.style.margin = '0';
+            iframe.style.padding = '0';
+            iframe.style.zIndex = '6';
+            iframe.style.objectFit = 'cover';
+            console.log("Iframe ajustado correctamente.");
+          } else {
+            intentos++;
+            if (intentos < maxIntentos) {
+              setTimeout(intentarExpandir, 300);
+            } else {
+              console.warn("No se pudo encontrar el iframe de YouTube.");
+            }
+          }
+        };
+
+        intentarExpandir();
+      }
+
+
+
+
+    });
+
+    function ajustarZoom() {
+      let container = document.getElementById("player-container-youtube");
+      let playerElement = document.getElementById("player-youtube");
+
+      let contenedorAncho = container.clientWidth;
+      let contenedorAlto = container.clientHeight;
+
+      let escalaAncho = contenedorAncho / 640; // Escala basada en el ancho
+      let escalaAlto = contenedorAlto / 360; // Escala basada en la altura
+
+      let escalaFinal = Math.min(escalaAncho, escalaAlto); // Mantener proporción
+
+      playerElement.style.transform = "scale(" + escalaFinal + ")";
+
+      //playerElement.style.transformOrigin = "top left"; // Evitar desajustes
+    }
+
+    //window.addEventListener("resize", ajustarZoom);
+    //ajustarZoom(); // Ajustar al cargar
+
+    //Función para listas de reproducción automática en ventana secundaria
+    function cargarReproductorAleatorioVS(lista) {
+      if (player) {
+        player.destroy();
+        player = null;
+      }
+      if (playerYouTube) {
+        playerYouTube.destroy();
+        playerYouTube = null;
+      }
+
+
+      videoPlayerContainer.innerHTML = "";
+
+      // Seleccionar un video aleatorio de la lista
+      const himnoAleatorio = lista[Math.floor(Math.random() * lista.length)];
+      videoPlayerContainer.style.display = "block";
+      player = new Clappr.Player({
+        source: himnoAleatorio.videoPath,
+        parentId: "#videoPlayerContainer",
+        width: "100%",
+        height: "100vh",
+        preload: 'auto',
+        autoPlay: true,
+        exitFullscreenOnEnd: false,
+        volume: 100,
+        //plugins: [MediaControl.MainPlugin],
+        //mediaControl: {
+        //    disableBeforeVideoStarts: true
+        //},
+        poster: himnoAleatorio.imagePath,
+        watermark: waterMarkAux,
+        playbackNotSupportedMessage: "No se puede reproducir el contenido",
+        position: "bottom-right"
+      });
+      player.unmute();
+      // Escuchar cuando el video termine
+      player.on(Clappr.Events.PLAYER_ENDED, function () {
+
+        cargarReproductorAleatorioVS(lista); // Cargar y reproducir un nuevo video aleatorio
+      });
+
+    }
+
+    // Función para activar pantalla completa
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.body.requestFullscreen()
+          .then(() => console.log("🟢 Body en pantalla completa"))
+          .catch(err => console.warn("❌ No se pudo activar fullscreen:", err));
+        fullscreenButton.classList.add('hidden');
+      } else {
+        document.exitFullscreen()
+          .then(() => console.log("🔙 Saliste de pantalla completa"))
+          .catch(err => console.warn("❌ No se pudo salir de fullscreen:", err));
+        fullscreenButton.classList.remove('hidden');
+      }
+    }
+
+
+    // Mostrar el botón cuando la ventana no está en pantalla completa
+    document.addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement) {
+        fullscreenButton.classList.add('hidden'); // Oculta el botón
+      } else {
+        fullscreenButton.classList.remove('hidden'); // Muestra el botón
+      }
+      ajustarTamanoReproductorFullscreen();
+    });
+
+    fullscreenButton.addEventListener("click", toggleFullScreen);
+
+    function ajustarTamanoReproductorFullscreen() {
+      const isFullscreen = !!document.fullscreenElement;
+
+      const container = document.getElementById("videoPlayerContainer");
+      const playerYoutube = document.getElementById("player-youtube");
+
+      if (isFullscreen) {
+        container.style.width = "100vw";
+        container.style.height = "100vh";
+        container.style.position = "fixed";
+        container.style.top = "0";
+        container.style.left = "0";
+
+        if (playerYoutube) {
+          playerYoutube.style.width = "100%";
+          playerYoutube.style.height = "100%";
+        }
+
+      } else {
+        container.style.width = "100%";
+        container.style.height = "100vh";
+        container.style.position = "relative";
+      }
+    }
+
+
+    
+  </script>
+
+</body>
+
+</html>

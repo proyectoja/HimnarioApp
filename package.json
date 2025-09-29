@@ -1,0 +1,136 @@
+{
+  "name": "himnarioadventistapro",
+  "version": "1.0.3",
+  "description": "Himnario Adventista optimizado y fácil de usar, creado por PROYECTO JA",
+  "author": "PROYECTO JA | FUNDADOR KENDALL TORRES",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "keywords": [],
+  "build": {
+    "asar": false,
+    "appId": "com.proyectoja.himnarioadventistapro",
+    "productName": "Himnario Adventista Pro",
+    "directories": {
+      "output": "dist"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "proyectoja",
+        "repo": "HimnarioApp",
+        "private": true
+      }
+    ],
+    "files": [
+      "src/**/*",
+      "!src/prueba/**",
+      "!src/audiosHimnos/**",
+      "!src/audiosHimnosIngles/**",
+      "!src/audiosHimnosPista/**",
+      "!src/musicaParaOrarDeFondo/**",
+      "!src/portadas/**",
+      "!src/portadasAntiguo/**",
+      "!src/portadasCoritos/**",
+      "!src/portadasHimnosAntiguos/**",
+      "!src/portadasHimnosInfantiles/**",
+      "!src/portadasHimnosJA/**",
+      "!src/portadasHimnosNacionales/**",
+      "!src/videos/**",
+      "!src/videosAntiguo/**",
+      "!src/videosCoritos/**",
+      "!src/videosHimnosAntiguos/**",
+      "!src/videosHimnosInfantiles/**",
+      "!src/videosHimnosJA/**",
+      "!src/videosHimnosNacionales/**",
+      "!src/videosHimnosPianoPista/**",
+      "downloader.js",
+      "log.html",
+      "logHelper.js",
+      "main.js",
+      "package.json",
+      "preload.js",
+      "verificarWrapper.js"
+    ],
+    "win": {
+      "forceCodeSigning": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/iconos/iconoWindows.ico",
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "runAfterFinish": true,
+      "installerIcon": "src/iconos/iconoWindows.ico",
+      "uninstallerIcon": "src/iconos/iconoWindows.ico",
+      "uninstallDisplayName": "Himnario Adventista Pro Desinstalador",
+      "perMachine": false,
+      "allowElevation": true,
+      "deleteAppDataOnUninstall": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Himnario Adventista Pro",
+      "license": "src/licencia/licencia.txt"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "src/iconos/iconoMac.icns",
+      "artifactName": "${productName} ${version}.${ext}"
+    },
+    "dmg": {
+      "title": "Himnario Adventista Pro",
+      "icon": "src/iconos/iconoMac.icns",
+      "artifactName": "${productName}-${version}.${ext}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "icon": "src/iconos/iconoLinux.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^38.1.2",
+    "electron-builder": "^25.1.8",
+    "electron-rebuild": "^3.2.9",
+    "electron-updater": "^6.6.2"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "axios": "^1.12.2",
+    "electron-log": "^5.2.4",
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.2",
+    "node-fetch": "^3.3.2",
+    "systeminformation": "^5.27.10"
+  }
+}

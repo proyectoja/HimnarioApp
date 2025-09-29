@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Himnario Adventista Pro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="contenedorLoader">
+        <div id="loaderPrincipal">
+            <div class="spinnerPrincipal"></div>
+        </div>
+    </div>
+    <div class="contenedor-principal">
+        <div id="chatbro"></div>
+        <!--
+        <div class="contenedor-intro" id="contenedor-intro">
+            <img class="image1" src="portadas/logo-iglesia-adventista.png">
+            <img class="image2" src="portadas/ministerios.png">
+        </div> -->
+        
+        <div class="contenedor-categorias">
+            <div class="contenedor-ministerio">
+                <img id="ministerio" src="portadas/logo-proyectoja.png">
+            </div>
+            <div class="categorias">
+                <div class="categoria" tabindex="0" onclick="mostrarCategoria('todos')">Todos</div>
+                <div class="categoria" tabindex="0" onclick="mostrarCategoria('1-100')">1-100</div>
+                <div class="categoria" tabindex="0" onclick="mostrarCategoria('101-200')">101-200</div>
+                <div class="categoria" tabindex="0" onclick="mostrarCategoria('201-300')">201-300</div>
+                <div class="categoria" tabindex="0" onclick="mostrarCategoria('301-400')">301-400</div>
+                <div class="categoria" tabindex="0" onclick="mostrarCategoria('401-500')">401-500</div>
+                <div class="categoria" tabindex="0" onclick="mostrarCategoria('501-614')">501-614</div>
+            </div>
+        </div>
+        <div id="contenedorVisitasYMonitores">
+            <div id="contenedor-vistas">Cargando estadísticas...</div>
+            <div id="contenedor-monitores"><img src="iconos/monitores.png" alt=""><select id="selectMonitores"></select></div>
+        </div>
+        <div id="videoPlayerContainer">
+            <button id="closePlayer" class="close-btn">X</button>
+        </div>
+        <div id="contenedor-biblia" class="contenedor-biblia">
+            <!-- LA BIBLIA PARA PROYECTAR, VERSIÓN REINA VALERA 1960-->
+            <div id="menu">
+                <h2>Libros</h2>
+                <ul id="lista-libros"></ul>
+            </div>
+
+            <div id="contenido">
+                <div class="contanedor-dos-vistas">
+                    <div id="vista-previa">
+                        <div id="fondo"></div>
+                        <h3 class="titulo1">Vista Previa:</h3>
+                        <p class="versiculo1" id="versiculo">Selecciona un versículo para verlo aquí.</p>
+                    </div>
+                    <div id="vista-previa2">
+                        <div id="fondo2"></div>
+                        <h3 class="titulo2">Vista Previa Mini:</h3>
+                        <p class="versiculo2" id="versiculo">Selecciona un versículo para verlo aquí.</p>
+                    </div>
+                </div>
+                <div class="contenedor-version-y-enviar">
+
+                    <div class="contenedor-versiones">
+                        <h2 style="font-family: Arial, Helvetica, sans-serif;">Seleccione la versión:</h2>
+                        <select id="selector-versiones">
+                            <option>Versiones en Español:</option>
+                            <option value="SpanishRVR1960Bible"> 01-|Biblia Reina-Valera 1960</option>
+                            <option value="Spanish1569Bible"> 02-|Biblia Reina-Valera 1569</option>
+                            <option value="Spanish1989Bible"> 03-|Biblia Reina-Valera 1989</option>
+                            <option value="Spanish1909Bible"> 04-|Biblia Reina-Valera 1909</option>
+                            <option value="SpanishBLaPalabra-VersionEspanola-Bible"> 05-|Biblia La Palabra (Versión
+                                Española)</option>
+                            <option value="SpanishBTI-Traduccion-Interconfesional-version espanola-Bible"> 06-|Biblia
+                                Traducción Interconfesional (Versión Española)</option>
+                            <option value="SpanishBTX-Hebraica-Stuttgartensia1999Bible"> 07-|Biblia Hebraica
+                                Stuttgartensia 1999</option>
+                            <option value="SpanishDHH1996Bible"> 08-|Biblia Dios Habla Hoy 1996</option>
+                            <option value="SpanishLBLABible"> 09-|Biblia (La Biblia De Las Américas) 1997</option>
+                            <option value="SpanishNVIBible"> 10-|Biblia Nueva Versión Internacional</option>
+                            <option value="SpanishRevisedRVR1960Bible"> 11-|Biblia Reina-Valera 1960 (Revisada)</option>
+                            <option value="SpanishRV2020Bible"> 12-|Biblia Reina-Valera 2020</option>
+                            <option value="SpanishRVGBible"> 13-|Biblia Reina-Valera Gómez 2004</option>
+                            <option value="SpanishRVR1995Bible"> 14-|Biblia Reina-Valera 1995</option>
+                            <option value="SpanishBibliaJerusalenBible"> 15-|Biblia Jerusalén</option>
+                            <option value="SpanishBibliaLatinoamericana95Bible"> 16-|Biblia Latinoamericana 95</option>
+                            <option value="SpanishBibliaLatinoamericanadeHoyBible"> 17-|Biblia Latinoamericana Hoy
+                            </option>
+                            <option value="SpanishDiosHablaHoyBible"> 18-|Biblia Dios Habla Hoy</option>
+                            <option value="SpanishNuevaBibliadeJerusalenBible"> 19-|Biblia Nueva Biblia Jerusalén
+                            </option>
+                            <option value="SpanishNuevaBibliadelosHispanosBible"> 20-|Biblia Nueva Biblia De Los
+                                Hispanos</option>
+                            <option value="SpanishNuevaTraduccionVivienteBible"> 21-|Biblia Nueva Traducción Viviente
+                            </option>
+                            <option value="SpanishPalabradeDiosparaTodosBible"> 22-|Biblia Palabra De Dios Para Todos
+                            </option>
+                            <option value="SpanishTraduccionEnLenguajeActualBible"> 23-|Biblia Traducción En Lenguaje
+                                Actual</option>
+                            <option>English Versions:</option>
+                            <option value="EnglishEasyToReadVersionBible"> 01-|Biblia Easy To Read Version</option>
+                            <option value="EnglishKingJames2000Bible"> 02-|Biblia King James 2000</option>
+                            <option value="EnglishModernKingJamesVersionBible"> 03-|Biblia Modern King James Version
+                            </option>
+                            <option>Hebreo Versión:</option>
+                            <option value="HebreoTanakh">01-|Biblia Hebrea Tanakh | Stuttgartensia | Lexham</option>
+
+                        </select>
+                    </div>
+                    <button onclick="enviarVersiculo()" class="enviar" id="enviar">Enviar<img
+                            src="iconos/enviar.png"></button>
+                </div>
+                <div class="contenedor-subcontenido">
+                    <div id="lista-capitulos"></div>
+                    <!--Configuración de la letra de los versículos-->
+                    <div id="config-panel">
+                        <h2>Configuración de Letra</h2>
+
+                        <!-- Tamaño de Fuente -->
+                        <div>
+                            <label>Tamaño de Fuente:</label>
+                            <button id="increase-font">A+</button>
+                            <button id="decrease-font">A-</button>
+                        </div>
+
+                        <!-- Tipo de Fuente -->
+                        <div>
+                            <label>Tipo de Fuente:</label>
+                            <select id="font-type">
+                                <!-- Familias genéricas -->
+                                <option value="serif">Serif</option>
+                                <option value="sans-serif">Sans-serif</option>
+                                <option value="cursive">Cursiva</option>
+                                <option value="monospace">Monospace</option>
+                                <option value="fantasy">Fantasy</option>
+
+                                <!-- Fuentes específicas -->
+                                <option value="Arial">Arial</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Tahoma">Tahoma</option>
+                                <option value="Trebuchet MS">Trebuchet MS</option>
+                                <option value="Comic Sans MS">Comic Sans MS</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Lucida Console">Lucida Console</option>
+                                <option value="Palatino Linotype">Palatino Linotype</option>
+                                <option value="Garamond">Garamond</option>
+                                <option value="Century Gothic">Century Gothic</option>
+                                <option value="Segoe UI">Segoe UI</option>
+
+                                <!-- Combinaciones -->
+                                <option value="Arial, sans-serif">Arial (Sans-serif)</option>
+                                <option value="Georgia, serif">Georgia (Serif)</option>
+                                <option value="Courier New, monospace">Courier New (Monospace)</option>
+                                <option value="Comic Sans MS, cursive, sans-serif">Comic Sans MS (Cursive)</option>
+                                <option value="Impact, fantasy">Impact (Fantasy)</option>
+                                <option value="Helvetica, Arial, sans-serif">Helvetica / Arial (Sans-serif)</option>
+                                <option value="Times, Times New Roman, serif">Times / Times New Roman (Serif)</option>
+                                <option value="Lucida Console, Monaco, monospace">Lucida Console / Monaco (Monospace)
+                                </option>
+                                <option value="Palatino, Palatino Linotype, Georgia, serif">Palatino / Georgia (Serif)
+                                </option>
+                                <option value="Tahoma, Geneva, sans-serif">Tahoma / Geneva (Sans-serif)</option>
+                            </select>
+                        </div>
+
+                        <!-- Color de Fuente -->
+                        <div>
+                            <label>Color de Fuente:</label>
+                            <input type="color" id="font-color" value="#000000">
+                        </div>
+
+                        <!-- Alineación -->
+                        <div>
+                            <label>Alineación:</label>
+                            <button id="align-left">📜</button>
+                            <button id="align-center">🎯</button>
+                            <button id="align-right">➡️</button>
+                            <button id="align-justify">🖹</button>
+                        </div>
+
+                        <!-- Espaciado -->
+                        <div>
+                            <label>Espaciado de Líneas:</label>
+                            <input type="range" id="line-spacing" min="1" max="10" step="0.1" value="5">
+                        </div>
+
+                        <!-- Espaciado entre letras-->
+                        <div>
+                            <label>Espaciado entre letras:</label>
+                            <input type="range" id="letter-spacing" min="0" max="10" step="0.1" value="5">
+                        </div>
+
+                        <!-- Desvanecimiento de fondo -->
+                        <div>
+                            <label>Desvanecer Fondo</label>
+                            <input type="range" id="desvanecer-fondo" min="0" max="1" step="0.1" value="0">
+                        </div>
+
+                        <!-- Fondos -->
+                        <div class="contenedor-imagenes">
+                            <label class="letra-imagenes" id="letra-imagenes">Imágenes de Fondo:</label>
+                            <div id="background-select"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="himnario"></div>
+        <div id="contenedor-youtube">
+            <div id="lista-videos"></div>
+            <div id="contenedor-busqueda">
+                <img src="iconos/iconoyoutube.png" alt="">
+                <input type="search" id="busqueda-youtube" placeholder="Buscar en You Tube o pegar URL">
+                <button id="buscar-youtube-boton" onclick="buscarVideos()"><img src="iconos/iconoBuscar.png"
+                        alt=""></button>
+                <div id="loader" style="display:none;text-align: center;">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+        <div id="contenedor-contador">
+            <div class="contadores" id="contadores">Contadores:</div>
+            <div class="clock" id="clock">Reloj | 12:00:00 AM</div>
+            <div class="cronometro" id="timer">00:00:00 | cronómetro de inicio</div>
+
+            <div class="temporizador" id="countdown">00:00:00 | regresivo</div>
+            <div class="stop-alert" id="stopAlerta">STOP<img src="imagenes/stop.png"></div>
+            <div class="temporizador-config">
+                <input type="number" id="minutosInput" placeholder="Min" min="1" value="5">
+                <button onclick="iniciarCuentaRegresiva()">Iniciar regresivo</button>
+                <button onclick="iniciarCronometro()">Iniciar cronómetro</button>
+                <button onclick="limpiar()">Limpiar regresivo</button>
+                <button onclick="limpiarTodo()">Limpiar todo</button>
+                <button id="abrirVentanaContador">Pantalla secundaria</button>
+            </div>
+        </div>
+
+
+        <div id="contenedor-himnos-personalizados">
+            <div id="himnosList">
+              <select id="carpetaSelect">
+                <option value="audiosHimnos">Cantado</option>
+                <option value="audiosHimnosPista">Pista</option>
+                <option value="audiosHimnosLetra">Letra</option>
+                <option value="audiosHimnosIngles">English</option>
+              </select>
+              <div id="listaHimnos"></div>
+            </div>
+            <div id="previsualizacion">
+              <h2 id="anuncioHimnos" style="width: 100%;color: white;text-align: center;font-family: Arial, Helvetica, sans-serif;">Himnos 60,71,84,185,188,368 comienzan en Coro.</h2>
+              <h2 id="tituloHimno"></h2>
+              <div id="contenidoHimno"></div>
+              <audio id="audioHimno" controls controlsList="nodownload noplaybackrate nofullscreen"></audio>
+              <img src="portadas/logo-proyectoja.png" alt="">
+            </div>
+            <div id="config-panel2">
+                <h2>Configuración de Letra</h2>
+
+                <!-- Tamaño de Fuente -->
+                <div>
+                    <label>Tamaño de Fuente:</label>
+                    <button id="increase-font2">A+</button>
+                    <button id="decrease-font2">A-</button>
+                </div>
+
+                <!-- Tipo de Fuente -->
+                <div>
+                    <label>Tipo de Fuente:</label>
+                    <select id="font-type2">
+                        <!-- Familias genéricas -->
+                        <option value="serif">Serif</option>
+                        <option value="sans-serif">Sans-serif</option>
+                        <option value="cursive">Cursiva</option>
+                        <option value="monospace">Monospace</option>
+                        <option value="fantasy">Fantasy</option>
+
+                        <!-- Fuentes específicas -->
+                        <option value="Arial">Arial</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Tahoma">Tahoma</option>
+                        <option value="Trebuchet MS">Trebuchet MS</option>
+                        <option value="Comic Sans MS">Comic Sans MS</option>
+                        <option value="Impact">Impact</option>
+                        <option value="Lucida Console">Lucida Console</option>
+                        <option value="Palatino Linotype">Palatino Linotype</option>
+                        <option value="Garamond">Garamond</option>
+                        <option value="Century Gothic">Century Gothic</option>
+                        <option value="Segoe UI">Segoe UI</option>
+
+                        <!-- Combinaciones -->
+                        <option value="Arial, sans-serif">Arial (Sans-serif)</option>
+                        <option value="Georgia, serif">Georgia (Serif)</option>
+                        <option value="Courier New, monospace">Courier New (Monospace)</option>
+                        <option value="Comic Sans MS, cursive, sans-serif">Comic Sans MS (Cursive)</option>
+                        <option value="Impact, fantasy">Impact (Fantasy)</option>
+                        <option value="Helvetica, Arial, sans-serif">Helvetica / Arial (Sans-serif)</option>
+                        <option value="Times, Times New Roman, serif">Times / Times New Roman (Serif)</option>
+                        <option value="Lucida Console, Monaco, monospace">Lucida Console / Monaco (Monospace)
+                        </option>
+                        <option value="Palatino, Palatino Linotype, Georgia, serif">Palatino / Georgia (Serif)
+                        </option>
+                        <option value="Tahoma, Geneva, sans-serif">Tahoma / Geneva (Sans-serif)</option>
+                    </select>
+                </div>
+
+                <!-- Color de Fuente -->
+                <div>
+                    <label>Color de Fuente:</label>
+                    <input type="color" id="font-color2" value="#000000">
+                </div>
+
+                <!-- Alineación -->
+                <div>
+                    <label>Alineación:</label>
+                    <button id="align-left2">📜</button>
+                    <button id="align-center2">🎯</button>
+                    <button id="align-right2">➡️</button>
+                    <button id="align-justify2">🖹</button>
+                </div>
+
+                <!-- Espaciado -->
+                <div>
+                    <label>Espaciado de Líneas:</label>
+                    <input type="range" id="line-spacing2" min="1" max="10" step="0.1" value="5">
+                </div>
+
+                <!-- Espaciado entre letras-->
+                <div>
+                    <label>Espaciado entre letras:</label>
+                    <input type="range" id="letter-spacing2" min="0" max="10" step="0.1" value="5">
+                </div>
+
+                <!-- Desvanecimiento de fondo -->
+                <div>
+                    <label>Desvanecer Fondo</label>
+                    <input type="range" id="desvanecer-fondo2" min="0" max="1" step="0.1" value="0">
+                </div>
+
+                <!-- Fondos -->
+                <div class="contenedor-imagenes2">
+                    <label class="letra-imagenes2" id="letra-imagenes">Imágenes de Fondo:</label>
+                    <div id="background-select2"></div>
+                    <img id="imagenPrevia" style="width: 100%;height: auto; overflow: hidden;">
+                    <div id="contenedorCargarImagen"><h2>Cargar imagen:</h2><button id="botonCargarImagen">Subir Imagen</button></div>
+                    <h2>Usar imagen cargada siempre:</h2>
+                    <label class="switch2">
+                        <input type="checkbox" id="miSwitch">
+                        <span class="slider2"></span>
+                      </label>                   
+                      <p id="estado">⚪ Apagado</p>
+                </div>
+            </div>
+          </div>
+
+
+        <div class="contenedor-buscador">
+            <button id="botonVideoImgLocal" class="botonVideoImgLocal"><img src="iconos/videolocal.png"></button>
+            <button id="botonYoutube" class="botonYouTube"><img src="iconos/youtube.png"></button>
+            <button id="botonBiblia" class="botonBiblia"><img src="iconos/biblia.png"></button>
+            <button id="botonContador" class="botonContador"><img src="iconos/contador.png"></button>
+            <button id="botonHimnosPro" class="botonHimnosPro"><img src="iconos/himnospro.png"></button>
+            <div class="toggle-container">
+                <div id="slideButton" class="slider"></div>
+                <div id="tooltip">Modo Profesional</div>
+            </div>
+            
+            <input type="text" id="searchInput" placeholder="Buscar himno..." />
+            <img src="iconos/iconoBuscar.png">
+            <button id="configBoton"><img src="iconos/configuracion.png"></button>
+            <div id="configMenu" class="config-menu">
+                <div id="contenedor-ventanas-opciones" class="contenedor-ventanas-opciones">
+                    <div id="opcion1" class="opcion1">
+                        <img src="imagenes/perfil.jpg">
+                        <h1>Kendall Torres</h1>
+                        <h3>Fundador del ministerio PROYECTO JA</h3>
+                        <p>¡Hola! Espero este himnario sea de bendición para tu iglesia. Seguimos trabajando por la
+                            causa del evangelio,
+                            para que más personas conozcan del Maestro Salvador Jesús. Ponemos nuestros talentos
+                            digitales informáticos al servicio del Señor.
+                        </p>
+                        <p>Cualquier detalle o sugerencia no dudes en escribirnos al correo interno:
+                            kendall.torres.17@gmail.com</p>
+                        <h3>De: Costa Rica</h3>
+                        <h5>❤️ ¡Dios te bendiga! Oramos por ti y tu iglesia. 🙏🏼</h5><br />
+                        <hr><br /><br />
+                        <img src="imagenes/perfilDos.jpg">
+                        <h1>Juan Saucedo</h1>
+                        <h3>QA Tester del ministerio PROYECTO JA</h3>
+                        <h3>De: Perú</h3>
+                        <p>¡Dios te bendiga!</p><br />
+                        <h4>Sección de: Acerca de</h4>
+                    </div>
+                    <div id="opcion2" class="opcion2">
+                        <h1>¡Más Contenido!</h1>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('himnosAntiguos')">Himnario Antiguo 1962</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('orquestado')">Himnario Orquestado</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('himnosInfantiles')">Himnario Infantil</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('coritos')">Coritos Adventistas</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('himnosJA')">Himnos JA</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('himnosNacionales')">Himnos Nacionales</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('orar')">Música Para Orar</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('himnosPianoPista')">Himnos Piano Pista</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('stream')">In-Pre-Out Stream</div>
+                        <div class="categoria" tabindex="0"
+                            style="box-shadow: 0 0 10px black; margin-top: 10px; margin-bottom: 10px; font-size: 24px;"
+                            onclick="mostrarCategoria('listas')">Listas Mix</div>
+                        <p>Esta sección contiene más material en video musical para proyectar en la iglesia; ya sea
+                            encuentros espirituales,
+                            grupos pequeños, visitación, clubes de conquistadores y demás actividades de los diferentes
+                            departamentos de la iglesia.</p>
+                        <h4>Sección de: Más contenido</h4>
+                    </div>
+                    <div id="opcion3" class="opcion3">
+                        <h1>¡Ángeles de Esperanza!</h1>
+                        <h3>Comparte esperanza!</h3>
+                        <h5>Se un Ángel de Esperanza apoyando el ministerio PROYECTO JA y sus redes de evangelismo
+                            digital.</h5>
+                        <p>Las donaciones son puestas marcha en:</p>
+                        <p>1.Construyendo nuevos puentes tecnológicos con la compra del equipo necesario.</p>
+                        <p>2.Misión rescate voluntariado en: solventando necesidades básicas económicas y alimenticias a
+                            las
+                            familias afectadas por la pobreza, desastres naturales o eventos importantes.</p>
+                        <p>3.El ministerio PROYECTO JA no acustumbra a pedir donaciones. El Fundador es apacionado a la
+                            causa del evangelio, todo lo solventa de sus propios bolsillos
+                            en el amor del evangelio y la pronta venida de Cristo. Cualquier donación es aceptada a su
+                            gusto y corazón en ayuda al prójimo.</p>
+                        <div class="contenedor-paypal">
+                            <div id="paypal-button-container-P-55061878M62357111M4MDGRY"></div>
+                            <script
+                                src="https://www.paypal.com/sdk/js?client-id=AQXqYVyDlLC-fpc20TdZ-0rX1S1MI-Suf_dkr-ds--LmeCjCZUzQ1VtnPQYaxB3odZa1RIa2W1TFPbph&vault=true&intent=subscription"
+                                data-sdk-integration-source="button-factory"></script>
+                            <script>
+                                paypal.Buttons({
+                                    style: {
+                                        shape: 'pill',
+                                        color: 'gold',
+                                        layout: 'vertical',
+                                        label: 'subscribe'
+                                    },
+                                    createSubscription: function (data, actions) {
+                                        return actions.subscription.create({
+                                            /* Creates the subscription */
+                                            plan_id: 'P-55061878M62357111M4MDGRY'
+                                        });
+                                    },
+                                    onApprove: function (data, actions) {
+                                        alert(data.subscriptionID); // You can add optional success message for the subscriber here
+                                    }
+                                }).render('#paypal-button-container-P-55061878M62357111M4MDGRY'); // Renders the PayPal button
+                            </script>
+                        </div>
+                        <h4>Sección de: Donaciones</h4>
+                    </div>
+                    <div id="opcion4" class="opcion4">
+                        <h1>Déjanos tus comentarios:</h1>
+                        <div class="contenedor-resenas">
+                            <iframe src="https://proyectoja.github.io/disqus.html" frameborder="0" scrolling="no"
+                                width="100%" height="100%"></iframe>
+                        </div>
+                        <h4>Sección de: Reseñas</h4>
+                    </div>
+                    <div id="opcion5" class="opcion5">
+                        <h1>Página Web:</h1>
+                        <p>Entra a nuestra sitio oficial para ver más contenido
+                            como películas, música, radio, televisión, predicaciones y más!
+                            Visible para ver directamente desde la computadora.
+                        </p>
+                        <div><a href="https://proyectoja.github.io" target="_blank"
+                                style="color: white; font-size: 28px; font-family: Arial, Helvetica, sans-serif;font-weight: bold;">Ir
+                                a ver</a></div>
+                        <h4>Sección de: Página Web</h4>
+                    </div>
+                    <div id="opcion6" class="opcion6">
+                        <h1>Fondos De Pantalla:</h1>
+                        <p>Esta sección es para presentar fondos en la proyeción de la
+                            ventana secundaria. ¡No funcionará si no está activa la ventana secundaria!
+                        </p>
+                        <div class="photo-list" id="photo-list"></div>
+                        <h4>Sección de: Fondos De Pantalla</h4>
+                    </div>
+                </div>
+                <button id="cerrar"><img src="iconos/cerrar.png"></button>
+                <button id="web"><img src="iconos/web.png"></button>
+                <button id="resenia"><img src="iconos/resenia.png"></button>
+                <button id="fondoPantalla"><img src="iconos/fondoPantalla.png"></button>
+                <button id="masContenido"><img src="iconos/menu.png"></button>
+                <button id="paypal"><img src="iconos/paypal.png"></button>
+                <button id="acercaDe"><img src="iconos/acercaDe.png"></button>
+            </div>
+
+            <div id="botonPremium" class="botonPremium"><img src="iconos/corona.png">
+                <h1>PREMIUM</h1>
+                <div id="gota"></div>
+            </div>
+
+
+        </div>
+        <div id="paypal-button-container"></div>
+
+
+    </div>
+    <script type="text/javascript" src="biblia.js"></script>
+    <script type="text/javascript" src="scripts.js"></script>
+    <script type="text/javascript" charset="utf-8" src="clappr.js"></script>
+    <script type="text/javascript" charset="utf-8" src="clappr-playback-rate.js"></script>
+    <script type="text/javascript" charset="utf-8" src="clappr-youtube-playback.js"></script>
+    <script type="text/javascript" charset="utf-8" src="clappr-pip-plugin.js"></script>
+
+
+
+    <script
+        src="https://www.paypal.com/sdk/js?client-id=AZ6rZOCiKsNy9KZwtpz2qC77SgxCcyxVbRh1ulaxKwUvrPpd4IoGguoi8j7M26jIH7BMbvF4QBSM9Vab&vault=true&intent=subscription"></script>
+
+
+    <!-- Para pruebas Sandbox-->
+    <!--
+    <script src="https://www.paypal.com/sdk/js?client-id=AdlYeoPzPSWD_V4unW2sPP9ct6GOg2QdCh3j6ONFPWXLo048mmHVKYzYcSR38MNeMjlg7UBJwtjci5Ki&vault=true&intent=subscription"></script>
+    -->
+
+    <script type="text/javascript" src="//proyectoja.github.io/scriptHimnarioModificaciones.js"></script>
+
+
+    <script async id="chatBroEmbedCode">
+        /* Chatbro Widget Embed Code Start */
+        function ChatbroLoader(chats, async) {
+            async = !1 !== async;
+            var params = {
+                embedChatsParameters: chats instanceof Array ? chats : [chats],
+                lang: navigator.language || navigator.userLanguage,
+                needLoadCode: 'undefined' == typeof Chatbro,
+                embedParamsVersion: localStorage.embedParamsVersion,
+                chatbroScriptVersion: localStorage.chatbroScriptVersion
+            },
+                xhr = new XMLHttpRequest;
+            xhr.withCredentials = !0, xhr.onload = function () {
+                eval(xhr.responseText)
+            }, xhr.onerror = function () {
+                console.error('Chatbro loading error')
+            }, xhr.open('GET', 'https://www.chatbro.com/embed.js?' + btoa(unescape(encodeURIComponent(JSON.stringify(params)))), async), xhr.send()
+        } /* Chatbro Widget Embed Code End */
+        ChatbroLoader({
+            encodedChatId: '397TS'
+        });
+    </script>
+    <script>
+
+        document.addEventListener('chatLoaded', function () {
+            document.addEventListener('chatbroPtCountChanging', function (event) {
+                const contUsuarios = document.getElementById("contadorOnline");
+                if (contUsuarios) {
+                    const count = event?.ptCount?.web ?? 0;
+                    const onlineDiv = `👁️ ${count}`;
+                    contUsuarios.textContent = `${onlineDiv} En línea`;
+                    console.log(contUsuarios);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

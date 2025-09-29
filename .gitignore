@@ -1,0 +1,48 @@
+# Node modules
+node_modules/
+
+# Electron build output
+dist/
+out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS específicos
+.DS_Store
+Thumbs.db
+
+# Carpeta de dependencias locales
+.vscode/
+.idea/
+
+# Carpetas pesadas que no quieres subir
+prueba/
+audiosHimnos/
+audiosHimnosIngles/
+audiosHimnosPista/
+musicaParaOrarDeFondo/
+portadas/
+portadasAntiguo/
+portadasCoritos/
+portadasHimnosAntiguos/
+portadasHimnosInfantiles/
+portadasHimnosJA/
+portadasHimnosNacionales/
+videos/
+videosAntiguo/
+videosCoritos/
+videosHimnosAntiguos/
+videosHimnosInfantiles/
+videosHimnosJA/
+videosHimnosNacionales/
+videosHimnosPianoPista/
+
+# Configuraciones de npm/yarn
+package-lock.json
+yarn.lock
+
+
+

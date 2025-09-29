@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Consola de PROYECTO JA</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 10px;
+            background: #111;
+            color: #0f0;
+        }
+
+        #logs {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Logs de Descarga:</h2>
+  <pre id="logs"></pre>
+  <script>
+    if (window.electronAPI && window.electronAPI.onLog) {
+      window.electronAPI.onLog(msg => {
+        const pre = document.getElementById('logs');
+        
+        // agregar nueva línea
+        pre.textContent += msg + "\n";
+  
+        // dividir en líneas
+        let lineas = pre.textContent.split("\n");
+  
+        // si hay más de 100 líneas, eliminar las primeras
+        if (lineas.length > 50) {
+          lineas = lineas.slice(lineas.length - 100);
+          pre.textContent = lineas.join("\n");
+        }
+  
+        // autoscroll
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+    } else {
+      document.getElementById('logs').textContent = '[ERROR] preload.js no inyectado';
+    }
+  </script>
+  
+</body>
+
+</html>
