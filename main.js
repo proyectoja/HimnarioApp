@@ -297,6 +297,9 @@ autoUpdater.on('update-downloaded', () => {
 
 
 
+
+
+
 app.whenReady().then(() => {
   // Revisar actualizaciones
   autoUpdater.checkForUpdatesAndNotify();
@@ -326,3 +329,5 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   app.quit();
 });
+
+//npm run release -> comando importante para actualizaciones.
