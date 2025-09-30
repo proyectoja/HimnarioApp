@@ -1475,7 +1475,7 @@ function mostrarCategoria(categoria) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
       const videoPath = srcAux+`musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
-      const imagePath = `portadasParaOrarDeFondo/${numero}.png`;
+      const imagePath = srcAux+`portadasParaOrarDeFondo/${numero}.png`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
