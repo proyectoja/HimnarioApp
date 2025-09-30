@@ -181,11 +181,6 @@ botonPremium.addEventListener("click", function () {
   }
 });
 
-//Hasta que se cargue todo llamada y valida premium
-document.addEventListener("DOMContentLoaded", async () => {
-  await mostrarCategoria("todos");
-  await validarPremium();
-});
 
 const totalHimnos = 614;
 // Referencia al contenedor principal del himnario
@@ -204,6 +199,7 @@ let todosLosMusicaParaOrarDeFondoLista = [];
 let todosHimnosPianoPista = [];
 let todosLosHimnosInfantiles = [];
 let todosLosHimnosAntiguos = [];
+
 
 // Función para crear los contenedores de himnos
 function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
@@ -1479,7 +1475,7 @@ function mostrarCategoria(categoria) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
       const videoPath = srcAux+`musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
-      const imagePath = srcAux+`portadasParaOrarDeFondo/${numero}.png`;
+      const imagePath = `portadasParaOrarDeFondo/${numero}.png`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -3133,10 +3129,27 @@ window.electronAPI.onMonitoresActualizados(async () => {
 const select = document.getElementById("selectMonitores");
 
 let srcAux;
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMonitores();
- srcAux = window.paths.src + "/";
+
+  // Asegúrate que window.paths.src existe antes de usarlo
+  if (!window.paths || !window.paths.src) {
+    console.error("window.paths.src no está definido todavía");
+    return;
+  }
+
+  srcAux = window.paths.src + "/";
+
+  // Forzar render
+  await mostrarCategoria("todos");
+
+  // Pequeño retraso para dejar que el DOM pinte
+  requestAnimationFrame(() => {
+    validarPremium();
+  });
 });
+
 
 async function cargarMonitores() {
   // 🚀 Inicializar opciones
