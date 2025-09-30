@@ -89,17 +89,34 @@ function createWindow() {
   });
 
   // ⚡ Interceptar cualquier intento de abrir nueva ventana
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    // Abrir enlace en el navegador predeterminado
-    shell.openExternal(url);
-    return { action: 'deny' }; // evita que Electron abra una ventana
-  });
+win.webContents.setWindowOpenHandler(({ url }) => {
+  if (url.startsWith("about:")) {
+    // ✅ Permitir abrir ventanas about
+    return { action: "allow" };
+  }
 
-  // También opcionalmente interceptar links que se abren con target="_blank"
-  win.webContents.on('new-window', (event, url) => {
-    event.preventDefault();
-    shell.openExternal(url);
+  // 🔗 Abrir todo lo demás en el navegador predeterminado
+  shell.openExternal(url);
+  return { action: "deny" };
+});
+
+// Compatibilidad con versiones antiguas (target="_blank")
+win.webContents.on("new-window", (event, url) => {
+  if (url.startsWith("about:")) {
+    return; // ✅ Permitir
+  }
+
+  event.preventDefault();
+  shell.openExternal(url);
+});
+
+win.webContents.once("dom-ready", () => {
+  win.webContents.send("set-paths", {
+    userData: app.getPath("userData"),
+    src: path.join(app.getPath("userData"), "src")
   });
+});
+  
 }
 
 // Ocultar la barra de menú

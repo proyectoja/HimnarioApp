@@ -4,14 +4,13 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const { log } = require("./logHelper"); // tu módulo de logs
-
+const { app } = require("electron");
 // Carpeta base donde se almacenan los archivos
-const BASE_DIR = path.join(__dirname, "src");
+const BASE_DIR = path.join(app.getPath('userData'), 'src');
 
 // Configuración de carpetas remotas
 const CARPETAS = {
-  /*
-  prueba: "https://archive.org/details/003_20250924_202509",
+  //prueba: "https://archive.org/details/003_20250924_202509",
   audiosHimnos: "https://archive.org/details/audiosHimnos",
   audiosHimnosIngles: "https://archive.org/details/audiosHimnosInglesActualizacion",
   audiosHimnosPista: "https://archive.org/details/audiosHimnosPista",
@@ -30,7 +29,6 @@ const CARPETAS = {
   videosHimnosInfantiles: "https://archive.org/details/videosHimnosInfantiles",
   videosHimnosJA: "https://archive.org/details/videosHimnosJA",
   videosHimnosNacionales: "https://archive.org/details/videosHimnosNacionales",
-  */
   videosHimnosPianoPista: "https://archive.org/details/videosHimnosPianoPista",
 };
 

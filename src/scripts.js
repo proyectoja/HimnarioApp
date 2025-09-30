@@ -69,7 +69,7 @@ function aplicarEstadoPremium(esPremiumAux) {
       el.style.display = "flex";
     });
   } else {
-    waterMark = "portadas/logo-proyectoja.png";
+    waterMark = "imagenes/logo-proyectoja.png";
     botonPremium.style.display = "flex";
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "none";
@@ -1334,7 +1334,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "1-100") {
     inicio = 1;
     fin = 100;
@@ -1344,7 +1344,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "101-200") {
     inicio = 101;
     fin = 200;
@@ -1354,7 +1354,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "201-300") {
     inicio = 201;
     fin = 300;
@@ -1364,7 +1364,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "301-400") {
     inicio = 301;
     fin = 400;
@@ -1374,7 +1374,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "401-500") {
     inicio = 401;
     fin = 500;
@@ -1384,7 +1384,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "501-614") {
     inicio = 501;
     fin = 614;
@@ -1394,7 +1394,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "orquestado") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -1403,9 +1403,9 @@ function mostrarCategoria(categoria) {
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
       const numero = titulos2[i].match(/\d{3}/)[0]; // Encuentra los primeros 3 dígitos en el título
-      const videoPath = `videosAntiguo/${numero}.mp4`; // Ruta del video con el número
+      const videoPath = srcAux+`videosAntiguo/${numero}.mp4`; // Ruta del video con el número
       const titulo = titulos2[i]; // El título completo del himno
-      const imagePath = `portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
+      const imagePath = srcAux+`portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
 
       // Almacenar en el array
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
@@ -1415,7 +1415,7 @@ function mostrarCategoria(categoria) {
     }
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "coritos") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -1423,9 +1423,9 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
-      const videoPath = `videosCoritos/${numero}.mp4`;
+      const videoPath = srcAux+`videosCoritos/${numero}.mp4`;
       const titulo = titulos3[i];
-      const imagePath = `portadasCoritos/${numero}.jpg`;
+      const imagePath = srcAux+`portadasCoritos/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -1441,9 +1441,9 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos4.length; i++) {
       const numero = titulos4[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosJA/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosJA/${numero}.mp4`;
       const titulo = titulos4[i];
-      const imagePath = `portadasHimnosJA/${numero}.jpg`;
+      const imagePath = srcAux+`portadasHimnosJA/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -1459,9 +1459,9 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos5.length; i++) {
       const numero = titulos5[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosNacionales/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosNacionales/${numero}.mp4`;
       const titulo = titulos5[i];
-      const imagePath = `portadasHimnosNacionales/${numero}.png`;
+      const imagePath = srcAux+`portadasHimnosNacionales/${numero}.png`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -1469,7 +1469,7 @@ function mostrarCategoria(categoria) {
     }
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "orar") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -1477,9 +1477,9 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
-      const videoPath = `musicaParaOrarDeFondo/${numero}.mp4`;
+      const videoPath = srcAux+`musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
-      const imagePath = `portadasParaOrarDeFondo/${numero}.png`;
+      const imagePath = srcAux+`portadasParaOrarDeFondo/${numero}.png`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -1487,7 +1487,7 @@ function mostrarCategoria(categoria) {
     }
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "himnosPianoPista") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -1495,7 +1495,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosPianoPista/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosPianoPista/${numero}.mp4`;
       const titulo = tituloHimnosPianoPista[i];
       const imagePath = `portadasHimnosPianoPista/001.jpg`;
 
@@ -1505,7 +1505,7 @@ function mostrarCategoria(categoria) {
     }
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "himnosInfantiles") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -1513,9 +1513,9 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosInfantiles/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosInfantiles/${numero}.mp4`;
       const titulo = tituloHimnosInfantiles[i];
-      const imagePath = `portadasHimnosInfantiles/${numero}.jpg`;
+      const imagePath = srcAux+`portadasHimnosInfantiles/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -1523,7 +1523,7 @@ function mostrarCategoria(categoria) {
     }
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "himnosAntiguos") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -1531,9 +1531,9 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosAntiguos/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosAntiguos/${numero}.mp4`;
       const titulo = tituloHimnosAntiguos[i];
-      const imagePath = `portadasHimnosAntiguos/${numero}.jpg`;
+      const imagePath = srcAux+`portadasHimnosAntiguos/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -1541,15 +1541,15 @@ function mostrarCategoria(categoria) {
     }
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "listas") {
     botonLista = true;
     //Lista música para orar de fondo
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
-      const videoPath = `musicaParaOrarDeFondo/${numero}.mp4`;
+      const videoPath = srcAux+`musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
-      const imagePath = `portadasParaOrarDeFondo/${numero}.png`;
+      const imagePath = srcAux+`portadasParaOrarDeFondo/${numero}.png`;
 
       todosLosMusicaParaOrarDeFondoLista.push({
         numero,
@@ -1573,9 +1573,9 @@ function mostrarCategoria(categoria) {
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
       const numero = titulos2[i].match(/\d{3}/)[0]; // Encuentra los primeros 3 dígitos en el título
-      const videoPath = `videosAntiguo/${numero}.mp4`; // Ruta del video con el número
+      const videoPath = srcAux+`videosAntiguo/${numero}.mp4`; // Ruta del video con el número
       const titulo = `Antiguos`; // El título completo del himno
-      const imagePath = `portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
+      const imagePath = srcAux+`portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
 
       // Almacenar en el array
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
@@ -1588,9 +1588,9 @@ function mostrarCategoria(categoria) {
     //Lista de los coritos adventistas: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
-      const videoPath = `videosCoritos/${numero}.mp4`;
+      const videoPath = srcAux+`videosCoritos/${numero}.mp4`;
       const titulo = `Coritos`;
-      const imagePath = `portadasCoritos/${numero}.jpg`;
+      const imagePath = srcAux+`portadasCoritos/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosCoritosLista.push({ numero, titulo, videoPath, imagePath });
@@ -1603,8 +1603,8 @@ function mostrarCategoria(categoria) {
     for (let i = 1; i <= 614; i++) {
       const numero = i.toString().padStart(3, "0");
       const titulo = titulos[i - 1] || `Himno ${numero}`;
-      const videoPath = `videos/${numero}.mp4`;
-      const imagePath = `portadas/${numero}.jpg`;
+      const videoPath = srcAux+`videos/${numero}.mp4`;
+      const imagePath = srcAux+`portadas/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosCantadosLista.push({ numero, titulo, videoPath, imagePath });
@@ -1616,7 +1616,7 @@ function mostrarCategoria(categoria) {
     //Lista de los piano pista: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosPianoPista/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosPianoPista/${numero}.mp4`;
       const titulo = `Himnos Piano Pista`;
       const imagePath = `portadasHimnosPianoPista/${numero}.jpg`;
 
@@ -1630,9 +1630,9 @@ function mostrarCategoria(categoria) {
     //Lista de los infantiles: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosInfantiles/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosInfantiles/${numero}.mp4`;
       const titulo = `Himnos Infantiles`;
-      const imagePath = `portadasHimnosInfantiles/${numero}.jpg`;
+      const imagePath = srcAux+`portadasHimnosInfantiles/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosHimnosInfantiles.push({ numero, titulo, videoPath, imagePath });
@@ -1644,9 +1644,9 @@ function mostrarCategoria(categoria) {
     //Lista de los antiguos 1962: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
-      const videoPath = `videosHimnosAntiguos/${numero}.mp4`;
+      const videoPath = srcAux+`videosHimnosAntiguos/${numero}.mp4`;
       const titulo = `Himnos Antiguos 1962`;
-      const imagePath = `portadasHimnosAntiguos/${numero}.jpg`;
+      const imagePath = srcAux+`portadasHimnosAntiguos/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosHimnosAntiguos.push({ numero, titulo, videoPath, imagePath });
@@ -1666,7 +1666,7 @@ function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
-    )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   }
 
   let duracionesHimnosAux;
@@ -1674,8 +1674,8 @@ function mostrarCategoria(categoria) {
   for (let i = inicio; i <= fin; i++) {
     const numero = i.toString().padStart(3, "0");
     const titulo = titulos[i - 1] || `Himno ${numero}`;
-    const videoPath = `videos/${numero}.mp4`;
-    const imagePath = `portadas/${numero}.jpg`;
+    const videoPath = srcAux+`videos/${numero}.mp4`;
+    const imagePath = srcAux+`portadas/${numero}.jpg`;
 
     // Crear himno normal
     duracionesHimnosAux = duracionesHimnos[i - 1];
@@ -1726,7 +1726,7 @@ searchInput.addEventListener("focus", function () {
   //mostrarCategoria('todos'); // Mostrar todos los himnos al hacer clic en el buscador
   document.getElementsByClassName(
     "contenedor-principal"
-  )[0].style.backgroundImage = 'url("portadas/fondo1.jpg")';
+  )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   searchInput.value = "";
   // mostrarCategoria("todos");
 });
@@ -2831,7 +2831,7 @@ function mostrarTitulo(himno) {
     else if (carpetaSelect.value === "audiosHimnosLetra")
       carpeta = "audiosHimnosLetra";
     else carpeta = "audiosHimnos";
-    audioHimno.src = `${carpeta}/${numeroFormateado}.mp3`;
+    audioHimno.src = srcAux+`${carpeta}/${numeroFormateado}.mp3`;
     audioHimno.play().catch((err) => console.log("Error al reproducir:", err));
 
     // 🔹 Marcar título como seleccionado (toggle)
@@ -3132,8 +3132,10 @@ window.electronAPI.onMonitoresActualizados(async () => {
 
 const select = document.getElementById("selectMonitores");
 
+let srcAux;
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMonitores();
+ srcAux = window.paths.src + "/";
 });
 
 async function cargarMonitores() {

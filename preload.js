@@ -23,3 +23,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onVentanaCerrada: (callback) => ipcRenderer.on("ventana-cerrada", callback),
   onMonitoresActualizados: (callback) => ipcRenderer.on("monitores-actualizados", callback)
 });
+
+ipcRenderer.on("set-paths", (_, paths) => {
+  contextBridge.exposeInMainWorld("paths", paths);
+});
