@@ -1257,11 +1257,11 @@ botonYoutube.addEventListener("click", function () {
 
 //Función para cerrar ventana secundaria
 function cerrarVentanaReproductor() {
-  if (playerWindow && !playerWindow.closed) {
-    playerWindow.close();
-  }
+  //if (playerWindow && !playerWindow.closed) {
+    //playerWindow.close();
+  //}
   botonPRO = false;
-  toggleContainer.classList.remove("active");
+  //toggleContainer.classList.remove("active");
 
   botonHimnosPro.style.display = "none";
   ventanaHimnosPro.style.display = "none";
@@ -1272,12 +1272,12 @@ function cerrarVentanaReproductor() {
 }
 
 // Escuchar el mensaje de cierre de la ventana secundaria
-window.addEventListener("message", (event) => {
-  if (event.data === "closed") {
-    audioHimno.pause();
-    cerrarVentanaReproductor();
-  }
-});
+//window.addEventListener("message", (event) => {
+  //if (event.data === "closed") {
+    //audioHimno.pause();
+    //cerrarVentanaReproductor();
+  //}
+//});
 
 // Función para ocultar el reproductor
 function ocultarReproductor() {
@@ -1545,7 +1545,7 @@ function mostrarCategoria(categoria) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
       const videoPath = srcAux+`musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
-      const imagePath = srcAux+`portadasParaOrarDeFondo/${numero}.png`;
+      const imagePath = `portadasParaOrarDeFondo/${numero}.png`;
 
       todosLosMusicaParaOrarDeFondoLista.push({
         numero,
@@ -2118,6 +2118,7 @@ function youtubeInicio(url, poster) {
 }
 
 function youtubeClapprEstandar(url, poster) {
+  audioHimno.pause();
   // Limpiar el contenedor de video antes de cargar uno nuevo
   videoPlayerContainer.innerHTML = "";
   videoPlayerContainer.appendChild(closePlayerButton);
@@ -2129,7 +2130,7 @@ function youtubeClapprEstandar(url, poster) {
     width: "100%",
     height: "100vh",
     preload: "auto",
-    autoPlay: true,
+    autoPlay: false,
     volume: 100,
     poster: poster,
     //hideMediaControl: true,
@@ -2150,7 +2151,27 @@ function youtubeClapprEstandar(url, poster) {
   playerYouTube.on(Clappr.Events.PLAYER_ENDED, function () {
     ocultarReproductor();
   });
+  playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
+    console.log("✅ Player listo, esperando 2 segundos...");
+  
+    setTimeout(() => {
+      const poster = document.querySelector('.player-poster.clickable');
+      if (poster) {
+        console.log("🎬 Simulando clic en póster tras PLAYER_READY");
+  
+        const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+        poster.dispatchEvent(clickEvent);
+      } else {
+        console.log("⚠️ No se encontró póster, intentando play() directo");
+        playerYouTube.play();
+      }
+    }, 1000);
+  });
+  
+  
 }
+
+
 
 function expandirIframeYouTube() {
   const maxIntentos = 1000000;
@@ -2185,7 +2206,7 @@ function expandirIframeYouTube() {
 }
 
 function youtubeClappr(auxUrlOnce, poster) {
-  
+  audioHimno.pause();
   enviarDatos({
     videoPath: auxUrlOnce,
     imagePath: poster,
@@ -2201,6 +2222,7 @@ function youtubeClappr(auxUrlOnce, poster) {
 
 //FUNSIÓN PARA VIDEOS LOCALES ESTANDAR
 function videosLocalesEstandar(url, poster) {
+  audioHimno.pause();
   // Limpiar el contenedor de video antes de cargar uno nuevo
   videoPlayerContainer.innerHTML = "";
   videoPlayerContainer.appendChild(closePlayerButton);
@@ -2231,7 +2253,7 @@ function videosLocalesEstandar(url, poster) {
   });
 }
 function videosLocalesPro(auxUrlOnce, poster) {
-  
+  audioHimno.pause();
   enviarDatos({
     videoPath: auxUrlOnce,
     imagePath: poster,
@@ -3266,6 +3288,278 @@ document.getElementById("ministerio").addEventListener("mouseout", () => {
     yearDiv.remove();
   }
 });
+
+
+
+// 🗓️ Array de actualizaciones
+const actualizaciones = [
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "",
+    titulo: "",
+    mensaje: "",
+    version: "",
+    tipo: ""
+  },
+  {
+    fecha: "2025-10-6",
+    titulo: "Mejoramiento del reproductor de proyección y vista automática del video de YouTube",
+    mensaje: "Se mejoró el reproductor profesional de proyección: Ya no se observa la barra de control cuando se coloca un himno, además, también se implementó en YouTube la mejora; además, ahora YouTube se reproduce automáticamente. Además, se agregó un botón de novedades para que revices qué actualizaciones han salido desde que se creó el software y te mantengas actualizado.",
+    version: "v1.0.20",
+    tipo: "Mejora"
+  },
+  {
+    fecha: "2025-09-10",
+    titulo: "Nueva funcionalidad para personalizar los himnos tanto español como inglés.",
+    mensaje: "Se agregó y automatizó el software corriendo en su servidor propio. Nuevo botón para personalizar el himnario con ajustes de letra y versiones como cantado, instrumental, solo letra e inglés(se sigue modificando cada estrofa a su idioma con traductores voluntarios), además, en la misma sección, se puede cargar una imagen a proyección en el himno. Además se agregó la funcionalidad potente de auto-actualización de este software para futuras actualizaciones: ya no tendrás que descargar el mismo archivo zip todo el tiempo, este software desde esta versión se actualiza automáticamente.",
+    version: "v1.0.19",
+    tipo: "Función nueva"
+  },
+  {
+    fecha: "2025-08-30",
+    titulo: "Nuevas funciones!",
+    mensaje: "Se transladó la opción PRO al lado superior de la pantalla, allí mismo se implenta un apartado de estadísticas nerd, además, se agregó funcionalidad de búsqueda de monitores disponibles en tu computador. Se repara la búsqueda en YouTube(nuevas políticas de navegadores web), Se agrega un reloj contador para predicadores. Se agregó también un botón para búsqueda de archivos en el explorador de archivos del disco.",
+    version: "v1.0.18",
+    tipo: "Función nueva"
+  },
+  {
+    fecha: "2025-07-30",
+    titulo: "Nuevos himnario implementados y nueva función de You Tube",
+    mensaje: "Se agregaron nuevas versiones de himnario tanto orquestado, antiguo, cantado, instrumental, infantil, piano y listas de reproducción actualizadas. Además, nueva función potente, búsquedas de YouTube sin anuncios para reproducir en tu iglesia, tanto en modo local o activando el modo profesional.",
+    version: "v1.0.2",
+    tipo: "Función nueva"
+  },
+  {
+    fecha: "2025-01-27",
+    titulo: "Nuevas listas de reproducción.",
+    mensaje: "Se implementa listas de reproducción en modo bucle y play automático tanto en local y profesional",
+    version: "v1.0.1",
+    tipo: "Mejora"
+  },
+  {
+    fecha: "2024-011-09",
+    titulo: "Publicación del Software",
+    mensaje: "Creación del software del himnario con funcionalidad de proyección y búsqueda avanzada, himnario solo cantado. Funciones modo reproducción local y profesional.",
+    version: "v1.0.0",
+    tipo: "Función nueva"
+  }
+  /**
+   * Función Nueva
+   * Mejor
+   * Corrección
+   */
+];
+
+// 🎨 Función para renderizar los mensajes
+function mostrarActualizaciones() {
+  himnarioContainer.style.display = "grid";
+  ventanaBiblia.style.display = "none";
+  ventanaContador.style.display = "none";
+  ventanaHimnosPro.style.display = "none";
+  ventanaYouTube.style.display = "none";
+  const contenedorPadre = document.getElementById("himnario");
+  contenedorPadre.innerHTML = "";
+  const contenedor  = document.createElement("div");
+  contenedor.className = "contenedorHijo";
+  
+  const card = document.createElement("div");
+  card.className = "actualizacion";
+  card.textContent = "Recuerda darnos tu opinión o dejarnos un comentario para seguir mejorando. Aquí mismo puedes dejarnos tus comentarios. (LEEMOS SOLO AQUÍ)";
+  contenedor.appendChild(card);
+
+  actualizaciones.forEach(item => {
+    if(item.fecha != ""){
+      const card = document.createElement("div");
+    card.className = "actualizacion";
+
+    card.innerHTML = `
+      <div class="fecha">${item.fecha} | PROYECTO JA</div>
+      <h3>${item.titulo}</h3>
+      <p>${item.mensaje}</p>
+      <div class="extra">
+        <span class="version">${item.version}</span>
+        <span class="tipo ${item.tipo.toLowerCase()}">${item.tipo}</span>
+      </div>
+    `;
+    contenedor.appendChild(card);
+    }
+  });
+  contenedorPadre.appendChild(contenedor);
+}
 
 //TÍTULO DE LOS VIDEOS | SIEMPRE ABAJO DE TODO EL CÓDIGO PARA MAYOR FÁCILIDAD
 const titulos = [

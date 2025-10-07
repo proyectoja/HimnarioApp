@@ -332,18 +332,42 @@
           source: videoPath,
           watermark: waterMarkAux,
           position: "bottom-right",
-          autoPlay: true,
+          width: "100%",
+          height: "100vh",
+          allowUserInteraction: true,
+      chromeless: true,
           exitFullscreenOnEnd: false,
           disableVideoTagContextMenu: true,
           volume: 100,
           poster: 'https://i.ytimg.com/vi/' + videoPath + '/hqdefault.jpg',
           playbackNotSupportedMessage: "No se puede reproducir el contenido",
           plugins: [YoutubePlugin, YoutubePluginControl],
-          //YoutubePluginControl
-          YoutubeVars: { "languageCode": "en" },
+          //YoutubePluginControl,
+          YoutubeVars: { "languageCode": "en"},
           parentId: "#player-youtube"
         });
+        // Escuchar cuando el video termine
+  playerYouTube.on(Clappr.Events.PLAYER_ENDED, function () {
+    ocultarReproductor();
+  });
+  playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
+    console.log("✅ Player listo, esperando 2 segundos...");
+  
+    setTimeout(() => {
+      const poster = document.querySelector('.player-poster.clickable');
+      if (poster) {
+        console.log("🎬 Simulando clic en póster tras PLAYER_READY");
+  
+        const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+        poster.dispatchEvent(clickEvent);
+      } else {
+        console.log("⚠️ No se encontró póster, intentando play() directo");
+        playerYouTube.play();
+      }
+    }, 300);
+  });
 
+        
 
 
         console.log("Clappr version:", Clappr.version);
@@ -410,6 +434,8 @@
           height: "100vh",
           preload: 'auto',
           autoPlay: true,
+          allowUserInteraction: true,
+      chromeless: true,
           exitFullscreenOnEnd: false,
           disableVideoTagContextMenu: true,
           volume: 100,
@@ -509,6 +535,8 @@
         height: "100vh",
         preload: 'auto',
         autoPlay: true,
+        allowUserInteraction: true,
+      chromeless: true,
         exitFullscreenOnEnd: false,
         volume: 100,
         //plugins: [MediaControl.MainPlugin],

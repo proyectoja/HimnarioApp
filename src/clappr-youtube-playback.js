@@ -56,7 +56,7 @@ var YoutubePlugin = Clappr.Playback.extend({
       showinfo: 0,
       rel: 0,
       html5: 1,
-      cc_load_policy: 1
+      cc_load_policy: 0
     };
     if (typeof this.options.YoutubeVars === "object") {
       $.each(this.options.YoutubeVars, function(key, value) {
