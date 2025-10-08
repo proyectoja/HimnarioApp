@@ -12,7 +12,7 @@
   },
   "keywords": [],
   "build": {
-    "asar": false,
+    "asar": true,
     "appId": "com.proyectoja.himnarioadventistapro",
     "productName": "Himnario Adventista Pro",
     "directories": {
@@ -76,7 +76,7 @@
       "installerIcon": "src/iconos/iconoWindows.ico",
       "uninstallerIcon": "src/iconos/iconoWindows.ico",
       "uninstallDisplayName": "Himnario Adventista Pro Desinstalador",
-      "perMachine": false,
+      "perMachine": true,
       "allowElevation": true,
       "deleteAppDataOnUninstall": true,
       "allowToChangeInstallationDirectory": false,
