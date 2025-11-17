@@ -2180,3 +2180,27 @@ audio {
 .tipo.mejoras, .tipo.mejora { background-color: #d9fdd3; }
 .tipo.corrección { background-color: #ffe6e6; }
 .tipo.función { background-color: #e6f0ff; }
+
+/* Estilos para el bloqueador de actualización */
+#update-blocker-overlay * {
+  box-sizing: border-box;
+}
+
+#update-blocker-overlay button:hover {
+  transform: translateY(-2px) !important;
+  transition: all 0.3s ease !important;
+}
+
+#update-blocker-overlay button:active {
+  transform: translateY(0) !important;
+}
+
+/* Bloquear scroll y interacciones */
+body.blocked {
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+body.blocked #update-blocker-overlay {
+  pointer-events: all !important;
+}
