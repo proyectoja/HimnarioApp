@@ -341,6 +341,14 @@ app.whenReady().then(() => {
   });
 });
 
+//Exponer versión
+ipcMain.handle("get-app-version", () => {
+  return app.getVersion();
+});
+
+ipcMain.handle("quit-and-install-update", () => {
+  autoUpdater.quitAndInstall();
+});
 
 
 app.on("window-all-closed", () => {
