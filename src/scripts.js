@@ -3479,7 +3479,7 @@ const actualizaciones = [
     fecha: "2025-10-6",
     titulo: "Mejoramiento del reproductor de proyección y vista automática del video de YouTube",
     mensaje: "Se mejoró el reproductor profesional de proyección: Ya no se observa la barra de control cuando se coloca un himno, además, también se implementó en YouTube la mejora; además, ahora YouTube se reproduce automáticamente. Además, se agregó un botón de novedades para que revices qué actualizaciones han salido desde que se creó el software y te mantengas actualizado.",
-    version: "v1.0.23",
+    version: "v1.0.24",
     tipo: "Mejora"
   },
   {
