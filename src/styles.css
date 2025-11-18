@@ -758,7 +758,7 @@ h5 {
   height: auto;
   min-height: 10%;
 }
-ul {
+#menu ul {
   list-style-type: none;
   padding: 0;
   font-size: 20px;
@@ -767,7 +767,7 @@ ul {
   text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
     1px 1px 0 #000;
 }
-li {
+#menu li {
   margin: 10px 0;
   cursor: pointer;
   padding: 5px;
@@ -782,7 +782,34 @@ li {
   text-wrap: nowrap;
   text-overflow: ellipsis;
 }
-li:hover {
+#menu li:hover {
+  background-color: rgb(255, 255, 255, 0.5);
+}
+#lista-capitulos ul {
+  list-style-type: none;
+  padding: 0;
+  font-size: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+    1px 1px 0 #000;
+}
+#lista-capitulos li {
+  margin: 10px 0;
+  cursor: pointer;
+  padding: 5px;
+  padding-left: 15px;
+  background-color: brown;
+  border-radius: 1rem;
+  border: 2px solid rgb(255, 255, 255, 0.8);
+  box-shadow: 5px 5px 5px #000;
+  transition: ease-in-out;
+  transition-duration: 500ms;
+  overflow: hidden;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
+}
+#lista-capitulos li:hover {
   background-color: rgb(255, 255, 255, 0.5);
 }
 #vista-previa {
@@ -1441,29 +1468,60 @@ li:hover {
 }
 
 /*ESTILO PARA EL CONTENEDOR DE PAGO DE PAYPAY*/
+/*ESTILO MEJORADO PARA EL CONTENEDOR DE PAGO DE PAYPAL*/
 #paypal-button-container {
   display: none;
   position: absolute;
-  width: 100%;
+  width: auto;
   height: auto;
+  min-width: 400px;
   max-width: 35%;
   max-height: 70%;
   right: 40px;
   bottom: 70px;
   margin: 0%;
-  padding: 10px;
+  padding: 0;
   overflow: hidden;
-  overflow-y: auto;
   border: 5px solid rgb(255, 255, 255, 0.8);
   box-shadow: inset 0px 0px 10px black, 0 0 10px black;
   border-radius: 1rem;
   background-color: brown;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   text-align: center;
   flex-direction: column;
   z-index: 10;
 }
+
+#paypal-button-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+#paypal-button-container::-webkit-scrollbar-track {
+  background: rgba(139, 69, 19, 0.3);
+  border-radius: 4px;
+}
+
+#paypal-button-container::-webkit-scrollbar-thumb {
+  background: #D2691E;
+  border-radius: 4px;
+}
+
+#paypal-button-container::-webkit-scrollbar-thumb:hover {
+  background: #A0522D;
+}
+
+/* Asegurar que el botón de PayPal se vea completo */
+#paypal-button-container-inner {
+  width: 100% !important;
+  min-height: 45px !important;
+}
+
+#paypal-button-container-inner iframe {
+  min-height: 45px !important;
+  max-height: 45px !important;
+}
+
 #paypal-button-container p {
   width: auto;
   height: auto;
@@ -2105,7 +2163,7 @@ audio {
   background-color: rgba(165, 42, 42, 0.5);
 }
 #contenedor-monitores{
-  display: flex;
+  display: none;
   position: relative;
   flex-direction: row;
   width: auto;
@@ -2180,4 +2238,5 @@ audio {
 .tipo.mejoras, .tipo.mejora { background-color: #d9fdd3; }
 .tipo.corrección { background-color: #ffe6e6; }
 .tipo.función { background-color: #e6f0ff; }
+
 

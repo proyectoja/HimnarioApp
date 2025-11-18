@@ -10,6 +10,8 @@ let waterMark = "";
 let modo = "live"; // o "sandbox"
 //modo = "sandbox";
 
+const contenedorMonitor = document.getElementById("contenedor-monitores");
+
 //Parap pruebas
 if (modo === "sandbox") {
   //localStorage.removeItem("paypalSubscriptionId");
@@ -68,33 +70,78 @@ function aplicarEstadoPremium(esPremiumAux) {
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "flex";
     });
+    contenedorMonitor.style.display = "flex";
   } else {
     waterMark = "imagenes/logo-proyectoja.png";
     botonPremium.style.display = "flex";
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "none";
     });
+    contenedorMonitor.style.display = "none";
   }
 }
 
+//localStorage.setItem("paypalSubscriptionId", "");
 const botonPremium = document.getElementById("botonPremium");
 const contenedorPremium = document.getElementById("paypal-button-container");
-
 async function validarCodigos() {
-  const codigoIngresado = codigoUnico.value.trim();
-  if (!codigoIngresado) {
+  const codigoIngresado = document.getElementById('codigoUnico').value.trim();
+  
+  // Si el campo está vacío pero hay un subscriptionId almacenado, validar ese
+  const subscriptionIdAlmacenado = localStorage.getItem("paypalSubscriptionId");
+  
+  let codigoAValidar = codigoIngresado;
+  
+  if (!codigoIngresado && subscriptionIdAlmacenado) {
+    codigoAValidar = subscriptionIdAlmacenado;
+  }
+  
+  if (!codigoAValidar) {
     alert("⚠️ Ingresa un código primero.");
     return;
   }
-  const esValido = await validarCodigo(codigoIngresado);
+  
+  try {
+    // Validar en el servidor
+    const res = await fetch(
+      `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${codigoAValidar}&modo=${modo}`
+    );
+    
+    if (!res.ok) {
+      throw new Error('Error al conectar con el servidor');
+    }
+    
+    const data = await res.json();
 
-  if (esValido) {
-    alert("✅ Código válido, acceso premium activado");
-    localStorage.setItem("premium", "true");
-    aplicarEstadoPremium(true);
-  } else {
-    alert("❌ Código inválido o expirado.");
+    if (data.premium === true) {
+      alert("✅ Código válido, acceso premium activado");
+      
+      // Guardar el subscriptionId si es válido
+      if (codigoIngresado) {
+        localStorage.setItem("paypalSubscriptionId", codigoIngresado);
+      }
+      
+      localStorage.setItem("premium", "true");
+      aplicarEstadoPremium(true);
+      
+    } else {
+      alert("❌ Código inválido o expirado.");
+      
+      // Si estamos validando el código almacenado y no es válido, limpiarlo
+      if (!codigoIngresado && subscriptionIdAlmacenado) {
+        localStorage.removeItem("paypalSubscriptionId");
+        localStorage.setItem("premium", "false");
+        aplicarEstadoPremium(false);
+      } else {
+        localStorage.setItem("premium", "false");
+        aplicarEstadoPremium(false);
+      }
+    }
+  } catch (err) {
+    console.error("❌ Error al verificar premium:", err);
+    alert("❌ Error al conectar con el servidor. Intenta nuevamente.");
     localStorage.setItem("premium", "false");
+    aplicarEstadoPremium(false);
   }
 }
 
@@ -104,78 +151,369 @@ botonPremium.addEventListener("click", function () {
   if (displayContenedorPremium === "none") {
     contenedorPremium.textContent = "";
     validarPremium();
-    const tituloCodigoUnico = document.createElement("p");
-    tituloCodigoUnico.id = "tituloCodigoUnico";
-    tituloCodigoUnico.textContent =
-      "Ingrese su código ID de suscripción único o compre una licencia:";
-    contenedorPremium.appendChild(tituloCodigoUnico);
+    const subscriptionIdDos = localStorage.getItem("paypalSubscriptionId");
+    
+    // Aplicar estilos mejorados al contenedor principal
+    contenedorPremium.style.display = "flex";
+    contenedorPremium.style.flexDirection = "column";
+    contenedorPremium.style.padding = "15px";
+    contenedorPremium.style.overflowY = "auto";
+    contenedorPremium.style.overflowX = "hidden";
+    contenedorPremium.style.maxHeight = "70%";
+    contenedorPremium.style.width = "auto";
+    contenedorPremium.style.minWidth = "400px";
+    contenedorPremium.style.maxWidth = "90vw";
+
+    // Contenedor interno para mejor control
+    const contenedorInterno = document.createElement("div");
+    contenedorInterno.style.width = "100%";
+    contenedorInterno.style.display = "flex";
+    contenedorInterno.style.flexDirection = "column";
+    contenedorInterno.style.gap = "15px";
+
+    // Título principal
+    const tituloPrincipal = document.createElement("h2");
+    tituloPrincipal.textContent = "Actualiza tu Experiencia";
+    tituloPrincipal.style.color = "#FFF8DC";
+    tituloPrincipal.style.textAlign = "center";
+    tituloPrincipal.style.margin = "0";
+    tituloPrincipal.style.fontFamily = "Arial, sans-serif";
+    tituloPrincipal.style.fontSize = "22px";
+    tituloPrincipal.style.fontWeight = "bold";
+    tituloPrincipal.style.textShadow = "2px 2px 4px rgba(0,0,0,0.3)";
+    contenedorInterno.appendChild(tituloPrincipal);
+
+    // Contenedor de comparación (layout horizontal para pantallas grandes, vertical para móviles)
+    const contenedorComparacion = document.createElement("div");
+    contenedorComparacion.style.display = "flex";
+    contenedorComparacion.style.flexDirection = "row";
+    contenedorComparacion.style.gap = "10px";
+    contenedorComparacion.style.flexWrap = "wrap";
+    contenedorComparacion.style.justifyContent = "center";
+
+    // Columna Versión Gratis
+    const columnaGratis = document.createElement("div");
+    columnaGratis.style.flex = "1";
+    columnaGratis.style.minWidth = "180px";
+    columnaGratis.style.background = "linear-gradient(135deg, #F5F5DC 0%, #DEB887 100%)";
+    columnaGratis.style.padding = "12px";
+    columnaGratis.style.borderRadius = "8px";
+    columnaGratis.style.textAlign = "center";
+    columnaGratis.style.boxShadow = "0 4px 8px rgba(139, 69, 19, 0.2)";
+    columnaGratis.style.border = "2px solid #D2B48C";
+
+    const tituloGratis = document.createElement("h3");
+    tituloGratis.textContent = "🎵 Gratis";
+    tituloGratis.style.color = "#8B4513";
+    tituloGratis.style.margin = "0 0 10px 0";
+    tituloGratis.style.fontSize = "18px";
+    tituloGratis.style.fontWeight = "bold";
+
+    const listaGratis = document.createElement("ul");
+    listaGratis.style.textAlign = "left";
+    listaGratis.style.color = "#654321";
+    listaGratis.style.listStyle = "none";
+    listaGratis.style.padding = "0";
+    listaGratis.style.margin = "0";
+    listaGratis.style.fontSize = "14px";
+    listaGratis.innerHTML = `
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Todos los himnos
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Búsqueda y filtros
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Listas de reproducción
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Con marca de agua
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> YouTube limitado
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Proyección estándar
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Biblia y versiones
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Himnos personalizables
+      </li>
+    `;
+
+    columnaGratis.appendChild(tituloGratis);
+    columnaGratis.appendChild(listaGratis);
+    contenedorComparacion.appendChild(columnaGratis);
+
+    // Columna Versión Premium
+    const columnaPremium = document.createElement("div");
+    columnaPremium.style.flex = "1";
+    columnaPremium.style.minWidth = "180px";
+    columnaPremium.style.background = "linear-gradient(135deg, #D2691E 0%, #CD853F 100%)";
+    columnaPremium.style.padding = "12px";
+    columnaPremium.style.borderRadius = "8px";
+    columnaPremium.style.textAlign = "center";
+    columnaPremium.style.boxShadow = "0 4px 8px rgba(210, 105, 30, 0.4)";
+    columnaPremium.style.border = "2px solid #F4A460";
+    columnaPremium.style.position = "relative";
+
+    const tituloPremium = document.createElement("h3");
+    tituloPremium.textContent = "⭐ Premium";
+    tituloPremium.style.color = "#FFF8DC";
+    tituloPremium.style.margin = "0 0 10px 0";
+    tituloPremium.style.fontSize = "18px";
+    tituloPremium.style.fontWeight = "bold";
+    tituloPremium.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
+
+    const listaPremium = document.createElement("ul");
+    listaPremium.style.textAlign = "left";
+    listaPremium.style.color = "#FFF8DC";
+    listaPremium.style.listStyle = "none";
+    listaPremium.style.padding = "0";
+    listaPremium.style.margin = "0";
+    listaPremium.style.fontSize = "14px";
+    listaPremium.innerHTML = `
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> <strong>Sin marca de agua</strong>
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> YouTube ilimitado
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Máxima velocidad
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Proyección profesional
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Biblia y versiones
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Himnos personalizables
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Soporte prioritario
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Actualizaciones
+      </li>
+    `;
+
+    columnaPremium.appendChild(tituloPremium);
+    columnaPremium.appendChild(listaPremium);
+    contenedorComparacion.appendChild(columnaPremium);
+
+    contenedorInterno.appendChild(contenedorComparacion);
+
+    // Sección de código de suscripción
+    const seccionCodigo = document.createElement("div");
+    seccionCodigo.style.width = "100%";
+    seccionCodigo.style.background = "rgba(245, 222, 179, 0.95)";
+    seccionCodigo.style.padding = "15px";
+    seccionCodigo.style.borderRadius = "8px";
+    seccionCodigo.style.marginBottom = "0";
+    seccionCodigo.style.textAlign = "center";
+    seccionCodigo.style.border = "1px solid #D2B48C";
+
+    const tituloCodigo = document.createElement("h4");
+    tituloCodigo.textContent = "🔑 ¿Ya tienes un código?";
+    tituloCodigo.style.color = "#8B4513";
+    tituloCodigo.style.margin = "0 0 12px 0";
+    tituloCodigo.style.fontSize = "16px";
+    tituloCodigo.style.fontWeight = "bold";
+
+    const contenedorInput = document.createElement("div");
+    contenedorInput.style.display = "flex";
+    contenedorInput.style.flexDirection = "column";
+    contenedorInput.style.gap = "10px";
+    contenedorInput.style.alignItems = "center";
 
     const codigoUnico = document.createElement("input");
     codigoUnico.id = "codigoUnico";
     codigoUnico.type = "text";
-    codigoUnico.placeholder = "Código Suscripción";
-    contenedorPremium.appendChild(codigoUnico);
+    codigoUnico.placeholder = subscriptionIdDos ? subscriptionIdDos : "Ingresa tu código premium...";
+    codigoUnico.style.width = "100%";
+    codigoUnico.style.maxWidth = "250px";
+    codigoUnico.style.padding = "10px 12px";
+    codigoUnico.style.border = "2px solid #D2B48C";
+    codigoUnico.style.borderRadius = "20px";
+    codigoUnico.style.fontSize = "14px";
+    codigoUnico.style.outline = "none";
+    codigoUnico.style.background = "#FFF8DC";
+    codigoUnico.style.color = "#8B4513";
+    codigoUnico.style.transition = "all 0.3s ease";
+
+    codigoUnico.addEventListener("focus", function() {
+      this.style.borderColor = "#8B4513";
+      this.style.boxShadow = "0 0 8px rgba(139, 69, 19, 0.3)";
+    });
+
+    codigoUnico.addEventListener("blur", function() {
+      this.style.borderColor = "#D2B48C";
+      this.style.boxShadow = "none";
+    });
+
     const botonValidar = document.createElement("button");
-    botonValidar.textContent = "Validar Código";
-    botonValidar.style.borderRadius = "30px";
-    botonValidar.style.margin = "5px";
-    botonValidar.style.fontSize = "18px";
-    botonValidar.style.fontFamily = "Arial";
-    botonValidar.style.fontWeight = "Bold";
-    botonValidar.style.padding = "5px";
+    botonValidar.textContent = "🔓 Activar Premium";
+    botonValidar.style.padding = "10px 20px";
+    botonValidar.style.background = "linear-gradient(135deg, #8B4513, #A0522D)";
+    botonValidar.style.color = "#FFF8DC";
+    botonValidar.style.border = "none";
+    botonValidar.style.borderRadius = "20px";
+    botonValidar.style.fontSize = "14px";
+    botonValidar.style.fontWeight = "bold";
     botonValidar.style.cursor = "pointer";
+    botonValidar.style.transition = "all 0.3s ease";
+    botonValidar.style.boxShadow = "0 3px 10px rgba(139, 69, 19, 0.3)";
+    botonValidar.style.minWidth = "150px";
+
+    botonValidar.addEventListener("mouseover", function() {
+      this.style.transform = "translateY(-1px)";
+      this.style.boxShadow = "0 5px 15px rgba(139, 69, 19, 0.4)";
+    });
+
+    botonValidar.addEventListener("mouseout", function() {
+      this.style.transform = "translateY(0)";
+      this.style.boxShadow = "0 3px 10px rgba(139, 69, 19, 0.3)";
+    });
+
     botonValidar.onclick = () => validarCodigos();
-    contenedorPremium.appendChild(botonValidar);
 
-    const raya = document.createElement("hr");
-    raya.style.width = "100%";
-    raya.style.height = "2px";
-    raya.style.backgroundColor = "white";
-    raya.style.border = "none";
-    raya.style.margin = "10px";
-    contenedorPremium.appendChild(raya);
-    const parrafoCaracteristicas = document.createElement("p");
-    parrafoCaracteristicas.id = "parrafoCaracteristicas";
-    parrafoCaracteristicas.textContent =
-      "Remover marca de agua en toda la proyección.";
-    contenedorPremium.appendChild(parrafoCaracteristicas);
-    const parrafoCaracteristicas2 = document.createElement("p");
-    parrafoCaracteristicas2.id = "parrafoCaracteristicas";
-    parrafoCaracteristicas2.textContent = "¡Sé un ángel de esperanza!";
-    contenedorPremium.appendChild(parrafoCaracteristicas2);
-    contenedorPremium.style.display = "flex";
-    paypal
-      .Buttons({
-        style: {
-          layout: "vertical",
-          color: "gold",
-          shape: "rect",
-          label: "subscribe",
-        },
-        createSubscription: function (data, actions) {
-          return actions.subscription.create({
-            plan_id: "P-40E25374WC496032ENB62ANQ", //PRODUCCIÓN
-            //'plan_id': 'P-94T48305F9433872GNB63OEA' //PRUEBA PLAN
-          });
-        },
-        onApprove: function (data, actions) {
-          const subscriptionId = data.subscriptionID;
-          alert("🎉 Suscripción exitosa: " + subscriptionId);
+    contenedorInput.appendChild(codigoUnico);
+    contenedorInput.appendChild(botonValidar);
 
-          localStorage.setItem("paypalSubscriptionId", subscriptionId); // ✅ GUARDAR ID
-          localStorage.setItem("premium", "true");
+    seccionCodigo.appendChild(tituloCodigo);
+    seccionCodigo.appendChild(contenedorInput);
+    contenedorInterno.appendChild(seccionCodigo);
 
-          location.reload();
-        },
-        onCancel: function () {
-          alert("Suscripción cancelada.");
-        },
-        onError: function (err) {
-          alert("Error con PayPal");
-          console.error("Error con PayPal:", err);
-        },
-      })
-      .render("#paypal-button-container");
+    // Separador
+    const separador = document.createElement("div");
+    separador.style.width = "100%";
+    separador.style.textAlign = "center";
+    separador.style.margin = "10px 0";
+    separador.style.position = "relative";
+
+    const textoSeparador = document.createElement("span");
+    textoSeparador.textContent = "O compra tu licencia por $1,99";
+    textoSeparador.style.background = "linear-gradient(135deg, #8B4513 0%, #A0522D 100%)";
+    textoSeparador.style.color = "#FFF8DC";
+    textoSeparador.style.padding = "6px 15px";
+    textoSeparador.style.borderRadius = "15px";
+    textoSeparador.style.fontSize = "14px";
+    textoSeparador.style.fontWeight = "bold";
+    textoSeparador.style.border = "1px solid #D2691E";
+
+    separador.appendChild(textoSeparador);
+    contenedorInterno.appendChild(separador);
+
+    // Mensaje motivacional
+    const mensajeMotivacional = document.createElement("div");
+    mensajeMotivacional.style.textAlign = "center";
+    mensajeMotivacional.style.marginBottom = "15px";
+    mensajeMotivacional.style.padding = "10px";
+    mensajeMotivacional.style.background = "rgba(210, 105, 30, 0.2)";
+    mensajeMotivacional.style.borderRadius = "8px";
+    mensajeMotivacional.style.border = "1px solid rgba(210, 105, 30, 0.3)";
+
+    const textoMotivacional = document.createElement("p");
+    textoMotivacional.innerHTML = "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
+    textoMotivacional.style.color = "#FFF8DC";
+    textoMotivacional.style.margin = "0";
+    textoMotivacional.style.fontSize = "14px";
+    textoMotivacional.style.lineHeight = "1.3";
+    textoMotivacional.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
+
+    mensajeMotivacional.appendChild(textoMotivacional);
+    contenedorInterno.appendChild(mensajeMotivacional);
+
+    // Contenedor de PayPal - ESPACIO RESERVADO
+    const paypalContainer = document.createElement("div");
+    paypalContainer.id = "paypal-button-container-inner";
+    paypalContainer.style.width = "100%";
+    paypalContainer.style.minHeight = "50px";
+    paypalContainer.style.display = "flex";
+    paypalContainer.style.justifyContent = "center";
+    paypalContainer.style.alignItems = "center";
+    paypalContainer.style.marginBottom = "10px";
+
+    // Texto temporal mientras carga PayPal
+    const textoCargaPayPal = document.createElement("div");
+    textoCargaPayPal.textContent = "Cargando opciones de pago...";
+    textoCargaPayPal.style.color = "#FFF8DC";
+    textoCargaPayPal.style.fontSize = "12px";
+    textoCargaPayPal.style.fontStyle = "italic";
+    paypalContainer.appendChild(textoCargaPayPal);
+
+    contenedorInterno.appendChild(paypalContainer);
+
+    // Agregar contenedor interno al principal
+    contenedorPremium.appendChild(contenedorInterno);
+
+    // NUEVO: Mensaje sobre cambios en el monto
+    const mensajeMonto = document.createElement("div");
+    mensajeMonto.style.textAlign = "center";
+    mensajeMonto.style.marginTop = "5px";
+    mensajeMonto.style.padding = "8px";
+    mensajeMonto.style.background = "rgba(139, 69, 19, 0.3)";
+    mensajeMonto.style.borderRadius = "6px";
+    mensajeMonto.style.border = "1px solid rgba(210, 105, 30, 0.4)";
+
+    const textoMonto = document.createElement("p");
+    textoMonto.innerHTML = "💡 <strong>Nota:</strong> El monto puede variar según actualizaciones futuras del servicio. Los suscriptores actuales mantienen su tarifa.";
+    textoMonto.style.color = "#FFF8DC";
+    textoMonto.style.margin = "0";
+    textoMonto.style.fontSize = "10px";
+    textoMonto.style.lineHeight = "1.2";
+    textoMonto.style.textShadow = "1px 1px 1px rgba(0,0,0,0.3)";
+    textoMonto.style.fontStyle = "italic";
+
+    mensajeMonto.appendChild(textoMonto);
+    contenedorInterno.appendChild(mensajeMonto);
+
+    // Agregar contenedor interno al principal
+    contenedorPremium.appendChild(contenedorInterno);
+
+    // Inicializar PayPal después de un pequeño delay para asegurar que el DOM esté listo
+    setTimeout(() => {
+      paypalContainer.innerHTML = ""; // Limpiar texto temporal
+      
+      paypal
+        .Buttons({
+          style: {
+            layout: "vertical",
+            color: "gold",
+            shape: "rect",
+            label: "subscribe",
+            height: 40,
+            tagline: false
+          },
+          createSubscription: function (data, actions) {
+            return actions.subscription.create({
+              plan_id: "P-40E25374WC496032ENB62ANQ",
+            });
+          },
+          onApprove: function (data, actions) {
+            const subscriptionId = data.subscriptionID;
+            alert("🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium.");
+
+            localStorage.setItem("paypalSubscriptionId", subscriptionId);
+            localStorage.setItem("premium", "true");
+
+            location.reload();
+          },
+          onCancel: function () {
+            alert("Suscripción cancelada. Puedes intentarlo nuevamente cuando lo desees.");
+          },
+          onError: function (err) {
+            alert("❌ Error con el proceso de pago. Por favor, intenta nuevamente.");
+            console.error("Error con PayPal:", err);
+          },
+        })
+        .render("#paypal-button-container-inner");
+    }, 100);
+
   } else {
     contenedorPremium.style.display = "none";
   }
@@ -474,6 +812,34 @@ function cargarReproductorAleatorio(lista) {
   player.on(Clappr.Events.PLAYER_ENDED, function () {
     cargarReproductorAleatorio(lista); // Cargar y reproducir un nuevo video aleatorio
   });
+}
+
+// Función optimizada para cargar himnos en lotes
+async function cargarHimnosEnLotes(inicio, fin, tamanoLote = 50) {
+  for (let i = inicio; i <= fin; i += tamanoLote) {
+    const finLote = Math.min(i + tamanoLote - 1, fin);
+    
+    // Procesar lote actual
+    for (let j = i; j <= finLote; j++) {
+      const numero = j.toString().padStart(3, "0");
+      const titulo = titulos[j - 1] || `Himno ${numero}`;
+      const videoPath = srcAux+`videos/${numero}.mp4`;
+      const imagePath = srcAux+`portadas/${numero}.jpg`;
+      const duracionesHimnosAux = duracionesHimnos[j - 1];
+
+      crearHimno(titulo, videoPath, imagePath, null, duracionesHimnosAux);
+      todosLosHimnos.push({
+        numero,
+        titulo,
+        videoPath,
+        imagePath,
+        duracionesHimnosAux,
+      });
+    }
+    
+    // Dar tiempo al navegador para renderizar
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
 }
 
 function ventanaSecundaria(
@@ -1313,7 +1679,7 @@ function exitFullscreen() {
 }
 
 // Función para mostrar los himnos por categoría
-function mostrarCategoria(categoria) {
+async function mostrarCategoria(categoria) {
   todosLosHimnos = []; // Limpiar el array anterior
   himnarioContainer.innerHTML = ""; // Limpiar himnos anteriores
   himnarioContainer.scrollTop = 0;
@@ -1331,6 +1697,8 @@ function mostrarCategoria(categoria) {
     document.getElementsByClassName(
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    // Cargar en lotes para mejor rendimiento
+    await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "1-100") {
     inicio = 1;
     fin = 100;
@@ -1988,8 +2356,12 @@ async function buscarVideos() {
   botonYoutubeAux.style.opacity = "0.5";
 
   let input = document.getElementById("busqueda-youtube").value.trim();
+  document.getElementById("busqueda-youtube").disabled = true;
   let lista = document.getElementById("lista-videos");
   let premiumCategoria = localStorage.getItem("premium") === "true";
+
+  let velocidadDeBusqueda = 0;
+  
 
   if (input !== "" && !input.includes("youtube.com")) {
     // URL de tu API desplegada en Vercel
@@ -2003,7 +2375,12 @@ async function buscarVideos() {
       if (!response.ok) throw new Error("Error en la respuesta de la API");
 
       let videos = await response.json();
-
+      if(premiumCategoria){
+        velocidadDeBusqueda = 100;
+      }else{
+        velocidadDeBusqueda = 30000;
+        videos = videos.slice(0,8);
+      }
       // Mostrar videos uno por uno
       for (let video of videos) {
         const div = document.createElement("div");
@@ -2045,7 +2422,7 @@ async function buscarVideos() {
         }
         lista.appendChild(div);
 
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, velocidadDeBusqueda));
       }
 
       botonYoutubeAux.style.pointerEvents = "all";
@@ -2059,6 +2436,7 @@ async function buscarVideos() {
       botonYoutubeAux.style.pointerEvents = "all";
       botonYoutubeAux.style.cursor = "pointer";
       botonYoutubeAux.style.opacity = "1";
+      document.getElementById("busqueda-youtube").disabled = false;
     }
   } else if (input !== "" && input.includes("youtube.com")) {
     // Si es un link de YouTube, extraemos el video ID
@@ -3172,6 +3550,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
+// Solo agregar esta función al final para precarga de imágenes
+function precargarImagenes() {
+  // Precargar las primeras 20 imágenes para mejor experiencia
+  for (let i = 1; i <= 20; i++) {
+    const numero = i.toString().padStart(3, "0");
+    const img = new Image();
+    img.src = srcAux + `portadas/${numero}.jpg`;
+  }
+}
+
+// Llamar a precarga después de que la página esté cargada
+window.addEventListener('load', precargarImagenes);
 
 async function cargarMonitores() {
   // 🚀 Inicializar opciones
@@ -3455,25 +3845,25 @@ const actualizaciones = [
     tipo: ""
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: ""
+    fecha: "2025-11-17",
+    titulo: "Apariencia y mejoramiento",
+    mensaje: "La apariencia para el pago de suscripción se mejoró y se agregaron más características premium al sistema de ayuda del ministerio PROYECTO JA.",
+    version: "v1.0.26",
+    tipo: "Mejor"
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: ""
+    fecha: "2025-11-17",
+    titulo: "Bug Pantalla Negra en Algunas Laptops",
+    mensaje: "Se corrigió un pequeño fallo de optimización en la iniciación del software. Algunas personas presentaron problemas cuando abrian el programa: 1-Cargaba muy lento, 2-Se quedaba en negra parte de la pantalla y no cargaban los himnos. Se optimizó el programa y ahora carga en 0.500 milisegundos en computadora de 4/8gigas de Ram con Disco SSD con dos nucleos mínimo y procesador 2300 herts balanceado.",
+    version: "v1.0.25",
+    tipo: "Corrección"
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: ""
+    fecha: "2025-11-17",
+    titulo: "Buscador de Youtube",
+    mensaje: "Se mejoró el buscador de YouTube para evitar caídas repentinas con el contenido.",
+    version: "v1.0.24",
+    tipo: "Mejor"
   },
   {
     fecha: "2025-10-6",
