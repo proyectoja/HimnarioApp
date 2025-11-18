@@ -3855,8 +3855,8 @@ const actualizaciones = [
     fecha: "2025-11-18",
     titulo: "Error de proyección de YouTube",
     mensaje: "Se reparó el fallo que daba en la proyección con el monitor para reproducir automáticamente video de YouTube, ¡ya lista para usar!",
-    version: "v1.0.27",
-    tipo: "Mejor"
+    version: "v1.0.28",
+    tipo: "Corrección"
   },
   {
     fecha: "2025-11-17",
