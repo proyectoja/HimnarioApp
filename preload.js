@@ -27,3 +27,4 @@ contextBridge.exposeInMainWorld("electronAPI", {
 ipcRenderer.on("set-paths", (_, paths) => {
   contextBridge.exposeInMainWorld("paths", paths);
 });
+
