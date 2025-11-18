@@ -3853,6 +3853,13 @@ const actualizaciones = [
   },
   {
     fecha: "2025-11-18",
+    titulo: "Versiones antiguas no funcionales",
+    mensaje: "Las versiones antiguas dejaran de funcionar, es necesaria actualizar a la reciente y mantenerse actualizado a nuevas funciones del software.",
+    version: "v1.0.29",
+    tipo: "Corrección"
+  },
+  {
+    fecha: "2025-11-18",
     titulo: "Error de proyección de YouTube",
     mensaje: "Se reparó el fallo que daba en la proyección con el monitor para reproducir automáticamente video de YouTube, ¡ya lista para usar!",
     version: "v1.0.28",
@@ -3964,6 +3971,7 @@ function mostrarActualizaciones() {
   });
   contenedorPadre.appendChild(contenedor);
 }
+
 
 //TÍTULO DE LOS VIDEOS | SIEMPRE ABAJO DE TODO EL CÓDIGO PARA MAYOR FÁCILIDAD
 const titulos = [

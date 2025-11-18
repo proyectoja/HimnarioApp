@@ -55,6 +55,9 @@ function createWindow() {
     win.setTitle(
       `PROYECTO JA | Himnario Adventista Pro - v${app.getVersion()}`
     );
+    win.webContents.executeJavaScript(`
+      window.__APP_VERSION__ = "${app.getVersion()}";
+  `);
   });
 
   // Manejar el evento de cerrar la ventana, sin cerrar la app
