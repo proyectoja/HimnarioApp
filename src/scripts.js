@@ -3845,11 +3845,18 @@ const actualizaciones = [
     tipo: ""
   },
   {
-    fecha: "2025-11-17",
+    fecha: "2025-11-sinfecha",
     titulo: "En desarrollo...",
     mensaje: "Se está trabajando en la sección de Biblia para pasar con el teclado o avanzar los versículos a petición de un usuario.",
     version: "v1.0.sin-versión",
     tipo: "Función nueva"
+  },
+  {
+    fecha: "2025-11-18",
+    titulo: "Error de proyección de YouTube",
+    mensaje: "Se reparó el fallo que daba en la proyección con el monitor para reproducir automáticamente video de YouTube, ¡ya lista para usar!",
+    version: "v1.0.27",
+    tipo: "Mejor"
   },
   {
     fecha: "2025-11-17",

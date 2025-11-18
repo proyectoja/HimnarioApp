@@ -21,9 +21,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   obtenerMonitores: () => ipcRenderer.invoke("obtener-monitores"),
   abrirVentanaSecundaria: (monitorIndex) => ipcRenderer.send("abrir-ventana", monitorIndex),
   onVentanaCerrada: (callback) => ipcRenderer.on("ventana-cerrada", callback),
-  onMonitoresActualizados: (callback) => ipcRenderer.on("monitores-actualizados", callback),
-  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
-  quitAndInstallUpdate: () => ipcRenderer.invoke("quit-and-install-update"),
+  onMonitoresActualizados: (callback) => ipcRenderer.on("monitores-actualizados", callback)
 });
 
 ipcRenderer.on("set-paths", (_, paths) => {

@@ -239,8 +239,9 @@ function abrirVentanaSecundaria(monitorIndex) {
     },
   });
 
-  playerWindow.loadFile("src/ventanaSecundaria.html");
+  playerWindow.loadURL("http://localhost:3000/ventanaSecundaria.html");
   playerWindow.setFullScreen(true);
+  //playerWindow.webContents.openDevTools({ mode: 'undocked' });
 
   // 🔄 Detectar cuando el usuario cierre manualmente la ventana
   playerWindow.on("close", () => {
@@ -341,14 +342,6 @@ app.whenReady().then(() => {
   });
 });
 
-//Exponer versión
-ipcMain.handle("get-app-version", () => {
-  return app.getVersion();
-});
-
-ipcMain.handle("quit-and-install-update", () => {
-  autoUpdater.quitAndInstall();
-});
 
 
 app.on("window-all-closed", () => {
@@ -356,3 +349,20 @@ app.on("window-all-closed", () => {
 });
 
 //npm run release -> comando importante para actualizaciones.
+
+/**
+ * Comprobar dependencias desactualizadas
+ * npm outdated
+# Comando completo para actualizar todo
+npm install electron@latest electron-builder@latest electron-updater@latest --save-dev
+npm install express@latest axios@latest fs-extra@latest adm-zip@latest electron-log@latest systeminformation@latest node-fetch@latest --save
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+
+# Verificar que todo esté correcto
+npm list --depth=0
+
+# Probar que la aplicación funcione
+npm start
+ */
