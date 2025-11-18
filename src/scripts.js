@@ -3846,6 +3846,13 @@ const actualizaciones = [
   },
   {
     fecha: "2025-11-17",
+    titulo: "En desarrollo...",
+    mensaje: "Se está trabajando en la sección de Biblia para pasar con el teclado o avanzar los versículos a petición de un usuarios.",
+    version: "v1.0.26",
+    tipo: "Función nueva"
+  },
+  {
+    fecha: "2025-11-17",
     titulo: "Apariencia y mejoramiento",
     mensaje: "La apariencia para el pago de suscripción se mejoró y se agregaron más características premium al sistema de ayuda del ministerio PROYECTO JA.",
     version: "v1.0.26",
