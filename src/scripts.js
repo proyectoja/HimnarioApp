@@ -3848,7 +3848,7 @@ const actualizaciones = [
     fecha: "2025-11-17",
     titulo: "En desarrollo...",
     mensaje: "Se está trabajando en la sección de Biblia para pasar con el teclado o avanzar los versículos a petición de un usuario.",
-    version: "v1.0.26",
+    version: "v1.0.sin-versión",
     tipo: "Función nueva"
   },
   {
