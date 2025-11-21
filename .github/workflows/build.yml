@@ -9,8 +9,6 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     continue-on-error: true
-    outputs:
-      VERSION: ${{ steps.version_step.outputs.VERSION }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -31,15 +29,19 @@ jobs:
 
       - name: Incrementar versión (sin crear tag)
         id: version_step
+        shell: bash
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
           npm version patch --no-git-tag-version
+
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$NEW_VERSION"
 
-      - name: Commit de versión
+      - name: Commit de nueva versión
+        shell: bash
         run: |
           git add package.json package-lock.json || true
           git commit -m "Bump version to $VERSION" || true
@@ -48,7 +50,7 @@ jobs:
       - name: Build (npm run release)
         run: npm run release
 
-      - name: Subir artefacto
+      - name: Subir artefactos
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}
@@ -64,18 +66,14 @@ jobs:
         with:
           path: dist-all
 
-      - name: Crear release
+      - name: Crear Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ needs.build.outputs.VERSION }}
-          name: Release v${{ needs.build.outputs.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
           body: "Release generado automáticamente"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Subir artefactos al Release
-        uses: softprops/action-gh-release@v1
-        with:
+          draft: false
+          prerelease: false
           files: dist-all/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
