@@ -4152,6 +4152,9 @@ function mostrarActualizaciones() {
     }
   });
   contenedorPadre.appendChild(contenedor);
+  
+  // ✅ Inicializar carrusel de posts
+  inicializarCarrusel(contenedor);
 }
 
 
@@ -5801,3 +5804,146 @@ const tituloStream = [];
 </html>
 
  */
+
+// ========================================
+// 🎨 CARRUSEL DE POSTS DE IGLESIAS
+// ========================================
+
+let carruselPosts = [];
+let carruselIndexActual = 0;
+let carruselPostsPorPagina = 3; // Por defecto
+
+// Calcular cuántos posts mostrar según el ancho de pantalla
+function calcularPostsPorPagina() {
+  const ancho = window.innerWidth || document.documentElement.clientWidth;
+  
+  if (ancho >= 3200) {
+    return 5;
+  } else if (ancho >= 2560) {
+    return 4;
+  } else if (ancho >= 1920) {
+    return 3;
+  } else {
+    return 2;
+  }
+}
+
+// Cargar posts desde JSON
+async function cargarCarruselPosts() {
+  try {
+    const response = await fetch('carrusel-posts.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('No se pudo cargar el carrusel');
+    
+    carruselPosts = await response.json();
+    console.log(`[CARRUSEL] ✓ Cargados ${carruselPosts.length} posts`);
+    
+  } catch (error) {
+    console.error('[CARRUSEL] Error al cargar posts:', error);
+    carruselPosts = [];
+  }
+}
+
+// Crear HTML del carrusel
+function crearCarruselHTML() {
+  const carruselHTML = `
+    <div id="carrusel-posts-container">
+      <div id="carrusel-posts-header">
+        <h3>📸 Galería de Iglesias</h3>
+        <div id="carrusel-posts-contador">Posts recibidos: ${carruselPosts.length}</div>
+      </div>
+      <div id="carrusel-posts-wrapper">
+        <button class="carrusel-nav-btn" id="carrusel-prev-btn">‹</button>
+        <div id="carrusel-posts-track"></div>
+        <button class="carrusel-nav-btn" id="carrusel-next-btn">›</button>
+      </div>
+    </div>
+  `;
+  return carruselHTML;
+}
+
+// Renderizar posts visibles
+function renderizarCarruselPosts() {
+  const track = document.getElementById('carrusel-posts-track');
+  if (!track) return;
+  
+  track.innerHTML = '';
+  carruselPostsPorPagina = calcularPostsPorPagina();
+  
+  // Calcular posts visibles (con bucle)
+  const totalPosts = carruselPosts.length;
+  if (totalPosts === 0) {
+    track.innerHTML = '<p style="color: white; text-align: center; grid-column: 1/-1;">No hay posts disponibles</p>';
+    return;
+  }
+  
+  for (let i = 0; i < carruselPostsPorPagina; i++) {
+    const index = (carruselIndexActual + i) % totalPosts;
+    const post = carruselPosts[index];
+    
+    const card = document.createElement('div');
+    card.className = 'carrusel-post-card';
+    card.innerHTML = `
+      <img src="${post.imagen}" alt="${post.iglesia}" class="carrusel-post-imagen" loading="lazy">
+      <div class="carrusel-post-info">
+        <h4 class="carrusel-post-iglesia">${post.iglesia}</h4>
+        <p class="carrusel-post-pais">🌍 ${post.pais}</p>
+        <p class="carrusel-post-fecha">📅 ${formatearFecha(post.fechaPublicada)}</p>
+        ${post.descripcion ? `<p class="carrusel-post-descripcion">${post.descripcion}</p>` : ''}
+      </div>
+    `;
+    
+    track.appendChild(card);
+  }
+}
+
+// Formatear fecha
+function formatearFecha(fechaISO) {
+  const fecha = new Date(fechaISO);
+  const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+  return fecha.toLocaleDateString('es-ES', opciones);
+}
+
+// Navegar al siguiente grupo
+function carruselSiguiente() {
+  if (carruselPosts.length === 0) return;
+  carruselIndexActual = (carruselIndexActual + carruselPostsPorPagina) % carruselPosts.length;
+  renderizarCarruselPosts();
+}
+
+// Navegar al anterior grupo
+function carruselAnterior() {
+  if (carruselPosts.length === 0) return;
+  carruselIndexActual = (carruselIndexActual - carruselPostsPorPagina + carruselPosts.length) % carruselPosts.length;
+  renderizarCarruselPosts();
+}
+
+// Inicializar carrusel en el contenedorHijo
+async function inicializarCarrusel(contenedorHijo) {
+  if (!contenedorHijo) return;
+  
+  await cargarCarruselPosts();
+  
+  // Agregar carrusel al INICIO del contenedorHijo
+  contenedorHijo.insertAdjacentHTML('afterbegin', crearCarruselHTML());
+  
+  // Renderizar posts iniciales
+  renderizarCarruselPosts();
+  
+  // Event listeners para botones
+  const btnPrev = document.getElementById('carrusel-prev-btn');
+  const btnNext = document.getElementById('carrusel-next-btn');
+  
+  if (btnPrev) btnPrev.addEventListener('click', carruselAnterior);
+  if (btnNext) btnNext.addEventListener('click', carruselSiguiente);
+  
+  // Actualizar al cambiar tamaño de ventana
+  window.addEventListener('resize', () => {
+    const nuevosPostsPorPagina = calcularPostsPorPagina();
+    if (nuevosPostsPorPagina !== carruselPostsPorPagina) {
+      carruselIndexActual = 0; // Reset al redimensionar
+      renderizarCarruselPosts();
+    }
+  });
+  
+  console.log('[CARRUSEL] ✅ Carrusel inicializado');
+}

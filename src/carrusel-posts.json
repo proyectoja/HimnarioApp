@@ -1,0 +1,37 @@
+[
+  {
+    "imagen": "https://via.placeholder.com/800x600/8B4513/FFFFFF?text=Iglesia+Adventista+1",
+    "iglesia": "Iglesia Central Adventista",
+    "pais": "Costa Rica",
+    "fechaPublicada": "2025-11-15",
+    "descripcion": "Celebración especial del día de acción de gracias con toda la comunidad adventista"
+  },
+  {
+    "imagen": "https://via.placeholder.com/800x600/A0522D/FFFFFF?text=Iglesia+Adventista+2",
+    "iglesia": "Iglesia Adventista del Sur",
+    "pais": "Perú",
+    "fechaPublicada": "2025-11-10",
+    "descripcion": "Bautismo de nuevos hermanos en la fe"
+  },
+  {
+    "imagen": "https://via.placeholder.com/800x600/D2691E/FFFFFF?text=Iglesia+Adventista+3",
+    "iglesia": "Iglesia Adventista Bethel",
+    "pais": "México",
+    "fechaPublicada": "2025-11-05",
+    "descripcion": ""
+  },
+  {
+    "imagen": "https://via.placeholder.com/800x600/CD853F/FFFFFF?text=Iglesia+Adventista+4",
+    "iglesia": "Iglesia Adventista Emanuel",
+    "pais": "Colombia",
+    "fechaPublicada": "2025-10-28",
+    "descripcion": "Semana de oración especial con juventudes"
+  },
+  {
+    "imagen": "https://via.placeholder.com/800x600/8B4513/FFFFFF?text=Iglesia+Adventista+5",
+    "iglesia": "Iglesia Adventista Maranatha",
+    "pais": "Argentina",
+    "fechaPublicada": "2025-10-20",
+    "descripcion": "Inauguración del nuevo templo con capacidad para 500 personas"
+  }
+]
