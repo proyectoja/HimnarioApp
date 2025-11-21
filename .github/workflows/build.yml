@@ -6,13 +6,17 @@ on:
       - main
 
 jobs:
+
   build:
     runs-on: ${{ matrix.os }}
+    outputs:
+      version: ${{ steps.version_step.outputs.version }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -34,10 +38,11 @@ jobs:
           git config user.email "github-actions@github.com"
 
           npm version patch --no-git-tag-version
+
           NEW_VERSION=$(node -p "require('./package.json').version")
 
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Commit de nueva versión
         shell: bash
@@ -49,19 +54,30 @@ jobs:
       - name: Build (npm run release)
         run: npm run release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Subir artefactos
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}
-          path: dist/**/*
+          path: |
+            dist/*.exe
+            dist/*.msi
+            dist/*.dmg
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.blockmap
+            dist/latest*.yml
+
 
   publish:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Descargar artefactos
         uses: actions/download-artifact@v4
         with:
@@ -75,6 +91,15 @@ jobs:
           body: "Release generado automáticamente"
           draft: false
           prerelease: false
-          files: dist-all/**/*
+          files: |
+            dist-all/**/*.exe
+            dist-all/**/*.msi
+            dist-all/**/*.dmg
+            dist-all/**/*.zip
+            dist-all/**/*.AppImage
+            dist-all/**/*.deb
+            dist-all/**/*.rpm
+            dist-all/**/*.blockmap
+            dist-all/**/latest*.yml
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
