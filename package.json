@@ -6,10 +6,12 @@
   "main": "main.js",
   "license": "MIT",
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder",
-    "prerelease": "npm version patch -m \"Versión %s\"",
-    "release": "electron-builder --publish always"
+  "start": "electron .",
+  "build": "electron-builder",
+  "release": "electron-builder --publish never",
+
+  "prerelease": "npm version patch -m \"Versión %s\"",
+  "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [],
   "build": {

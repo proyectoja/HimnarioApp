@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     continue-on-error: true
+    outputs:
+      VERSION: ${{ steps.version_step.outputs.VERSION }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -28,12 +30,14 @@ jobs:
         run: npm install
 
       - name: Incrementar versión (sin crear tag)
+        id: version_step
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           npm version patch --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit de versión
         run: |
@@ -60,19 +64,16 @@ jobs:
         with:
           path: dist-all
 
-      - name: Crear release si no existe
-        id: create_release
+      - name: Crear release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ env.VERSION }}
-          name: Release v${{ env.VERSION }}
+          tag_name: v${{ needs.build.outputs.VERSION }}
+          name: Release v${{ needs.build.outputs.VERSION }}
           body: "Release generado automáticamente"
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Subir instaladores al Release
+      - name: Subir artefactos al Release
         uses: softprops/action-gh-release@v1
         with:
           files: dist-all/**/*
