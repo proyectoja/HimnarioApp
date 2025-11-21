@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
+    "prerelease": "npm version patch -m \"Versión %s\"",
     "release": "electron-builder --publish always"
   },
   "keywords": [],
