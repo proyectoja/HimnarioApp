@@ -16,12 +16,12 @@
     </div>
     <div class="contenedor-principal">
         <div id="chatbro"></div>
-        
+
         <div class="contenedor-intro" id="contenedor-intro">
             <img class="image1" src="imagenes/logo-iglesia-adventista.png">
             <img class="image2" src="imagenes/ministerios.png">
-        </div> 
-        
+        </div>
+
         <div class="contenedor-categorias">
             <div class="contenedor-ministerio">
                 <img id="ministerio" src="imagenes/logo-proyectoja.png">
@@ -38,7 +38,8 @@
         </div>
         <div id="contenedorVisitasYMonitores">
             <div id="contenedor-vistas">Cargando estadísticas...</div>
-            <div id="contenedor-monitores"><img src="iconos/monitores.png" alt=""><select id="selectMonitores"></select></div>
+            <div id="contenedor-monitores"><img src="iconos/monitores.png" alt=""><select id="selectMonitores"></select>
+            </div>
         </div>
         <div id="videoPlayerContainer">
             <button id="closePlayer" class="close-btn">X</button>
@@ -213,6 +214,9 @@
                 </div>
             </div>
         </div>
+        <div id="contenedor-logs">
+            <pre id="logs"></pre>
+        </div>
         <div id="himnario"></div>
         <div id="contenedor-youtube">
             <div id="lista-videos"></div>
@@ -246,20 +250,22 @@
 
         <div id="contenedor-himnos-personalizados">
             <div id="himnosList">
-              <select id="carpetaSelect">
-                <option value="audiosHimnos">Cantado</option>
-                <option value="audiosHimnosPista">Pista</option>
-                <option value="audiosHimnosLetra">Letra</option>
-                <option value="audiosHimnosIngles">English</option>
-              </select>
-              <div id="listaHimnos"></div>
+                <select id="carpetaSelect">
+                    <option value="audiosHimnos">Cantado</option>
+                    <option value="audiosHimnosPista">Pista</option>
+                    <option value="audiosHimnosLetra">Letra</option>
+                    <option value="audiosHimnosIngles">English</option>
+                </select>
+                <div id="listaHimnos"></div>
             </div>
             <div id="previsualizacion">
-              <h2 id="anuncioHimnos" style="width: 100%;color: white;text-align: center;font-family: Arial, Helvetica, sans-serif;">Himnos 60,71,84,185,188,368 comienzan en Coro.</h2>
-              <h2 id="tituloHimno"></h2>
-              <div id="contenidoHimno"></div>
-              <audio id="audioHimno" controls controlsList="nodownload noplaybackrate nofullscreen"></audio>
-              <img src="imagenes/logo-proyectoja.png" alt="">
+                <h2 id="anuncioHimnos"
+                    style="width: 100%;color: white;text-align: center;font-family: Arial, Helvetica, sans-serif;">
+                    Himnos 60,71,84,185,188,368 comienzan en Coro.</h2>
+                <h2 id="tituloHimno"></h2>
+                <div id="contenidoHimno"></div>
+                <audio id="audioHimno" controls controlsList="nodownload noplaybackrate nofullscreen"></audio>
+                <img src="imagenes/logo-proyectoja.png" alt="">
             </div>
             <div id="config-panel2">
                 <h2>Configuración de Letra</h2>
@@ -353,16 +359,18 @@
                     <label class="letra-imagenes2" id="letra-imagenes">Imágenes de Fondo:</label>
                     <div id="background-select2"></div>
                     <img id="imagenPrevia" style="width: 100%;height: auto; overflow: hidden;">
-                    <div id="contenedorCargarImagen"><h2>Cargar imagen:</h2><button id="botonCargarImagen">Subir Imagen</button></div>
+                    <div id="contenedorCargarImagen">
+                        <h2>Cargar imagen:</h2><button id="botonCargarImagen">Subir Imagen</button>
+                    </div>
                     <h2>Usar imagen cargada siempre:</h2>
                     <label class="switch2">
                         <input type="checkbox" id="miSwitch">
                         <span class="slider2"></span>
-                      </label>                   
-                      <p id="estado">⚪ Apagado</p>
+                    </label>
+                    <p id="estado">⚪ Apagado</p>
                 </div>
             </div>
-          </div>
+        </div>
 
 
         <div class="contenedor-buscador">
@@ -375,7 +383,7 @@
                 <div id="slideButton" class="slider"></div>
                 <div id="tooltip">Modo Profesional</div>
             </div>
-            
+
             <input type="text" id="searchInput" placeholder="Buscar himno..." />
             <img src="iconos/iconoBuscar.png">
             <button id="configBoton"><img src="iconos/configuracion.png"></button>
@@ -394,7 +402,7 @@
                             kendall.torres.17@gmail.com</p>
                         <h3>De: Costa Rica</h3>
                         <h5>❤️ ¡Dios te bendiga! Oramos por ti y tu iglesia. 🙏🏼</h5><br />
-                        
+
                         <hr><br /><br />
                         <img src="imagenes/perfilDos.jpg">
                         <h1>Juan Saucedo</h1>
@@ -489,8 +497,8 @@
                                 width="100%" height="100%"></iframe>
                         </div>
                         <div class="contenedor-resenas">
-                            <iframe src="https://xat.com/embed/chat.php#id=220533534&gn=proyectoja777" frameborder="0" scrolling="no"
-                                width="100%" height="100%"></iframe>
+                            <iframe src="https://xat.com/embed/chat.php#id=220533534&gn=proyectoja777" frameborder="0"
+                                scrolling="no" width="100%" height="100%"></iframe>
                         </div>
                         <h4>Sección de: Reseñas</h4>
                     </div>
@@ -535,6 +543,7 @@
 
 
     </div>
+
     <script type="text/javascript" src="biblia.js"></script>
     <script type="text/javascript" src="scripts.js"></script>
     <script type="text/javascript" charset="utf-8" src="clappr.js"></script>

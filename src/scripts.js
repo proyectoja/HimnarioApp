@@ -10,6 +10,77 @@ let waterMark = "";
 let modo = "live"; // o "sandbox"
 //modo = "sandbox";
 
+
+//VISTA PREVIA EN CONTENEDOR DE LOGS PARA LOS ARCHIVOS QUE SE ESTÁN DESCARGANDO
+if (window.electronAPI && window.electronAPI.onLog) {
+  window.electronAPI.onLog(msg => {
+    const pre = document.getElementById('logs');
+    if (pre) {
+      // agregar nueva línea
+      pre.textContent += msg + "\n";
+
+      // dividir en líneas
+      let lineas = pre.textContent.split("\n");
+
+      // si hay más de 100 líneas, eliminar las primeras
+      if (lineas.length > 50) {
+        lineas = lineas.slice(lineas.length - 100);
+        pre.textContent = lineas.join("\n");
+      }
+
+      // autoscroll
+      const container = document.getElementById('contenedor-logs');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  });
+  // Mensaje de prueba inicial
+  const pre = document.getElementById('logs');
+  if (pre) pre.textContent = "--- Sistema de logs listo ---\n";
+
+  // Notificar al main que estamos listos para recibir logs
+  if (window.electronAPI.rendererReady) {
+    window.electronAPI.rendererReady();
+  }
+
+  if (window.electronAPI.onShowLogs) {
+    window.electronAPI.onShowLogs(() => {
+      const container = document.getElementById('contenedor-logs');
+      if (container) {
+        container.style.display = 'flex';
+        document.body.classList.add('logs-visible');
+      }
+    });
+  }
+
+  if (window.electronAPI.onHideLogs) {
+    window.electronAPI.onHideLogs(() => {
+      const container = document.getElementById('contenedor-logs');
+      if (container) {
+        container.style.display = 'none';
+        document.body.classList.remove('logs-visible');
+        
+        // Restaurar imágenes originales
+        const images = document.querySelectorAll('.video-container img');
+        images.forEach(img => {
+          if (img.dataset.originalSrc) {
+            img.src = img.dataset.originalSrc;
+          }
+        });
+      }
+      
+      // Ejecutar mostrarCategoria('todos') cuando todas las descargas hayan terminado
+      console.log('Todas las descargas completadas - Actualizando categoría todos');
+      if (typeof mostrarCategoria === 'function') {
+        mostrarCategoria('todos');
+      }
+    });
+  }
+} else {
+  console.error('[ERROR] preload.js no inyectado');
+}
+
 const contenedorMonitor = document.getElementById("contenedor-monitores");
 
 //Parap pruebas
@@ -550,7 +621,9 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
 
   // Imagen de portada
   const img = document.createElement("img");
+  img.dataset.originalSrc = imagePath;
   img.src = imagePath;
+
   img.alt = titulo;
   img.loading = "lazy";
 
@@ -559,7 +632,7 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
   h3.textContent = titulo;
 
   // evento de clic en la imagen
-  img.onclick = function () {
+  img.onclick = async function () {
     if (botonPRO == false) {
       audioHimno.pause();
       // Limpiar el contenedor de video antes de cargar uno nuevo
@@ -568,6 +641,16 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
       closePlayerButton.style.display = "flex";
 
       if (botonLista == false) {
+        // Convertir la imagen del poster a base64
+        let posterBase64 = null;
+        try {
+          const base64 = await window.electronAPI.leerArchivo(imagePath);
+          const extension = imagePath.split(".").pop();
+          posterBase64 = `data:image/${extension};base64,${base64}`;
+        } catch (err) {
+          console.error("Error cargando poster:", err);
+        }
+        
         // Crear el reproductor Clappr
         player = new Clappr.Player({
           source: videoPath,
@@ -577,7 +660,7 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
           preload: "auto",
           autoPlay: false,
           volume: 100,
-          poster: imagePath,
+          poster: posterBase64,
           //hideMediaControl: true,
           disableVideoTagContextMenu: true,
 
@@ -1709,6 +1792,7 @@ async function mostrarCategoria(categoria) {
     document.getElementsByClassName(
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "101-200") {
     inicio = 101;
     fin = 200;
@@ -1719,6 +1803,7 @@ async function mostrarCategoria(categoria) {
     document.getElementsByClassName(
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "201-300") {
     inicio = 201;
     fin = 300;
@@ -1729,6 +1814,7 @@ async function mostrarCategoria(categoria) {
     document.getElementsByClassName(
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "301-400") {
     inicio = 301;
     fin = 400;
@@ -1739,6 +1825,7 @@ async function mostrarCategoria(categoria) {
     document.getElementsByClassName(
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "401-500") {
     inicio = 401;
     fin = 500;
@@ -1749,6 +1836,7 @@ async function mostrarCategoria(categoria) {
     document.getElementsByClassName(
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "501-614") {
     inicio = 501;
     fin = 614;
@@ -1759,6 +1847,7 @@ async function mostrarCategoria(categoria) {
     document.getElementsByClassName(
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "orquestado") {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -2033,6 +2122,7 @@ async function mostrarCategoria(categoria) {
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   }
 
+  /*
   let duracionesHimnosAux;
   // Generar los himnos filtrados por categoría HIMNARIO 614 HIMNOS
   for (let i = inicio; i <= fin; i++) {
@@ -2040,7 +2130,7 @@ async function mostrarCategoria(categoria) {
     const titulo = titulos[i - 1] || `Himno ${numero}`;
     const videoPath = srcAux+`videos/${numero}.mp4`;
     const imagePath = srcAux+`portadas/${numero}.jpg`;
-
+    
     // Crear himno normal
     duracionesHimnosAux = duracionesHimnos[i - 1];
     crearHimno(titulo, videoPath, imagePath, null, duracionesHimnosAux);
@@ -2053,6 +2143,7 @@ async function mostrarCategoria(categoria) {
     });
 
   }
+  */
   let premiumCategoria = localStorage.getItem("premium") === "true";
   if (premiumCategoria) {
     aplicarEstadoPremium(true);
@@ -3852,6 +3943,27 @@ const actualizaciones = [
     tipo: "Función nueva"
   },
   {
+    fecha: "2025-11-21",
+    titulo: "Mejora de estética en la instalación de inicio",
+    mensaje: "Se mejoró el diseño y traslado de la consola de descarga, ahora aparecerá en el inicio con una interfaz más amigable y menos incomoda para disfrutar mejor de la experiencia del software.",
+    version: "v1.0.30",
+    tipo: "Mejor"
+  },
+  {
+    fecha: "2025-11-20",
+    titulo: "Mejora de descarga en la instalación de inicio",
+    mensaje: "Como saben, tenemos un servidor gratis, el cual es de una entidad pública donde almacenamos todos nuestros archivos, y muchos hermanos han presentado el problema que a veces algunos archivos no se descargan correctamente, En esta nueva mejora, se ha implementado la detección de archivo por archivo por si algún archivo no se descarga bien, se vuelve a descargar o se vuelve a descargar si se vuelve abrir el programa. Con esta nueva funcionalidad ya no se tendrá que sufrir por si se quedó un archivo a media en la descarga o a veces la conexión de internet es muy lenta y la descarga no sigue. Este es un excelentísimo aporte, espero sea de gran bendición. Dios me los bendiga!",
+    version: "v1.0.30",
+    tipo: "Mejor"
+  },
+  {
+    fecha: "2025-11-20",
+    titulo: "Versiones antiguas afectan la instalación en algunas instalaciones recientes",
+    mensaje: "Se agrego una mejora en el sistema de detención en el instalador cuando hay accesos directos antiguos en el computador. Esta nueva versión limpia carpetas, accesos directos y archivos temporales y antiguos del software.",
+    version: "v1.0.30",
+    tipo: "Mejor"
+  },
+  {
     fecha: "2025-11-18",
     titulo: "Versiones antiguas no funcionales",
     mensaje: "Las versiones antiguas dejaran de funcionar, es necesaria actualizar a la reciente y mantenerse actualizado a nuevas funciones del software.",
@@ -3971,6 +4083,11 @@ function mostrarActualizaciones() {
   });
   contenedorPadre.appendChild(contenedor);
 }
+
+
+
+
+
 
 
 //TÍTULO DE LOS VIDEOS | SIEMPRE ABAJO DE TODO EL CÓDIGO PARA MAYOR FÁCILIDAD

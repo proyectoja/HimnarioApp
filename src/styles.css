@@ -2239,4 +2239,35 @@ audio {
 .tipo.corrección { background-color: #ffe6e6; }
 .tipo.función { background-color: #e6f0ff; }
 
+#contenedor-logs {
+    display: none;
+    flex-direction: column;
+    width: 500px;
+    height: 150px;
+    background: #111;
+    color: #0f0;
+    font-family: monospace;
+    overflow-y: auto;
+    padding: 10px;
+    box-sizing: border-box;
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+    border-right: 1px solid rgba(255, 255, 255, 0.8);
+    border-top-right-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    position: fixed;
+    bottom: 60px;
+    left: 0;
+    z-index: 24;
+    
+    /* Ocultar scrollbar pero mantener funcionalidad */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE y Edge */
+}
+
+/* Webkit (Chrome, Safari, Edge) */
+#contenedor-logs::-webkit-scrollbar {
+    display: none;
+}
+
 

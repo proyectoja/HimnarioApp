@@ -1,12 +1,14 @@
-// logHelper.js
-let logWindow = null;
+const { BrowserWindow } = require('electron');
+
+let mainWindow = null;
 let buffer = [];
+let isLogVisible = false; // Estado de visibilidad
 
 /**
- * Registrar la ventana (main.js llama esto cuando la ventana de logs carga)
+ * Registrar la ventana principal (main.js llamará esto cuando se cree la ventana)
  */
-function setLogWindow(win) {
-  logWindow = win;
+function setMainWindow(win) {
+  mainWindow = win;
 }
 
 /**
@@ -16,38 +18,87 @@ function setLogWindow(win) {
  */
 function log(msg) {
   const ts = new Date().toISOString();
-  const line = `${ts} ${String(msg)}`;
-  // console del proceso principal (si corres electron verás esto en la terminal)
+  const line = `${String(msg)}`;
   console.log(line);
 
   try {
-    if (logWindow &&
-        logWindow.webContents &&
-        !logWindow.isDestroyed() &&
-        !logWindow.webContents.isLoadingMainFrame()) {
-      logWindow.webContents.send("log-message", line);
+    if (
+      mainWindow &&
+      mainWindow.webContents &&
+      !mainWindow.isDestroyed()
+    ) {
+      mainWindow.webContents.send("log-message", line);
     } else {
       buffer.push(line);
     }
   } catch (err) {
-    // si algo va mal al enviar, guardamos igualmente
     buffer.push(line);
+  }
+}
+
+function enviarArchivoDescargado(payload) {
+  try {
+    if (mainWindow && mainWindow.webContents && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("archivo-descargado", payload);
+    }
+  } catch (err) {
+    console.error("Error enviando archivo-descargado:", err);
+  }
+}
+
+function sendShowLogs() {
+  isLogVisible = true;
+  try {
+    if (mainWindow && mainWindow.webContents && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("show-logs-container");
+    }
+  } catch (err) {
+    console.error("Error enviando show-logs-container:", err);
+  }
+}
+
+function sendHideLogs() {
+  isLogVisible = false;
+  try {
+    if (mainWindow && mainWindow.webContents && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("hide-logs-container");
+    }
+  } catch (err) {
+    console.error("Error enviando hide-logs-container:", err);
   }
 }
 
 /**
  * Enviar todos los mensajes pendientes cuando la ventana esté lista
+ * Y sincronizar el estado de visibilidad
  */
 function flushBuffer() {
-  if (!logWindow) return;
+  if (!mainWindow) return;
   try {
+    // Sincronizar visibilidad
+    if (isLogVisible) {
+      mainWindow.webContents.send("show-logs-container");
+    } else {
+      mainWindow.webContents.send("hide-logs-container");
+    }
+
+    // Enviar logs
     buffer.forEach(m => {
-      if (!logWindow.isDestroyed()) logWindow.webContents.send("log-message", m);
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("log-message", m);
+      }
     });
   } catch (err) {
-    // ignore
+    // ignorar
   }
   buffer = [];
 }
 
-module.exports = { log, setLogWindow, flushBuffer };
+module.exports = {
+  log,
+  setMainWindow,
+  flushBuffer,
+  enviarArchivoDescargado,
+  sendShowLogs,
+  sendHideLogs
+};

@@ -1,39 +1,52 @@
 // gestorDescargas.js
-// Versión: descarga solo archivos faltantes y marca carpetas completadas usando .complete
+// Versión: descarga solo archivos faltantes, marca carpetas completadas usando .complete
+// y ahora marca también archivos individuales con file.complete
+
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-const { log } = require("./logHelper"); // tu módulo de logs
+const { log, sendShowLogs, sendHideLogs, enviarArchivoDescargado } = require("./logHelper");
 const { app } = require("electron");
+
 // Carpeta base donde se almacenan los archivos
 const BASE_DIR = path.join(app.getPath('userData'), 'src');
+//const BASE_DIR = "src/pruebas_downloader";
+
 
 // Configuración de carpetas remotas
 const CARPETAS = {
-  //prueba: "https://archive.org/details/003_20250924_202509",
+  //pruebas: "https://archive.org/details/prueba1_202509",
+  versionesBiblias: "https://archive.org/details/versionesBiblias",
+  portadas: "https://archive.org/details/portadas_20250925",
+  videos: "https://archive.org/details/videos_20250925",
+  portadasAntiguo: "https://archive.org/details/portadasAntiguo",
+  videosAntiguo: "https://archive.org/details/videosAntiguo",
+  portadasCoritos: "https://archive.org/details/portadasCoritos",
+  videosCoritos: "https://archive.org/details/videosCoritos",
+  portadasHimnosAntiguos: "https://archive.org/details/portadasHimnosAntiguos",
+  videosHimnosAntiguos: "https://archive.org/details/videosHimnosAntiguos",
+  portadasHimnosInfantiles: "https://archive.org/details/portadasHimnosInfantiles",
+  videosHimnosInfantiles: "https://archive.org/details/videosHimnosInfantiles",
+  portadasHimnosJA: "https://archive.org/details/portadasHimnosJA",
+  videosHimnosJA: "https://archive.org/details/videosHimnosJA",
+  portadasHimnosNacionales: "https://archive.org/details/portadasHimnosNacionales",
+  videosHimnosNacionales: "https://archive.org/details/videosHimnosNacionales",
+  videosHimnosPianoPista: "https://archive.org/details/videosHimnosPianoPista",
   audiosHimnos: "https://archive.org/details/audiosHimnos",
   audiosHimnosIngles: "https://archive.org/details/audiosHimnosInglesActualizacion",
   audiosHimnosPista: "https://archive.org/details/audiosHimnosPista",
   musicaParaOrarDeFondo: "https://archive.org/details/musicaParaOrarDeFondo",
-  portadas: "https://archive.org/details/portadas_20250925",
-  portadasAntiguo: "https://archive.org/details/portadasAntiguo",
-  portadasCoritos: "https://archive.org/details/portadasCoritos",
-  portadasHimnosAntiguos: "https://archive.org/details/portadasHimnosAntiguos",
-  portadasHimnosInfantiles: "https://archive.org/details/portadasHimnosInfantiles",
-  portadasHimnosJA: "https://archive.org/details/portadasHimnosJA",
-  portadasHimnosNacionales: "https://archive.org/details/portadasHimnosNacionales",
-  videos: "https://archive.org/details/videos_20250925",
-  videosAntiguo: "https://archive.org/details/videosAntiguo",
-  videosCoritos: "https://archive.org/details/videosCoritos",
-  videosHimnosAntiguos: "https://archive.org/details/videosHimnosAntiguos",
-  videosHimnosInfantiles: "https://archive.org/details/videosHimnosInfantiles",
-  videosHimnosJA: "https://archive.org/details/videosHimnosJA",
-  videosHimnosNacionales: "https://archive.org/details/videosHimnosNacionales",
-  videosHimnosPianoPista: "https://archive.org/details/videosHimnosPianoPista",
+  
+  
+  
+  
+  
+  
+  
 };
 
 // -----------------------------
-// FUNCIONES DE MARCA DE COMPLETADO
+// FUNCIONES DE MARCA DE COMPLETADO POR CARPETA
 // -----------------------------
 function markFolderComplete(carpeta) {
   const marker = path.join(BASE_DIR, carpeta, ".complete");
@@ -42,6 +55,19 @@ function markFolderComplete(carpeta) {
 
 function isFolderComplete(carpeta) {
   const marker = path.join(BASE_DIR, carpeta, ".complete");
+  return fs.existsSync(marker);
+}
+
+// -----------------------------
+// MARCAS DE ARCHIVOS INDIVIDUALES
+// -----------------------------
+function markFileComplete(carpeta, file) {
+  const marker = path.join(BASE_DIR, carpeta, `${file}.complete`);
+  fs.writeFileSync(marker, "ok", "utf-8");
+}
+
+function isFileComplete(carpeta, file) {
+  const marker = path.join(BASE_DIR, carpeta, `${file}.complete`);
   return fs.existsSync(marker);
 }
 
@@ -58,10 +84,12 @@ function monitorDescarga(response, file, carpeta) {
       descargado += chunk.length;
       const elapsed = (Date.now() - startTime) / 1000;
       const speed = descargado / elapsed;
+
       let speedStr =
         speed > 1024 * 1024
           ? `${(speed / (1024 * 1024)).toFixed(2)} MB/s`
           : `${(speed / 1024).toFixed(2)} KB/s`;
+
       if (total > 0) {
         const porcentaje = ((descargado / total) * 100).toFixed(2);
         const msg = `📊 ${carpeta}/${file}: ${porcentaje}% (${speedStr})`;
@@ -86,9 +114,10 @@ async function descargarArchivo(file, carpeta, baseUrl) {
 
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
-      if (fs.existsSync(filePath)) {
-        console.log(`⚠️ Ya existe, ignorado: ${carpeta}/${file}`);
-        log(`⚠️ Ya existe, ignorado: ${carpeta}/${file}`);
+      // Si existe el archivo y su archivo.complete → se ignora
+      if (fs.existsSync(filePath) && isFileComplete(carpeta, file)) {
+        console.log(`⚠️ Ya existe y completo: ${carpeta}/${file}`);
+        log(`⚠️ Ya existe y completo: ${carpeta}/${file}`);
         return resolve(false);
       }
 
@@ -111,8 +140,13 @@ async function descargarArchivo(file, carpeta, baseUrl) {
 
       writer.on("finish", () => {
         finished = true;
+        markFileComplete(carpeta, file); // ← NUEVO
         console.log(`✅ Descargado en ${carpeta}: ${file}`);
         log(`✅ Descargado en ${carpeta}: ${file}`);
+        
+        // Notificar al renderer que se descargó un archivo
+        enviarArchivoDescargado({ carpeta, file });
+        
         resolve(true);
       });
 
@@ -147,9 +181,42 @@ async function obtenerListaArchivos(url) {
   console.log(`🔍 Buscando archivos en el servidor`);
   log(`🔍 Buscando archivos en el servidor`);
 
+  // Usar API de Internet Archive para versionesBiblias
+  if (url.includes('versionesBiblias')) {
+    try {
+      const identifier = 'versionesBiblias';
+      const apiUrl = `https://archive.org/metadata/${identifier}`;
+      console.log(`📡 Usando API de Internet Archive: ${apiUrl}`);
+      log(`📡 Usando API de Internet Archive`);
+      
+      const { data } = await axios.get(apiUrl, { timeout: 30000 });
+      
+      // Extraer archivos de la respuesta de la API
+      const files = data.files || [];
+      const jsonFiles = files
+        .filter(f => f.name && f.name.endsWith('.json'))
+        .map(f => f.name);
+      
+      console.log(`📋 Archivos JSON encontrados vía API: ${jsonFiles.length}`);
+      log(`📋 Archivos JSON encontrados vía API: ${jsonFiles.length}`);
+      
+      if (jsonFiles.length > 0) {
+        console.log(`📄 Lista: ${jsonFiles.slice(0, 5).join(', ')}${jsonFiles.length > 5 ? '...' : ''}`);
+        log(`� Primeros archivos: ${jsonFiles.slice(0, 3).join(', ')}...`);
+      }
+      
+      return jsonFiles;
+    } catch (err) {
+      console.error(`❌ Error usando API de Internet Archive: ${err.message}`);
+      log(`❌ Error usando API: ${err.message}`);
+      return [];
+    }
+  }
+
+  // Método original para otras carpetas
   const { data } = await axios.get(url, { timeout: 30000 });
 
-  const regex = /href=["']\/download\/[^\/]+\/(?:([^"'\?<>#]+?\.(?:mp4|mp3|wav|ogg|mkv|jpg|jpeg|png|gif|webp)))['"]/gi;
+  const regex = /href=["']\/download\/[^\/]+\/(?:([^"'?\<>#]+?\.(?:mp4|mp3|wav|ogg|mkv|jpg|jpeg|png|gif|webp|json)))["']/gi;
 
   const archivos = [];
   let match;
@@ -157,7 +224,18 @@ async function obtenerListaArchivos(url) {
     archivos.push(match[1]);
   }
 
-  return [...new Set(archivos.filter(f => f && !f.includes(".ia") && !f.includes("_thumb")))];
+  const uniqueFiles = [...new Set(archivos.filter(f => f && !f.includes(".ia") && !f.includes("_thumb")))];
+  
+  console.log(`📋 Archivos encontrados: ${uniqueFiles.length}`);
+  log(`📋 Archivos encontrados: ${uniqueFiles.length}`);
+  
+  if (uniqueFiles.length > 0 && uniqueFiles.length <= 30) {
+    console.log(`📄 Lista: ${uniqueFiles.join(', ')}`);
+    log(`📄 Lista: ${uniqueFiles.slice(0, 10).join(', ')}${uniqueFiles.length > 10 ? '...' : ''}`);
+  }
+
+  return uniqueFiles;
+
 }
 
 // -----------------------------
@@ -192,9 +270,16 @@ async function descargarTodo() {
         await descargarArchivo(file, carpeta, downloadBase);
       }
 
-      markFolderComplete(carpeta);
-      console.log(`🎉 Carpeta ${carpeta} completada`);
-      log(`🎉 Carpeta ${carpeta} completada`);
+      // Verificar que todos tienen .complete
+      const todosCompletos = archivos.every(f => isFileComplete(carpeta, f));
+      if (todosCompletos) {
+        markFolderComplete(carpeta);
+        console.log(`🎉 Carpeta ${carpeta} COMPLETADA`);
+        log(`🎉 Carpeta ${carpeta} COMPLETADA`);
+      } else {
+        console.log(`⚠️ Carpeta ${carpeta} NO completa, faltan .complete`);
+      }
+
     } catch (err) {
       console.error(`❌ Error en carpeta ${carpeta}: ${err.message}`);
       log(`❌ Error en carpeta ${carpeta}: ${err.message}`);
@@ -207,6 +292,37 @@ async function descargarTodo() {
 // -----------------------------
 async function verificarCarpetasYReiniciarSiFaltan() {
   let huboDescarga = false;
+  let hayDescargasPendientes = false;
+
+  // Verificar primero si hay descargas pendientes
+  for (const [carpeta, pageUrl] of Object.entries(CARPETAS)) {
+    if (isFolderComplete(carpeta)) continue;
+    
+    const carpetaPath = path.join(BASE_DIR, carpeta);
+    if (!fs.existsSync(carpetaPath)) {
+      hayDescargasPendientes = true;
+      break;
+    }
+    
+    const archivosLocales = fs.readdirSync(carpetaPath)
+      .filter(f => !f.endsWith(".complete") && f !== ".complete");
+    const archivosRemotos = await obtenerListaArchivos(pageUrl);
+    const faltantes = archivosRemotos.filter(f => {
+      const tieneArchivo = archivosLocales.includes(f);
+      const tieneComplete = isFileComplete(carpeta, f);
+      return !(tieneArchivo && tieneComplete);
+    });
+    
+    if (faltantes.length > 0) {
+      hayDescargasPendientes = true;
+      break;
+    }
+  }
+
+  // Mostrar contenedor de logs si hay descargas pendientes
+  if (hayDescargasPendientes) {
+    sendShowLogs();
+  }
 
   for (const [carpeta, pageUrl] of Object.entries(CARPETAS)) {
     if (isFolderComplete(carpeta)) continue;
@@ -215,22 +331,48 @@ async function verificarCarpetasYReiniciarSiFaltan() {
     const carpetaPath = path.join(BASE_DIR, carpeta);
     fs.mkdirSync(carpetaPath, { recursive: true });
 
-    const archivosLocales = fs.readdirSync(carpetaPath).filter(f => f !== ".complete");
+    const archivosLocales = fs.readdirSync(carpetaPath)
+      .filter(f => !f.endsWith(".complete") && f !== ".complete");
+
     const archivosRemotos = await obtenerListaArchivos(pageUrl);
 
-    const faltantes = archivosRemotos.filter(f => !archivosLocales.includes(f));
+    const faltantes = archivosRemotos.filter(f => {
+      const tieneArchivo = archivosLocales.includes(f);
+      const tieneComplete = isFileComplete(carpeta, f);
+      return !(tieneArchivo && tieneComplete);
+    });
+
     if (faltantes.length === 0) {
-      markFolderComplete(carpeta);
+
+      const todosCompletos = archivosRemotos.every(f => isFileComplete(carpeta, f));
+
+      if (todosCompletos) {
+        markFolderComplete(carpeta);
+        console.log(`🎉 Carpeta ${carpeta} completada`);
+        log(`🎉 Carpeta ${carpeta} completada`);
+      } else {
+        console.log(`⚠️ Hay archivos sin .complete en ${carpeta}, no se marca completa`);
+      }
+
       continue;
     }
 
     console.log(`⬇️ Descargando ${faltantes.length} archivos en ${carpeta}`);
     log(`⬇️ Descargando ${faltantes.length} archivos en ${carpeta}`);
+
     for (const file of faltantes) {
       await descargarArchivo(file, carpeta, downloadBase);
     }
-    markFolderComplete(carpeta);
+
     huboDescarga = true;
+  }
+
+  // Si no hubo descargas, ocultar el contenedor de logs
+  if (!huboDescarga) {
+    log("✅ Todas las carpetas están completas. Ocultando logs...");
+    setTimeout(() => {
+      sendHideLogs();
+    }, 2000); // Dar tiempo para que se vea el último mensaje
   }
 
   return huboDescarga;
@@ -245,7 +387,9 @@ module.exports = {
   descargarArchivo,
   verificarCarpetasYReiniciarSiFaltan,
   markFolderComplete,
-  isFolderComplete
+  isFolderComplete,
+  markFileComplete,
+  isFileComplete
 };
 
 // -----------------------------
@@ -256,3 +400,7 @@ if (require.main === module) {
     await descargarTodo();
   })();
 }
+
+
+
+//PARA PRUEBAS

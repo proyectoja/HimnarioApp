@@ -23,7 +23,7 @@
         "provider": "github",
         "owner": "proyectoja",
         "repo": "HimnarioApp",
-        "private": true,
+        "private": false,
         "releaseType": "release"
       }
     ],
@@ -49,7 +49,9 @@
       "!src/videosHimnosJA/**",
       "!src/videosHimnosNacionales/**",
       "!src/videosHimnosPianoPista/**",
+      "!src/versionesBiblias/**",
       "downloader.js",
+      "installer.nsh",
       "log.html",
       "logHelper.js",
       "main.js",
@@ -83,7 +85,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Himnario Adventista Pro",
-      "license": "src/licencia/licencia.txt"
+      "license": "src/licencia/licencia.txt",
+      "include": "installer.nsh"
     },
     "mac": {
       "target": "dmg",
