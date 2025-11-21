@@ -5831,7 +5831,7 @@ function calcularPostsPorPagina() {
 // Cargar posts desde JSON
 async function cargarCarruselPosts() {
   try {
-    const response = await fetch('carrusel-posts.json', { cache: 'no-store' });
+    const response = await fetch('https://proyectoja.github.io/carrusel-posts.json', { cache: 'no-store' });
     if (!response.ok) throw new Error('No se pudo cargar el carrusel');
     
     carruselPosts = await response.json();
