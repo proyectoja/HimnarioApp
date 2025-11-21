@@ -4014,6 +4014,13 @@ const actualizaciones = [
   },
   {
     fecha: "2025-11-21",
+    titulo: "Iconos",
+    mensaje: "Se reparó el acceso directo y de inicio de los iconos principales del programa. Esto ayuda a encontrar más fácilmente el programa.",
+    version: "v1.0.32",
+    tipo: "Correción"
+  },
+  {
+    fecha: "2025-11-21",
     titulo: "Mejora de estética en la instalación de inicio",
     mensaje: "Se mejoró el diseño y traslado de la consola de descarga, ahora aparecerá en el inicio con una interfaz más amigable y menos incomoda para disfrutar mejor de la experiencia del software.",
     version: "v1.0.30",
