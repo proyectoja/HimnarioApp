@@ -41,9 +41,5 @@ videosHimnosNacionales/
 videosHimnosPianoPista/
 
 
-# Configuraciones de npm/yarn
-package-lock.json
-yarn.lock
-
 
 
