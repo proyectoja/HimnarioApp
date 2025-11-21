@@ -77,7 +77,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Descargar artefactos
         uses: actions/download-artifact@v4
         with:
@@ -91,15 +90,7 @@ jobs:
           body: "Release generado automáticamente"
           draft: false
           prerelease: false
-          files: |
-            dist-all/**/*.exe
-            dist-all/**/*.msi
-            dist-all/**/*.dmg
-            dist-all/**/*.zip
-            dist-all/**/*.AppImage
-            dist-all/**/*.deb
-            dist-all/**/*.rpm
-            dist-all/**/*.blockmap
-            dist-all/**/latest*.yml
+          files: dist-all/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
