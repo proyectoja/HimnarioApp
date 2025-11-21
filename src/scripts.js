@@ -4012,18 +4012,18 @@ const actualizaciones = [
     version: "v1.0.sin-versión",
     tipo: "Función nueva"
   },
-  {
-    fecha: "2025-11-21",
-    titulo: "Himnario Adventista PRO Multiplataforma",
-    mensaje: "Está es la primer versión beta que se estará probando para sistemas opertativos Windows, Mac, Linux y Ubuntu. Esperamos en las próximas horas tener más actualizaciones de pruebas con los usuarios de las diferentes plataformas.",
-    version: "v1.0.33",
-    tipo: "Mejor"
-  },
+  //{
+    //fecha: "2025-11-21",
+    //titulo: "Himnario Adventista PRO Multiplataforma",
+    //mensaje: "Está es la primer versión beta que se estará probando para sistemas opertativos Windows, Mac, Linux y Ubuntu. Esperamos en las próximas horas tener más actualizaciones de pruebas con los usuarios de las diferentes plataformas.",
+    //version: "v1.0.33",
+    //tipo: "Mejor"
+  //},
   {
     fecha: "2025-11-21",
     titulo: "Iconos",
     mensaje: "Se reparó el acceso directo y de inicio de los iconos principales del programa. Esto ayuda a encontrar más fácilmente el programa.",
-    version: "v1.0.32",
+    version: "v1.0.35",
     tipo: "Correción"
   },
   {
