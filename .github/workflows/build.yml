@@ -1,37 +1,79 @@
-name: Build & Release
+name: release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
-  release:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
-      - name: Checkout código
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+          node-version: 18
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install
 
-      - name: Build & Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Incrementar versión (sin crear tag)
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          npm version patch --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Commit de versión
+        run: |
+          git add package.json package-lock.json || true
+          git commit -m "Bump version to $VERSION" || true
+          git push || true
+
+      - name: Build (npm run release)
         run: npm run release
 
-      - name: Limpiar archivos temporales
-        if: always()
-        run: echo "Build completado para ${{ matrix.os }}"
+      - name: Subir artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: dist/**/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-all
+
+      - name: Crear release si no existe
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
+          body: "Release generado automáticamente"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Subir instaladores al Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist-all/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
