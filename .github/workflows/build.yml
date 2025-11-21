@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -35,10 +34,10 @@ jobs:
           git config user.email "github-actions@github.com"
 
           npm version patch --no-git-tag-version
-
           NEW_VERSION=$(node -p "require('./package.json').version")
+
           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "VERSION=$NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Commit de nueva versión
         shell: bash
@@ -49,6 +48,8 @@ jobs:
 
       - name: Build (npm run release)
         run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Subir artefactos
         uses: actions/upload-artifact@v4
@@ -69,11 +70,11 @@ jobs:
       - name: Crear Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ env.VERSION }}
-          name: Release v${{ env.VERSION }}
+          tag_name: v${{ needs.build.outputs.version }}
+          name: Release v${{ needs.build.outputs.version }}
           body: "Release generado automáticamente"
           draft: false
           prerelease: false
           files: dist-all/**/*
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
