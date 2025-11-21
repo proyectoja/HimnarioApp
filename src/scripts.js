@@ -4023,7 +4023,7 @@ const actualizaciones = [
     fecha: "2025-11-21",
     titulo: "Iconos",
     mensaje: "Se reparó el acceso directo y de inicio de los iconos principales del programa. Esto ayuda a encontrar más fácilmente el programa.",
-    version: "v1.0.35",
+    version: "v1.0.32",
     tipo: "Correción"
   },
   {
