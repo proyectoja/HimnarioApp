@@ -38,13 +38,15 @@ function createWindow() {
   win = new BrowserWindow({
     width: 800,
     height: 600,
+    show: false, // ← Ocultar mientras carga
+    title: `PROYECTO JA | Himnario Adventista Pro - v${app.getVersion()}`, // ← Título desde el inicio
     icon: path.join(__dirname, "src/iconos/iconoWindows.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: true,
       webSecurity: false,
-      devTools: true, // Desactiva devTools
+      devTools: false, // Desactiva devTools
     },
   });
   //win.webContents.openDevTools({ mode: 'undocked' });
@@ -105,6 +107,15 @@ flushBuffer();
   ipcMain.on('renderer-ready', () => {
     log("[MAIN] Renderer ready, flushing buffer...");
     flushBuffer();
+  });
+
+  // ✅ Mostrar ventana solo cuando la app esté COMPLETAMENTE lista
+  ipcMain.on('app-ready', () => {
+    log("[MAIN] App completamente cargada, mostrando ventana...");
+    if (win && !win.isDestroyed()) {
+      win.show();
+      win.focus();
+    }
   });
 
   // ⚡ Interceptar cualquier intento de abrir nueva ventana

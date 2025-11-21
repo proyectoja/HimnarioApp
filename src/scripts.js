@@ -77,9 +77,79 @@ if (window.electronAPI && window.electronAPI.onLog) {
       }
     });
   }
-} else {
   console.error('[ERROR] preload.js no inyectado');
 }
+
+// ========================================
+// 🚀 SISTEMA DE INICIALIZACIÓN OPTIMIZADO
+// ========================================
+let appInicializada = false;
+
+async function inicializarAplicacion() {
+  if (appInicializada) return;
+  
+  console.log('[INIT] 🔄 Iniciando carga de la aplicación...');
+  
+  try {
+    // 1️⃣ Validar premium
+    console.log('[INIT] ✓ Validando premium...');
+    await validarPremium();
+    
+    // 2️⃣ Cargar himnos personalizados (si la función existe)
+    console.log('[INIT] ✓ Cargando himnos...');
+    if (typeof cargarHimnos === 'function') {
+      await cargarHimnos();
+    }
+    
+    // 3️⃣ Contador de vistas
+    console.log('[INIT] ✓ Inicializando contador...');
+    if (typeof contadorDeVistas === 'function') {
+      await contadorDeVistas();
+    }
+    
+    // 4️⃣ Pequeña espera para asegurar renderizado
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // 5️⃣ Ocultar loader
+    console.log('[INIT] ✓ Ocultando loader...');
+    const loader = document.getElementById('contenedorLoader');
+    if (loader) {
+      loader.style.display = 'none';
+    }
+    
+    // 6️⃣ Mostrar introducción
+    //console.log('[INIT] ✓ Mostrando introducción...');
+    //mostrarIntro();
+    
+    // 7️⃣ Notificar que la app está lista para mostrarse
+    console.log('[INIT] ✅ Aplicación completamente cargada');
+    if (window.electronAPI && window.electronAPI.appReady) {
+      window.electronAPI.appReady();
+    }
+    
+    appInicializada = true;
+    
+  } catch (error) {
+    console.error('[INIT] ❌ Error durante la inicialización:', error);
+    // Aún así mostrar la ventana en caso de error
+    const loader = document.getElementById('contenedorLoader');
+    if (loader) loader.style.display = 'none';
+    if (window.electronAPI && window.electronAPI.appReady) {
+      window.electronAPI.appReady();
+    }
+  }
+}
+
+
+
+// Iniciar cuando el DOM esté listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', inicializarAplicacion);
+} else {
+  // DOM ya está listo
+  inicializarAplicacion();
+}
+// ========================================
 
 const contenedorMonitor = document.getElementById("contenedor-monitores");
 

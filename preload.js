@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   
   rendererReady: () => ipcRenderer.send('renderer-ready'),
+  appReady: () => ipcRenderer.send('app-ready'), // ← Nueva función
   onShowLogs: (callback) => ipcRenderer.on("show-logs-container", callback),
   onHideLogs: (callback) => ipcRenderer.on("hide-logs-container", callback),
 });

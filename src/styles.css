@@ -1422,9 +1422,9 @@ h5 {
 
 /*ESTILOS PARA EL LOADER Y SPINER*/
 #contenedorLoader {
-  display: none;
+  display: flex; /* ← Mostrar por defecto mientras carga */
   position: absolute;
-  z-index: 26;
+  z-index: 23;
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.8);
