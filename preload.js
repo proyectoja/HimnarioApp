@@ -60,6 +60,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onUpdateError: (callback) => ipcRenderer.on('update-error', (_, message) => callback(message)),
 });
 
-ipcRenderer.on("set-paths", (_, paths) => {
-  contextBridge.exposeInMainWorld("paths", paths);
-});
+// Obtener paths síncronamente
+const paths = ipcRenderer.sendSync('get-paths-sync');
+contextBridge.exposeInMainWorld("paths", paths);

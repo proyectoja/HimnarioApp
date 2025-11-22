@@ -26,8 +26,8 @@ async function cargarVersion() {
 
   try {
     // Obtener la ruta correcta desde userData
-    const basePath = window.paths?.src || 'src';
-    const rutaJSON = `${basePath}/versionesBiblias/${versionSeleccionada}.json`;
+    // Usar ruta relativa ya que estamos sirviendo desde 'src'
+    const rutaJSON = `versionesBiblias/${versionSeleccionada}.json`;
     
     console.log(`[BIBLIA] Cargando versión desde: ${rutaJSON}`);
     

@@ -141,13 +141,21 @@ flushBuffer();
   });
 
   win.webContents.once("dom-ready", () => {
-    win.webContents.send("set-paths", {
-      userData: app.getPath("userData"),
-      src: path.join(app.getPath("userData"), "src"),
-    });
+    // win.webContents.send("set-paths", {
+    //   userData: app.getPath("userData"),
+    //   src: path.join(app.getPath("userData"), "src"),
+    // });
   });
 
 }
+
+// ✅ IPC Síncrono para obtener paths inmediatamente en preload
+ipcMain.on('get-paths-sync', (event) => {
+  event.returnValue = {
+    userData: app.getPath("userData"),
+    src: path.join(app.getPath("userData"), "src"),
+  };
+});
 
 // Ocultar la barra de menú
 Menu.setApplicationMenu(null);
