@@ -4197,7 +4197,7 @@ const actualizaciones = [
     fecha: "2025-11-22",
     titulo: "Biblia con nuevas funciones",
     mensaje: "Ahora la Biblia y sus versiones pasan los versículos ya sea presionando sobre el mismo, con botón o con las teclas izquierda o derecha del teclado de la computadora; además, automáticamente se pasan los versículos y capítulos al siguiente capítulo con su versículo, incluso se pasa al siguiente libro. También se actualizan cada estilo personalizado en tiempo real(letras,colores,espacios,tamaños,imágenes...). Espero sea de gran bendición. Esta funcionalidad fue idea de un seguidor, gracias a -Albeiro Navarro-",
-    version: "v1.0.51",
+    version: "v1.0.52",
     tipo: "Función nueva"
   },
   {
