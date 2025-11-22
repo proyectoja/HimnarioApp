@@ -382,21 +382,22 @@ async function validarPremium() {
   }
 }
 function aplicarEstadoPremium(esPremiumAux) {
+  console.log("[PREMIUM] Aplicando estado premium:", esPremiumAux);
   if (esPremiumAux) {
     waterMark = "";
-    botonPremium.style.display = "none";
-    contenedorPremium.style.display = "none";
+    if(botonPremium) botonPremium.style.display = "none";
+    if(contenedorPremium) contenedorPremium.style.display = "none";
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "flex";
     });
-    contenedorMonitor.style.display = "flex";
+    if(contenedorMonitor) contenedorMonitor.style.display = "flex";
   } else {
     waterMark = "imagenes/logo-proyectoja.png";
-    botonPremium.style.display = "flex";
+    if(botonPremium) botonPremium.style.display = "flex";
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "none";
     });
-    contenedorMonitor.style.display = "none";
+    if(contenedorMonitor) contenedorMonitor.style.display = "none";
   }
 }
 
@@ -472,6 +473,7 @@ botonPremium.addEventListener("click", function () {
     validarPremium();
     const subscriptionIdDos = localStorage.getItem("paypalSubscriptionId");
     
+    // Aplicar estilos mejorados al contenedor principal
     // Aplicar estilos mejorados al contenedor principal
     contenedorPremium.style.display = "flex";
     contenedorPremium.style.flexDirection = "column";
@@ -792,46 +794,66 @@ botonPremium.addEventListener("click", function () {
     contenedorInterno.appendChild(mensajeMonto);
 
     // Agregar contenedor interno al principal
-    contenedorPremium.appendChild(contenedorInterno);
+    // contenedorPremium.appendChild(contenedorInterno); // Eliminado por duplicado
 
     // Inicializar PayPal después de un pequeño delay para asegurar que el DOM esté listo
     setTimeout(() => {
+      console.log("Intentando renderizar botón de PayPal...");
+      const containerInner = document.getElementById("paypal-button-container-inner");
+      if (!containerInner) {
+          console.error("Error: No se encontró el contenedor interno para el botón de PayPal");
+          return;
+      }
+      console.log("Contenedor interno encontrado. Limpiando y renderizando...");
       paypalContainer.innerHTML = ""; // Limpiar texto temporal
       
-      paypal
-        .Buttons({
-          style: {
-            layout: "vertical",
-            color: "gold",
-            shape: "rect",
-            label: "subscribe",
-            height: 40,
-            tagline: false
-          },
-          createSubscription: function (data, actions) {
-            return actions.subscription.create({
-              plan_id: "P-40E25374WC496032ENB62ANQ",
-            });
-          },
-          onApprove: function (data, actions) {
-            const subscriptionId = data.subscriptionID;
-            alert("🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium.");
+      if (!window.paypal) {
+        console.error("Error: El objeto 'paypal' no está definido. El SDK no se cargó correctamente.");
+        paypalContainer.innerHTML = "<p style='color:red; text-align:center;'>Error: PayPal SDK no cargado.<br>Verifique su conexión a internet.</p>";
+        return;
+      }
 
-            localStorage.setItem("paypalSubscriptionId", subscriptionId);
-            localStorage.setItem("premium", "true");
+      try {
+        window.paypal
+          .Buttons({
+            style: {
+              layout: "vertical",
+              color: "gold",
+              shape: "rect",
+              label: "subscribe",
+              height: 40,
+              tagline: false
+            },
+            createSubscription: function (data, actions) {
+              return actions.subscription.create({
+                plan_id: "P-40E25374WC496032ENB62ANQ",
+              });
+            },
+            onApprove: function (data, actions) {
+              const subscriptionId = data.subscriptionID;
+              alert("🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium.");
 
-            location.reload();
-          },
-          onCancel: function () {
-            alert("Suscripción cancelada. Puedes intentarlo nuevamente cuando lo desees.");
-          },
-          onError: function (err) {
-            alert("❌ Error con el proceso de pago. Por favor, intenta nuevamente.");
-            console.error("Error con PayPal:", err);
-          },
-        })
-        .render("#paypal-button-container-inner");
-    }, 100);
+              localStorage.setItem("paypalSubscriptionId", subscriptionId);
+              localStorage.setItem("premium", "true");
+
+              location.reload();
+            },
+            onCancel: function () {
+              alert("Suscripción cancelada.");
+            },
+            onError: function (err) {
+              console.error("Error interno de PayPal:", err);
+              alert("Error en el proceso de pago: " + err);
+            },
+          })
+          .render("#paypal-button-container-inner");
+        console.log("✅ Botón de PayPal renderizado correctamente");
+      } catch (error) {
+        console.error("Error al renderizar botones de PayPal:", error);
+        // Mostrar el error específico en pantalla
+        paypalContainer.innerHTML = `<p style='color:red; text-align:center;'>Error al iniciar PayPal:<br>${error.message}</p>`;
+      }
+    }, 500);
 
   } else {
     contenedorPremium.style.display = "none";
