@@ -127,8 +127,10 @@ async function descargarArchivo(file, carpeta, baseUrl) {
       const response = await axios.get(url, {
         responseType: "stream",
         maxRedirects: 5,
-        timeout: 60000,
+        timeout: 120000, // 120 segundos para archivos grandes
         validateStatus: (s) => s >= 200 && s < 400,
+        maxContentLength: Infinity, // Permitir archivos de cualquier tamaño
+        maxBodyLength: Infinity,
       });
 
       const writer = fs.createWriteStream(filePath);
@@ -157,15 +159,23 @@ async function descargarArchivo(file, carpeta, baseUrl) {
         reject(err);
       });
 
+      // Timeout más largo para archivos grandes (5 minutos)
+      const timeoutDuration = 300000; // 300 segundos = 5 minutos
       setTimeout(() => {
         if (!finished) {
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-          const msg = `❌ Timeout al descargar ${file} (cancelado)`;
+          if (fs.existsSync(filePath)) {
+            try {
+              fs.unlinkSync(filePath);
+            } catch (e) {
+              console.error(`Error al eliminar archivo incompleto: ${e.message}`);
+            }
+          }
+          const msg = `❌ Timeout al descargar ${file} después de ${timeoutDuration/1000}s (cancelado)`;
           console.error(msg);
           log(msg);
           resolve(false);
         }
-      }, 120000);
+      }, timeoutDuration);
     } catch (err) {
       console.error(`❌ Error al descargar ${file}: ${err.message}`);
       log(`❌ Error al descargar ${file}: ${err.message}`);
@@ -367,12 +377,20 @@ async function verificarCarpetasYReiniciarSiFaltan() {
     huboDescarga = true;
   }
 
-  // Si no hubo descargas, ocultar el contenedor de logs
+  // Si no hubo descargas, ocultar el contenedor de logs después de 8 segundos
   if (!huboDescarga) {
-    log("✅ Todas las carpetas están completas. Ocultando logs...");
+    log("✅ Todas las carpetas están completas. Ocultando logs en 8 segundos...");
     setTimeout(() => {
+      log("[INFO] Ocultando contenedor de logs...");
       sendHideLogs();
-    }, 2000); // Dar tiempo para que se vea el último mensaje
+    }, 8000); // 8 segundos para que el usuario vea el mensaje final
+  } else {
+    // Si hubo descargas, también ocultar después de completar
+    log("✅ Descargas completadas. Ocultando logs en 8 segundos...");
+    setTimeout(() => {
+      log("[INFO] Ocultando contenedor de logs...");
+      sendHideLogs();
+    }, 8000);
   }
 
   return huboDescarga;
