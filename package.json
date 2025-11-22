@@ -1,6 +1,10 @@
 {
   "name": "himnarioadventistapro",
+<<<<<<< HEAD
   "version": "1.0.58",
+=======
+  "version": "1.0.57",
+>>>>>>> 42ffb2eb5c30ca71f67bad424a8bc3717caf43f9
   "description": "Himnario Adventista optimizado y fácil de usar, creado por PROYECTO JA",
   "author": "PROYECTO JA - Kendall Torres <kendall.torres.17@gmail.com>",
   "main": "main.js",
