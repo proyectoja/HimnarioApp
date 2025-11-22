@@ -1,6 +1,6 @@
 {
   "name": "himnarioadventistapro",
-  "version": "1.0.44",
+  "version": "1.0.45",
   "description": "Himnario Adventista optimizado y fácil de usar, creado por PROYECTO JA",
   "author": "PROYECTO JA - Kendall Torres <kendall.torres.17@gmail.com>",
   "main": "main.js",
@@ -8,7 +8,9 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "release": "electron-builder --publish never",
+    "release": "electron-builder --publish always",
+    "release-draft": "electron-builder --publish onTagOrDraft",
+    "release-local": "electron-builder --publish never",
     "prerelease": "npm version patch -m \"Versión %s\"",
     "postinstall": "electron-builder install-app-deps",
     "deploy": "npm version patch --no-git-tag-version && git add . && git commit -m \"Auto bump\" || true && git push"

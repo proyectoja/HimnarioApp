@@ -327,31 +327,182 @@ ipcMain.on("abrir-ventana", (event, monitorIndex) => {
   abrirVentanaSecundaria(monitorIndex);
 });
 
-//ACTUALIZACIONES DE LA APP
-// Opcional: mostrar mensajes de actualización
-autoUpdater.on("update-available", () => {
-  dialog.showMessageBox({
+//ACTUALIZACIONES DE LA APP - SISTEMA MEJORADO
+const fs = require('fs');
+const updateStatusPath = path.join(app.getPath('userData'), 'update-status.json');
+
+// Estado de la actualización
+let updateDownloaded = false;
+let updateAvailable = false;
+
+// Función para guardar estado de actualización pospuesta
+function saveUpdateStatus(status) {
+  try {
+    fs.writeFileSync(updateStatusPath, JSON.stringify(status));
+  } catch (err) {
+    log('[UPDATE] Error al guardar estado: ' + err.message);
+  }
+}
+
+// Función para leer estado de actualización
+function readUpdateStatus() {
+  try {
+    if (fs.existsSync(updateStatusPath)) {
+      return JSON.parse(fs.readFileSync(updateStatusPath, 'utf8'));
+    }
+  } catch (err) {
+    log('[UPDATE] Error al leer estado: ' + err.message);
+  }
+  return null;
+}
+
+// Configurar autoUpdater para descargar automáticamente
+autoUpdater.autoDownload = false; // Lo haremos manual para dar control al usuario
+autoUpdater.autoInstallOnAppQuit = true; // Instalar al cerrar si ya se descargó
+
+// Cuando se detecta una actualización disponible
+autoUpdater.on("update-available", (info) => {
+  updateAvailable = true;
+  log(`[UPDATE] Actualización disponible: v${info.version}`);
+  
+  // Preguntar al usuario qué quiere hacer
+  dialog.showMessageBox(win, {
     type: "info",
-    title: "Actualización disponible del Himnario Adventista PRO",
-    message: "Hay una nueva versión. Se descargará automáticamente.",
+    title: "Actualización Disponible",
+    message: `Himnario Adventista PRO v${info.version} está disponible`,
+    detail: `Versión actual: v${app.getVersion()}\nNueva versión: v${info.version}\n\n¿Desea descargar la actualización ahora?\n\nLa descarga se realizará en segundo plano y no interrumpirá su trabajo.`,
+    buttons: ["Descargar Ahora", "Más Tarde"],
+    defaultId: 0,
+    cancelId: 1
+  }).then((response) => {
+    if (response.response === 0) {
+      // Usuario eligió descargar ahora
+      log('[UPDATE] Usuario eligió descargar ahora');
+      autoUpdater.downloadUpdate();
+      
+      // Notificar al usuario que la descarga comenzó
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('update-downloading-started');
+      }
+    } else {
+      // Usuario pospuso la actualización
+      log('[UPDATE] Usuario pospuso la actualización');
+      saveUpdateStatus({
+        postponed: true,
+        version: info.version,
+        date: Date.now()
+      });
+    }
   });
 });
 
-autoUpdater.on("update-downloaded", () => {
-  dialog
-    .showMessageBox({
-      type: "info",
-      title: "Actualización lista del Himnario Adventista PRO",
-      message: "Se instalará la actualización al cerrar la app.",
-    })
-    .then(() => {
-      autoUpdater.quitAndInstall();
+// Cuando no hay actualizaciones disponibles
+autoUpdater.on("update-not-available", () => {
+  log('[UPDATE] No hay actualizaciones disponibles');
+  updateAvailable = false;
+  // Limpiar el estado de actualización pospuesta si existe
+  if (fs.existsSync(updateStatusPath)) {
+    fs.unlinkSync(updateStatusPath);
+  }
+});
+
+// Progreso de descarga
+autoUpdater.on("download-progress", (progressObj) => {
+  const logMessage = `Descarga en progreso: ${Math.round(progressObj.percent)}% - ${(progressObj.transferred / 1048576).toFixed(2)}MB de ${(progressObj.total / 1048576).toFixed(2)}MB`;
+  log(`[UPDATE] ${logMessage}`);
+  
+  // Enviar progreso al renderer
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('update-download-progress', {
+      percent: Math.round(progressObj.percent),
+      transferred: (progressObj.transferred / 1048576).toFixed(2),
+      total: (progressObj.total / 1048576).toFixed(2),
+      speed: (progressObj.bytesPerSecond / 1048576).toFixed(2)
     });
+  }
+});
+
+// Cuando la descarga se completa
+autoUpdater.on("update-downloaded", (info) => {
+  updateDownloaded = true;
+  log(`[UPDATE] Actualización v${info.version} descargada completamente`);
+  
+  // Limpiar estado de pospuesta ya que ahora está descargada
+  if (fs.existsSync(updateStatusPath)) {
+    fs.unlinkSync(updateStatusPath);
+  }
+  
+  // Notificar al renderer que la descarga terminó
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('update-downloaded');
+  }
+  
+  // Preguntar al usuario si quiere reiniciar ahora
+  dialog.showMessageBox(win, {
+    type: "info",
+    title: "Actualización Lista para Instalar",
+    message: `Himnario Adventista PRO v${info.version} está listo para instalarse`,
+    detail: "La actualización se ha descargado correctamente.\n\n¿Desea reiniciar la aplicación ahora para completar la instalación?\n\nSi elige 'Más Tarde', la actualización se instalará la próxima vez que cierre la aplicación.",
+    buttons: ["Reiniciar Ahora", "Más Tarde"],
+    defaultId: 0,
+    cancelId: 1
+  }).then((response) => {
+    if (response.response === 0) {
+      // Usuario quiere reiniciar ahora
+      log('[UPDATE] Usuario eligió reiniciar ahora');
+      autoUpdater.quitAndInstall(false, true);
+    } else {
+      // Usuario pospuso el reinicio pero la actualización se instalará al cerrar
+      log('[UPDATE] Usuario pospuso el reinicio - se instalará al cerrar');
+    }
+  });
+});
+
+// Manejo de errores
+autoUpdater.on("error", (err) => {
+  log('[UPDATE] Error en autoUpdater: ' + err.message);
+  updateAvailable = false;
+  updateDownloaded = false;
+  
+  // Notificar al renderer para ocultar el widget
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('update-error', err.message);
+    
+    dialog.showMessageBox(win, {
+      type: "error",
+      title: "Error de Actualización",
+      message: "Ocurrió un error al intentar actualizar la aplicación",
+      detail: err.message,
+      buttons: ["OK"]
+    });
+  }
+});
+
+// Función para verificar actualizaciones manualmente (puede ser llamada desde el renderer)
+ipcMain.on('check-for-updates', () => {
+  log('[UPDATE] Verificación manual de actualizaciones solicitada');
+  autoUpdater.checkForUpdates();
+});
+
+// Función para descargar actualización cuando el usuario lo decida después
+ipcMain.on('download-update-now', () => {
+  if (updateAvailable && !updateDownloaded) {
+    log('[UPDATE] Descarga manual iniciada por el usuario');
+    autoUpdater.downloadUpdate();
+  }
+});
+
+// Función para instalar actualización cuando esté descargada
+ipcMain.on('install-update-now', () => {
+  if (updateDownloaded) {
+    log('[UPDATE] Instalación manual iniciada por el usuario');
+    autoUpdater.quitAndInstall(false, true);
+  }
 });
 
 app.whenReady().then(() => {
-  // Revisar actualizaciones
-  autoUpdater.checkForUpdatesAndNotify();
+  // Revisar actualizaciones con el sistema mejorado
+  autoUpdater.checkForUpdates();
   ejecutarVerificacion(); // ✅ ahora con lógica de reinicio/cierre de logs
   console.log("Monitores disponibles:");
   mostrarMonitores();

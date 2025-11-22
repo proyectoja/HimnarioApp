@@ -151,6 +151,184 @@ if (document.readyState === 'loading') {
 }
 // ========================================
 
+// ========================================
+// 📥 SISTEMA DE ACTUALIZACIONES VISUALES
+// ========================================
+
+// Crear el contenedor de notificación de actualización (oculto inicialmente)
+const updateNotificationContainer = document.createElement('div');
+updateNotificationContainer.id = 'update-notification';
+updateNotificationContainer.style.cssText = `
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  animation: slideInRight 0.4s ease-out;
+`;
+
+const updateTitle = document.createElement('div');
+updateTitle.style.cssText = `
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+`;
+
+const updateMessage = document.createElement('div');
+updateMessage.style.cssText = `
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  line-height: 1.4;
+`;
+
+const progressBarContainer = document.createElement('div');
+progressBarContainer.style.cssText = `
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  display: none;
+`;
+
+const progressBar = document.createElement('div');
+progressBar.style.cssText = `
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.3s ease;
+`;
+progressBarContainer.appendChild(progressBar);
+
+const progressText = document.createElement('div');
+progressText.style.cssText = `
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  text-align: center;
+  display: none;
+`;
+
+updateNotificationContainer.appendChild(updateTitle);
+updateNotificationContainer.appendChild(updateMessage);
+updateNotificationContainer.appendChild(progressBarContainer);
+updateNotificationContainer.appendChild(progressText);
+document.body.appendChild(updateNotificationContainer);
+
+// Agregar animación CSS
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInRight {
+    from {
+      transform: translateX(450px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(450px);
+      opacity: 0;
+    }
+  }
+`;
+document.head.appendChild(style);
+
+// Función para mostrar notificación
+function mostrarNotificacionUpdate(titulo, mensaje, mostrarProgreso = false) {
+  updateTitle.textContent = titulo;
+  updateMessage.textContent = mensaje;
+  updateNotificationContainer.style.display = 'flex';
+  
+  if (mostrarProgreso) {
+    progressBarContainer.style.display = 'block';
+    progressText.style.display = 'block';
+  } else {
+    progressBarContainer.style.display = 'none';
+    progressText.style.display = 'none';
+  }
+}
+
+// Función para ocultar notificación
+function ocultarNotificacionUpdate() {
+  updateNotificationContainer.style.animation = 'slideOutRight 0.4s ease-out';
+  setTimeout(() => {
+    updateNotificationContainer.style.display = 'none';
+    updateNotificationContainer.style.animation = 'slideInRight 0.4s ease-out';
+  }, 400);
+}
+
+// Escuchar eventos de actualización desde el proceso principal
+if (window.electronAPI) {
+  // Cuando empieza la descarga
+  window.electronAPI.onUpdateDownloadingStarted(() => {
+    console.log('[UPDATE] Descarga de actualización iniciada');
+    mostrarNotificacionUpdate(
+      '📥 Descargando Actualización',
+      'La descarga se está realizando en segundo plano...',
+      true
+    );
+    progressBar.style.width = '0%';
+    progressText.textContent = '0% - Preparando descarga...';
+  });
+
+  // Progreso de descarga
+  window.electronAPI.onUpdateDownloadProgress((data) => {
+    console.log(`[UPDATE] Progreso: ${data.percent}%`);
+    progressBar.style.width = `${data.percent}%`;
+    progressText.textContent = `${data.percent}% - ${data.transferred}MB de ${data.total}MB (${data.speed}MB/s)`;
+  });
+
+  // Cuando la descarga se completa
+  window.electronAPI.onUpdateDownloaded(() => {
+    console.log('[UPDATE] Descarga completada');
+    progressBar.style.width = '100%';
+    progressText.textContent = '100% - ¡Descarga completada!';
+    
+    setTimeout(() => {
+      mostrarNotificacionUpdate(
+        '✅ Actualización Lista',
+        'La actualización se instalará cuando cierres la aplicación.',
+        false
+      );
+      
+      // Ocultar después de 8 segundos
+      setTimeout(ocultarNotificacionUpdate, 8000);
+    }, 1500);
+  });
+
+  // Cuando ocurre un error
+  window.electronAPI.onUpdateError((errorMessage) => {
+    console.error('[UPDATE] Error:', errorMessage);
+    
+    // Ocultar inmediatamente el widget
+    ocultarNotificacionUpdate();
+    
+    // Log del error para debugging
+    console.log('[UPDATE] Widget ocultado debido a error');
+  });
+}
+
+// ========================================
+
+
 const contenedorMonitor = document.getElementById("contenedor-monitores");
 
 //Parap pruebas

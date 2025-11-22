@@ -49,6 +49,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   appReady: () => ipcRenderer.send('app-ready'), // ← Nueva función
   onShowLogs: (callback) => ipcRenderer.on("show-logs-container", callback),
   onHideLogs: (callback) => ipcRenderer.on("hide-logs-container", callback),
+
+  // Sistema de actualizaciones
+  checkForUpdates: () => ipcRenderer.send('check-for-updates'),
+  downloadUpdateNow: () => ipcRenderer.send('download-update-now'),
+  installUpdateNow: () => ipcRenderer.send('install-update-now'),
+  onUpdateDownloadingStarted: (callback) => ipcRenderer.on('update-downloading-started', callback),
+  onUpdateDownloadProgress: (callback) => ipcRenderer.on('update-download-progress', (_, data) => callback(data)),
+  onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
+  onUpdateError: (callback) => ipcRenderer.on('update-error', (_, message) => callback(message)),
 });
 
 ipcRenderer.on("set-paths", (_, paths) => {
