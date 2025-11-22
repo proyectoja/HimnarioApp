@@ -13,7 +13,7 @@
     "release-local": "electron-builder --publish never",
     "prerelease": "npm version patch -m \"Versión %s\"",
     "postinstall": "electron-builder install-app-deps",
-    "deploy": "npm version patch --no-git-tag-version && git add . && git commit -m \"Auto bump\" || true && git push"
+    "deploy": "npm version patch --no-git-tag-version && git add . && (git commit -m \"Auto bump\" || true) && git push"
   },
   "keywords": [],
   "build": {
