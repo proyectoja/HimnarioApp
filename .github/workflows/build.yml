@@ -33,26 +33,23 @@ jobs:
       - name: Instalar dependencias
         run: npm install
 
-      - name: Incrementar versión (sin crear tag)
+      - name: Leer versión actual
         id: version_step
         shell: bash
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          npm version patch --no-git-tag-version
-
+          # npm version patch --no-git-tag-version  <-- DESACTIVADO: Evitar auto-incremento y bucles
+          
           NEW_VERSION=$(node -p "require('./package.json').version")
-
+          
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
-      - name: Commit de nueva versión
-        shell: bash
-        run: |
-          git add package.json package-lock.json || true
-          git commit -m "Bump version to $VERSION" || true
-          git push || true
+      # - name: Commit de nueva versión  <-- DESACTIVADO
+      #   shell: bash
+      #   run: |
+      #     git add package.json package-lock.json || true
+      #     git commit -m "Bump version to $VERSION" || true
+      #     git push || true
 
       - name: Build (npm run release)
         run: npm run release
