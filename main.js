@@ -24,6 +24,7 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const server = express();
 server.use(express.static(path.join(__dirname, "src")));
+server.use(express.static(path.join(app.getPath('userData'), 'src')));
 server.listen(3000, () => {
   console.log("Servidor corriendo en http://localhost:3000");
 });

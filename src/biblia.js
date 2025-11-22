@@ -30,6 +30,9 @@ async function cargarVersion() {
     const rutaJSON = `versionesBiblias/${versionSeleccionada}.json`;
     
     console.log(`[BIBLIA] Cargando versión desde: ${rutaJSON}`);
+    if (window.paths) {
+        console.log(`[BIBLIA] Ruta de descargas (userData): ${window.paths.src}`);
+    }
     
     // Cargar el archivo JSON según la versión seleccionada
     const response = await fetch(rutaJSON);
@@ -53,8 +56,10 @@ async function cargarVersion() {
       console.log('[BIBLIA] Intentando cargar RVR1960 por defecto...');
       versionSeleccionada = 'SpanishRVR1960Bible';
       const versionSelect = document.getElementById("selector-versiones");
-      versionSelect.value = versionSeleccionada;
+      if(versionSelect) versionSelect.value = versionSeleccionada;
       cargarVersion(); // Reintentar con RVR1960
+    } else {
+      listaLibros.innerHTML = '<li style="color: red; padding: 10px;">Error al cargar la Biblia. Verifique su conexión o reinicie la aplicación.</li>';
     }
   }
 }
