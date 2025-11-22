@@ -9,7 +9,7 @@
   <link rel="icon" href="iconos/iconoWindows.ico" type="image/ico">
   <title>Ventana Secundaria Reproductor Himnario PRO | PROYECTO JA</title>
 
-  
+
   <link rel="stylesheet" href="styles.css">
   <style>
     body {
@@ -299,7 +299,13 @@
           }
 
           if (key == "fontSize") {
-            tituloLibro.style[key] = estilosAux[key];
+            // Calcular tamaño reducido para el libro
+            let size = parseInt(estilosAux[key]);
+            if (!isNaN(size)) {
+              tituloLibro.style[key] = (size * 0.6) + "px"; // 60% del tamaño original
+            } else {
+              tituloLibro.style[key] = estilosAux[key]; // Fallback
+            }
           } else if (key == "fontFamily") {
             tituloLibro.style[key] = estilosAux[key];
           } else if (key == "color") {
@@ -332,8 +338,8 @@
           width: "100%",
           height: "100vh",
           allowUserInteraction: true,
-      chromeless: true,
-      preload: 'auto',
+          chromeless: true,
+          preload: 'auto',
           exitFullscreenOnEnd: false,
           disableVideoTagContextMenu: true,
           volume: 100,
@@ -341,31 +347,31 @@
           playbackNotSupportedMessage: "No se puede reproducir el contenido",
           plugins: [YoutubePlugin, YoutubePluginControl],
           //YoutubePluginControl,
-          YoutubeVars: { "languageCode": "en"},
+          YoutubeVars: { "languageCode": "en" },
           parentId: "#player-youtube"
         });
         // Escuchar cuando el video termine
-  playerYouTube.on(Clappr.Events.PLAYER_ENDED, function () {
-    ocultarReproductor();
-  });
-  playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
-    console.log("✅ Player listo, esperando 2 segundos...");
-  
-    setTimeout(() => {
-      const poster = document.querySelector('.player-poster.clickable');
-      if (poster) {
-        console.log("🎬 Simulando clic en póster tras PLAYER_READY");
-  
-        const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
-        poster.dispatchEvent(clickEvent);
-      } else {
-        console.log("⚠️ No se encontró póster, intentando play() directo");
-        playerYouTube.play();
-      }
-    }, 300);
-  });
+        playerYouTube.on(Clappr.Events.PLAYER_ENDED, function () {
+          ocultarReproductor();
+        });
+        playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
+          console.log("✅ Player listo, esperando 2 segundos...");
 
-        
+          setTimeout(() => {
+            const poster = document.querySelector('.player-poster.clickable');
+            if (poster) {
+              console.log("🎬 Simulando clic en póster tras PLAYER_READY");
+
+              const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+              poster.dispatchEvent(clickEvent);
+            } else {
+              console.log("⚠️ No se encontró póster, intentando play() directo");
+              playerYouTube.play();
+            }
+          }, 300);
+        });
+
+
 
 
         console.log("Clappr version:", Clappr.version);
@@ -433,7 +439,7 @@
           preload: 'auto',
           autoPlay: true,
           allowUserInteraction: true,
-      chromeless: true,
+          chromeless: true,
           exitFullscreenOnEnd: false,
           disableVideoTagContextMenu: true,
           volume: 100,
@@ -534,7 +540,7 @@
         preload: 'auto',
         autoPlay: true,
         allowUserInteraction: true,
-      chromeless: true,
+        chromeless: true,
         exitFullscreenOnEnd: false,
         volume: 100,
         //plugins: [MediaControl.MainPlugin],
@@ -609,12 +615,12 @@
     }
 
 
-    
+
   </script>
-<script type="text/javascript" charset="utf-8" src="clappr.js"></script>
-<script type="text/javascript" charset="utf-8" src="clappr-playback-rate.js"></script>
-<script type="text/javascript" charset="utf-8" src="clappr-youtube-playback.js"></script>
-<script type="text/javascript" charset="utf-8" src="clappr-pip-plugin.js"></script>
+  <script type="text/javascript" charset="utf-8" src="clappr.js"></script>
+  <script type="text/javascript" charset="utf-8" src="clappr-playback-rate.js"></script>
+  <script type="text/javascript" charset="utf-8" src="clappr-youtube-playback.js"></script>
+  <script type="text/javascript" charset="utf-8" src="clappr-pip-plugin.js"></script>
 </body>
 
 </html>

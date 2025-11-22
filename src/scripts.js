@@ -1814,7 +1814,8 @@ function fadeVolume(to, callback) {
   }, intervalo);
 }
 
-document.getElementById("enviar").addEventListener("click", () => {
+// Función global para enviar versículo (accesible desde biblia.js)
+function enviarVersiculo() {
   // Obtener valores de los campos
   //const fontSize = document.getElementById('fontSize');
   //const textColor = document.getElementById('textColor');
@@ -1855,7 +1856,16 @@ document.getElementById("enviar").addEventListener("click", () => {
     imagen: null,
     waterMark: waterMark
   });
-});
+}
+
+// Asignar el evento click al botón enviar (si existe)
+const btnEnviarOriginal = document.getElementById("enviar");
+if (btnEnviarOriginal) {
+  btnEnviarOriginal.addEventListener("click", enviarVersiculo);
+}
+
+// Exponer globalmente por si acaso
+window.enviarVersiculo = enviarVersiculo;
 
 //const toggleContainer = document.querySelector(".toggle-container");
 const botonBiblia = document.getElementById("botonBiblia");
@@ -4184,19 +4194,19 @@ const actualizaciones = [
     tipo: ""
   },
   {
-    fecha: "2025-11-sinfecha",
-    titulo: "En desarrollo...",
-    mensaje: "Se está trabajando en la sección de Biblia para pasar con el teclado o avanzar los versículos a petición de un usuario.",
-    version: "v1.0.sin-versión",
+    fecha: "2025-11-22",
+    titulo: "Biblia con nuevas funciones",
+    mensaje: "Ahora la Biblia y sus versiones pasan los versículos ya sea presionando sobre el mismo, con botón o con las teclas izquierda o derecha del teclado de la computadora; además, automáticamente se pasan los versículos y capítulos al siguiente capítulo con su versículo, incluso se pasa al siguiente libro. También se actualizan cada estilo personalizado en tiempo real(letras,colores,espacios,tamaños,imágenes...). Espero sea de gran bendición. Esta funcionalidad fue idea de un seguidor, gracias a -Albeiro Navarro-",
+    version: "v1.0.51",
     tipo: "Función nueva"
   },
-  //{
-    //fecha: "2025-11-21",
-    //titulo: "Himnario Adventista PRO Multiplataforma",
-    //mensaje: "Está es la primer versión beta que se estará probando para sistemas opertativos Windows, Mac, Linux y Ubuntu. Esperamos en las próximas horas tener más actualizaciones de pruebas con los usuarios de las diferentes plataformas.",
-    //version: "v1.0.33",
-    //tipo: "Mejor"
-  //},
+  {
+    fecha: "2025-11-21",
+    titulo: "Himnario Adventista PRO Multiplataforma",
+    mensaje: "Está es la primer versión beta que se estará probando para sistemas opertativos Windows, Mac, Linux y Ubuntu. Esperamos en las próximas horas tener más actualizaciones de pruebas con los usuarios de las diferentes plataformas.",
+    version: "v1.0.48",
+    tipo: "Mejor"
+  },
   {
     fecha: "2025-11-21",
     titulo: "Iconos",
