@@ -349,6 +349,14 @@ function detenerControlRemoto() {
     remoteServer.close(() => {
       console.log("📱 Control remoto detenido");
       remoteServer = null;
+      
+      // Actualizar estado global
+      global.controlRemotoEstado = {
+        activo: false,
+        url: null,
+        pin: null,
+        puerto: null
+      };
     });
   }
 }

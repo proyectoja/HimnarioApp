@@ -68,6 +68,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Control de volumen del sistema
   obtenerVolumen: () => ipcRenderer.invoke('obtener-volumen'),
   cambiarVolumen: (volumen) => ipcRenderer.invoke('cambiar-volumen', volumen),
+  
+  // 🔐 Sistema premium (para control remoto)
+  setPremiumStatus: (esPremium) => ipcRenderer.send('set-premium-status', esPremium),
+  getPremiumStatus: () => ipcRenderer.invoke('get-premium-status'),
 });
 
 // Obtener paths síncronamente

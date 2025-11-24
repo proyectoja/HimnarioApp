@@ -383,6 +383,16 @@ async function validarPremium() {
 }
 function aplicarEstadoPremium(esPremiumAux) {
   console.log("[PREMIUM] Aplicando estado premium:", esPremiumAux);
+  
+  // 🔐 Actualizar variable global
+  esPremium = esPremiumAux;
+  
+  // 🔐 Notificar al proceso principal el estado premium (para control remoto)
+  if (window.electronAPI && window.electronAPI.setPremiumStatus) {
+    window.electronAPI.setPremiumStatus(esPremiumAux);
+    console.log("[PREMIUM] Estado premium notificado al proceso principal");
+  }
+  
   if (esPremiumAux) {
     waterMark = "";
     if(botonPremium) botonPremium.style.display = "none";
@@ -4211,7 +4221,7 @@ const actualizaciones = [
   {
     fecha: "2025-11-24",
     titulo: "Control Remoto Integrado",
-    mensaje: "Ahora el control remoto se integra con el himnario!😱 Es decir, se puede controlar el himnario, también se puede controlar desde el teléfono, tablet y cualquier otro sistema operativo Android o Apple y computadora; Recuerda solo ingresar con la URL y el PIN de acceso, tanto la computadora como el dispositivo móvil tienen que estar conectados a la misma red Wifi, disponible para las personas que apoyan el ministerio siendo premium. Como hoy es mi cumpleaños, se ha lanzado con mucho cariño está funcionalidad para todas aquellas personas que apoyan mi ministerio personal PROYECTO JA, Jesús bendiga sus corazones y nos motive a seguir trabajando para su obra!🥰",
+    mensaje: "Ahora el control remoto se integra con el himnario!😱 Es decir, se puede controlar el himnario, también se puede controlar desde el teléfono, tablet y cualquier otro sistema operativo Android o Apple y computadora; Recuerda solo ingresar con la URL y el PIN de acceso, tanto la computadora como el dispositivo móvil tienen que estar conectados a la misma red Wifi, esta funcionalidad sirve mucho cuando la directora/o de cantos pasa adelante y quiere controlar el equipo por si el técnico no está, o por ejemplo, no sé escucha que dijeron en la plataforma y el técnico de equipo no escucho bien que himno se dijo, el/la que está presentando puede reproducir el himno que quiera por cualquier situación, disponible para las personas que apoyan el ministerio siendo premium. Como hoy es mi cumpleaños, se ha lanzado con mucho cariño está funcionalidad para todas aquellas personas que apoyan mi ministerio personal PROYECTO JA, Jesús bendiga sus corazones y nos motive a seguir trabajando para su obra!🥰",
     version: "v1.0.66",
     tipo: "Función Nueva"
   },

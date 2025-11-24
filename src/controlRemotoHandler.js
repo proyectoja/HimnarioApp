@@ -5,21 +5,36 @@
 // Variable global para guardar la URL del control remoto
 let controlRemotoURL = null;
 
-// Escuchar cuando el control remoto se inicia
+//Escuchar cuando el control remoto se inicia
 if (window.electronAPI && window.electronAPI.onControlRemotoIniciado) {
   console.log('✅ Listener de control remoto registrado');
   
-  window.electronAPI.onControlRemotoIniciado((data) => {
+  window.electronAPI.onControlRemotoIniciado(async (data) => {
     controlRemotoURL = data.url;
     const pin = data.pin || '------';
     
     console.log(`📱 Control Remoto iniciado en: ${data.url}`);
     console.log(`🔐 PIN: ${pin}`);
     
-    // Mostrar notificación popup
-    setTimeout(() => {
-      mostrarNotificacionControlRemoto(data.url, pin);
-    }, 3000);
+    // 🔐 Verificar si el usuario es premium antes de mostrar la notificación
+    const esPremium = await window.electronAPI.getPremiumStatus();
+    console.log('🔐 Estado premium al recibir evento:', esPremium);
+    
+    if (esPremium) {
+      // Verificar nuevamente después del delay para asegurar que sigue siendo premium
+      setTimeout(async () => {
+        const esPremiumAhora = await window.electronAPI.getPremiumStatus();
+        console.log('🔐 Estado premium al mostrar notificación:', esPremiumAhora);
+        
+        if (esPremiumAhora) {
+          mostrarNotificacionControlRemoto(data.url, pin);
+        } else {
+          console.log('⚠️ Usuario ya no es premium, notificación cancelada');
+        }
+      }, 3000);
+    } else {
+      console.log('⚠️ Control remoto disponible solo para usuarios premium');
+    }
   });
 } else {
   console.error('⚠️ window.electronAPI.onControlRemotoIniciado no disponible');
@@ -29,14 +44,29 @@ if (window.electronAPI && window.electronAPI.onControlRemotoIniciado) {
 if (window.electronAPI && window.electronAPI.obtenerEstadoControlRemoto) {
   console.log('🔍 Solicitando estado actual del control remoto...');
   
-  window.electronAPI.obtenerEstadoControlRemoto().then((estado) => {
+  window.electronAPI.obtenerEstadoControlRemoto().then(async (estado) => {
     if (estado && estado.activo) {
       console.log('✅ Control remoto ya está activo:', estado);
       
-      // Mostrar notificación
-      setTimeout(() => {
-        mostrarNotificacionControlRemoto(estado.url, estado.pin);
-      }, 3000);
+      // 🔐 Verificar si el usuario es premium antes de mostrar la notificación
+      const esPremium = await window.electronAPI.getPremiumStatus();
+      console.log('🔐 Estado premium inicial:', esPremium);
+      
+      if (esPremium) {
+        // Verificar nuevamente después del delay para asegurar que sigue siendo premium
+        setTimeout(async () => {
+          const esPremiumAhora = await window.electronAPI.getPremiumStatus();
+          console.log('🔐 Estado premium al mostrar notificación:', esPremiumAhora);
+          
+          if (esPremiumAhora) {
+            mostrarNotificacionControlRemoto(estado.url, estado.pin);
+          } else {
+            console.log('⚠️ Usuario ya no es premium, notificación cancelada');
+          }
+        }, 3000);
+      } else {
+        console.log('⚠️ Control remoto disponible solo para usuarios premium');
+      }
     } else {
       console.log('⏳ Control remoto aún no está activo, esperando evento...');
     }

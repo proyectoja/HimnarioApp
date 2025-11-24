@@ -160,6 +160,35 @@ ipcMain.on('get-paths-sync', (event) => {
   };
 });
 
+// 🔐 Variable para almacenar el estado premium del usuario
+let esPremiumGlobal = false;
+
+// 🔐 IPC para recibir el estado premium desde el renderer
+ipcMain.on('set-premium-status', (event, esPremium) => {
+  console.log(`[PREMIUM] Estado premium actualizado: ${esPremium}`);
+  esPremiumGlobal = esPremium;
+  
+  // Control remoto solo para usuarios premium
+  if (esPremium && win && !win.isDestroyed()) {
+    // Si es premium y el control remoto no está activo, iniciarlo
+    if (!global.controlRemotoEstado || !global.controlRemotoEstado.activo) {
+      console.log('[CONTROL REMOTO] Iniciando para usuario premium...');
+      iniciarControlRemoto(win);
+    }
+  } else {
+    // Si no es premium y el control remoto está activo, detenerlo
+    if (global.controlRemotoEstado && global.controlRemotoEstado.activo) {
+      console.log('[CONTROL REMOTO] Deteniendo - usuario no premium');
+      detenerControlRemoto();
+    }
+  }
+});
+
+// 🔐 IPC para verificar estado premium desde el renderer
+ipcMain.handle('get-premium-status', () => {
+  return esPremiumGlobal;
+});
+
 // Ocultar la barra de menú
 Menu.setApplicationMenu(null);
 
@@ -566,12 +595,8 @@ app.whenReady().then(() => {
   console.log("Monitores disponibles:");
   mostrarMonitores();
   
-  // 📱 Iniciar control remoto después de crear la ventana
-  setTimeout(() => {
-    if (win && !win.isDestroyed()) {
-      iniciarControlRemoto(win);
-    }
-  }, 2000);
+  // 📱 Nota: El control remoto se iniciará solo cuando el renderer confirme que el usuario es premium
+  // Ver el IPC handler 'set-premium-status' más abajo
   
   // 📡 Detectar cuando se agrega un monitor
   screen.on("display-added", (event, newDisplay) => {
