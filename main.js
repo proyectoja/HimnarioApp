@@ -13,6 +13,7 @@ const si = require("systeminformation");
 const path = require("path");
 const { setMainWindow, flushBuffer, log, enviarArchivoDescargado } = require("./logHelper");
 const { verificarCarpetasYReiniciarSiFaltan } = require("./verificarWrapper");
+const { iniciarControlRemoto, detenerControlRemoto } = require("./controlRemoto");
 let tray = null; // Bandeja del sistema
 let win = null; // Ventana principal
 const express = require("express");
@@ -50,6 +51,7 @@ function createWindow() {
       devTools: false, // Desactiva devTools
     },
   });
+  
   //win.webContents.openDevTools({ mode: 'undocked' });
 
   setMainWindow(win);
@@ -336,6 +338,54 @@ ipcMain.on("abrir-ventana", (event, monitorIndex) => {
   abrirVentanaSecundaria(monitorIndex);
 });
 
+// Control remoto - obtener estado actual
+ipcMain.handle("obtener-estado-control-remoto", async () => {
+  if (global.controlRemotoEstado && global.controlRemotoEstado.activo) {
+    console.log('📡 Solicitando estado del control remoto:', global.controlRemotoEstado);
+    return global.controlRemotoEstado;
+  }
+  console.log('⚠️ Control remoto no está activo aún');
+  return null;
+});
+
+// Control de volumen del sistema
+ipcMain.handle("obtener-volumen", async () => {
+  try {
+    const loudness = require('loudness');
+    const volumen = await loudness.getVolume();
+    return volumen;
+  } catch (error) {
+    console.error('Error al obtener volumen:', error);
+    return 100;
+  }
+});
+
+ipcMain.handle("cambiar-volumen", async (event, volumen) => {
+  try {
+    const loudness = require('loudness');
+    
+    if (volumen === 0) {
+      // Silenciar el sistema
+      await loudness.setMuted(true);
+      console.log(`🔇 Sistema silenciado`);
+    } else {
+      // Dessilenciar si estaba muted
+      const isMuted = await loudness.getMuted();
+      if (isMuted) {
+        await loudness.setMuted(false);
+      }
+      // Cambiar volumen
+      await loudness.setVolume(volumen);
+      console.log(`🔊 Volumen del sistema cambiado a: ${volumen}%`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error al cambiar volumen:', error);
+    return false;
+  }
+});
+
 //ACTUALIZACIONES DE LA APP - SISTEMA MEJORADO
 const fs = require('fs');
 const updateStatusPath = path.join(app.getPath('userData'), 'update-status.json');
@@ -515,6 +565,14 @@ app.whenReady().then(() => {
   ejecutarVerificacion(); // ✅ ahora con lógica de reinicio/cierre de logs
   console.log("Monitores disponibles:");
   mostrarMonitores();
+  
+  // 📱 Iniciar control remoto después de crear la ventana
+  setTimeout(() => {
+    if (win && !win.isDestroyed()) {
+      iniciarControlRemoto(win);
+    }
+  }, 2000);
+  
   // 📡 Detectar cuando se agrega un monitor
   screen.on("display-added", (event, newDisplay) => {
     console.log("🟢 Monitor agregado:", newDisplay.model);
@@ -538,6 +596,7 @@ ipcMain.on('renderer-error', (evt, err) => {
 });
 
 app.on("window-all-closed", () => {
+  detenerControlRemoto(); // Detener el servidor de control remoto
   app.quit();
 });
 

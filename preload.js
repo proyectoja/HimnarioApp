@@ -58,6 +58,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onUpdateDownloadProgress: (callback) => ipcRenderer.on('update-download-progress', (_, data) => callback(data)),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
   onUpdateError: (callback) => ipcRenderer.on('update-error', (_, message) => callback(message)),
+  
+  // Control remoto
+  onControlRemotoIniciado: (callback) => ipcRenderer.on('control-remoto-iniciado', (_, data) => callback(data)),
+  obtenerEstadoControlRemoto: () => ipcRenderer.invoke('obtener-estado-control-remoto'),
+  onRemoteCommand: (callback) => ipcRenderer.on('remote-command', (_, data) => callback(data)),
+  onRemoteGetEstado: (callback) => ipcRenderer.on('remote-get-estado', callback),
+  
+  // Control de volumen del sistema
+  obtenerVolumen: () => ipcRenderer.invoke('obtener-volumen'),
+  cambiarVolumen: (volumen) => ipcRenderer.invoke('cambiar-volumen', volumen),
 });
 
 // Obtener paths síncronamente

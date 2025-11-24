@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Remoto - Himnario Adventista Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .pin-section {
+            margin-bottom: 30px;
+        }
+
+        .pin-section.hidden {
+            display: none;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #8B4513;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.4);
+        }
+
+        .btn-control {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-control:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-control:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .controls-section {
+            display: none;
+        }
+
+        .controls-section.visible {
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group h3 {
+            color: #8B4513;
+            margin-bottom: 15px;
+            font-size: 18px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #D2B48C;
+        }
+
+        .volume-control {
+            background: #FFF8DC;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #D2B48C;
+        }
+
+        .volume-control label {
+            color: #8B4513;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .volume-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #D2B48C;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #8B4513;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #8B4513;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.hidden {
+            display: none;
+        }
+
+        .status {
+            background: #FFF8DC;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #8B4513;
+            border: 2px solid #D2B48C;
+        }
+
+        .search-results {
+            margin-bottom: 15px;
+            display: none;
+            max-height: 320px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #8B4513 #f0f0f0;
+        }
+
+        .search-results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-results::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .search-results::-webkit-scrollbar-thumb {
+            background: #8B4513;
+            border-radius: 4px;
+        }
+
+        .search-results.visible {
+            display: block;
+        }
+
+        .result-item {
+            padding: 15px;
+            background: #FFF8DC;
+            border: 2px solid #D2B48C;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .result-item:hover {
+            background: #F5DEB3;
+            border-color: #8B4513;
+        }
+
+        .result-item.selected {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+            border-color: #8B4513;
+        }
+
+        .result-categoria {
+            display: inline-block;
+            background: #8B4513;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .result-item.selected .result-categoria {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .result-numero {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: #8B4513;
+        }
+
+        .result-item.selected .result-numero {
+            color: white;
+        }
+
+        .result-titulo {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .result-item.selected .result-titulo {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        @media (max-width: 480px) {
+            .btn-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Control Remoto</h1>
+            <p>Himnario Adventista Pro</p>
+        </div>
+
+        <div class="content">
+            <div id="alert" class="alert hidden"></div>
+
+            <!-- Sección de PIN -->
+            <div id="pinSection" class="pin-section">
+                <div class="input-group">
+                    <label for="pinInput">🔐 Ingrese el PIN de acceso (6 dígitos)</label>
+                    <input type="password" id="pinInput" placeholder="Ingrese el PIN" maxlength="6">
+                </div>
+                <button class="btn-primary" onclick="validarPIN()">Conectar</button>
+            </div>
+
+            <!-- Sección de Controles -->
+            <div id="controlsSection" class="controls-section">
+                <div class="status">
+                    ✅ Conectado al Himnario
+                </div>
+
+                <!-- Búsqueda de Himnos -->
+                <div class="control-group">
+                    <h3>🔍 Buscar Himno</h3>
+
+                    <!-- Resultados de búsqueda (arriba del campo) -->
+                    <div id="searchResults" class="search-results"></div>
+
+                    <div class="input-group">
+                        <input type="text" id="searchInput" placeholder="Buscar por número o título..."
+                            autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Controles de Reproducción -->
+                <div class="control-group">
+                    <h3>▶️ Controles</h3>
+
+                    <!-- Control de Volumen -->
+                    <div class="volume-control">
+                        <label for="volumeSlider">
+                            <span id="volumeIcon">🔊</span> Volumen: <span id="volumeValue">100</span>%
+                        </label>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="100" class="volume-slider">
+                    </div>
+
+                    <div class="btn-grid">
+                        <button class="btn-control" id="btnReproducir" onclick="reproducirSeleccionado()" disabled>▶️
+                            Reproducir</button>
+                        <button class="btn-danger" onclick="stopReproduccion()">⏹️ Stop</button>
+                    </div>
+                </div>
+
+                <!-- Desconectar -->
+                <div class="control-group">
+                    <button class="btn-danger" onclick="desconectar()">🔓 Desconectar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let PIN_GUARDADO = null;
+        let himnoSeleccionado = null;
+        let searchTimeout = null;
+
+        function mostrarAlerta(mensaje, tipo = 'error') {
+            const alert = document.getElementById('alert');
+            alert.textContent = mensaje;
+            alert.className = `alert alert-${tipo}`;
+            setTimeout(() => {
+                alert.className = 'alert hidden';
+            }, 3000);
+        }
+
+        async function validarPIN() {
+            const pinInput = document.getElementById('pinInput');
+            const pin = pinInput.value.trim();
+
+            if (!pin) {
+                mostrarAlerta('Por favor ingrese el PIN', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/validar-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ pin })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    PIN_GUARDADO = pin;
+                    document.getElementById('pinSection').classList.add('hidden');
+                    document.getElementById('controlsSection').classList.add('visible');
+                    mostrarAlerta('✅ Conectado exitosamente', 'success');
+                } else {
+                    mostrarAlerta('❌ PIN incorrecto', 'error');
+                    pinInput.value = '';
+                }
+            } catch (error) {
+                mostrarAlerta('❌ Error de conexión', 'error');
+            }
+        }
+
+        async function enviarComando(comando, datos = {}) {
+            if (!PIN_GUARDADO) {
+                mostrarAlerta('Debe conectarse primero', 'error');
+                return false;
+            }
+
+            try {
+                const response = await fetch('/cmd', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pin: PIN_GUARDADO,
+                        command: comando,
+                        data: datos
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.ok) {
+                    mostrarAlerta('Error al enviar comando', 'error');
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                mostrarAlerta('Error de conexión', 'error');
+                return false;
+            }
+        }
+
+        // Control de volumen - Actualización visual en tiempo real
+        document.getElementById('volumeSlider').addEventListener('input', function (e) {
+            const volumen = e.target.value;
+            document.getElementById('volumeValue').textContent = volumen;
+
+            // Cambiar icono según volumen
+            const icon = document.getElementById('volumeIcon');
+            if (volumen == 0) {
+                icon.textContent = '🔇';
+            } else if (volumen < 50) {
+                icon.textContent = '🔉';
+            } else {
+                icon.textContent = '🔊';
+            }
+        });
+
+        // Enviar comando SOLO cuando se suelta el slider
+        document.getElementById('volumeSlider').addEventListener('change', function (e) {
+            const volumen = e.target.value;
+            console.log(`📤 Enviando comando de volumen: ${volumen}%`);
+            enviarComando('cambiar-volumen', { volumen: parseInt(volumen) });
+        });
+
+        // Búsqueda en tiempo real
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+
+            if (query.length < 1) {
+                document.getElementById('searchResults').classList.remove('visible');
+                document.getElementById('searchResults').innerHTML = '';
+                himnoSeleccionado = null;
+                document.getElementById('btnReproducir').disabled = true;
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                await buscarHimnos(query);
+            }, 300);
+        });
+
+        async function buscarHimnos(query) {
+            if (!PIN_GUARDADO) return;
+
+            try {
+                const response = await fetch('/buscar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pin: PIN_GUARDADO,
+                        query: query
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.ok && data.resultados) {
+                    mostrarResultados(data.resultados);
+                }
+            } catch (error) {
+                console.error('Error en búsqueda:', error);
+            }
+        }
+
+        function mostrarResultados(resultados) {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+
+            if (resultados.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results">❌ No se encontraron resultados</div>';
+                resultsContainer.classList.add('visible');
+                himnoSeleccionado = null;
+                document.getElementById('btnReproducir').disabled = true;
+                return;
+            }
+
+            // Mostrar todos los resultados (el servidor limita a 20)
+            resultados.forEach((himno, index) => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+
+                const categoriaHTML = himno.categoria ?
+                    `<div class="result-categoria">${himno.categoria}</div>` : '';
+
+                item.innerHTML = `
+                    ${categoriaHTML}
+                    <div class="result-numero">#${himno.numero}</div>
+                    <div class="result-titulo">${himno.titulo || 'Sin título'}</div>
+                `;
+
+                item.onclick = () => seleccionarHimno(himno, item);
+                resultsContainer.appendChild(item);
+            });
+
+            resultsContainer.classList.add('visible');
+        }
+
+        function seleccionarHimno(himno, elemento) {
+            // Quitar selección de todos
+            document.querySelectorAll('.result-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // Seleccionar el clickeado
+            elemento.classList.add('selected');
+
+            // Guardar himno seleccionado
+            himnoSeleccionado = himno;
+
+            // Activar botón de reproducir
+            document.getElementById('btnReproducir').disabled = false;
+
+            console.log('Himno seleccionado:', himnoSeleccionado);
+        }
+
+        async function reproducirSeleccionado() {
+            if (!himnoSeleccionado) {
+                mostrarAlerta('❌ Seleccione un himno de la lista', 'error');
+                return;
+            }
+
+            const exito = await enviarComando('reproducir-himno-numero', {
+                numero: parseInt(himnoSeleccionado.numero),
+                categoria: himnoSeleccionado.categoria
+            });
+
+            if (exito) {
+                mostrarAlerta(`▶️ Reproduciendo: ${himnoSeleccionado.titulo}`, 'success');
+            }
+        }
+
+        async function stopReproduccion() {
+            await enviarComando('stop-reproduccion');
+            mostrarAlerta('⏹️ Detenido', 'success');
+        }
+
+        function desconectar() {
+            PIN_GUARDADO = null;
+            himnoSeleccionado = null;
+            document.getElementById('pinSection').classList.remove('hidden');
+            document.getElementById('controlsSection').classList.remove('visible');
+            document.getElementById('pinInput').value = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').classList.remove('visible');
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('btnReproducir').disabled = true;
+            mostrarAlerta('🔓 Desconectado', 'success');
+        }
+
+        // Permitir enviar con Enter
+        document.getElementById('pinInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validarPIN();
+        });
+
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && himnoSeleccionado) reproducirSeleccionado();
+        });
+    </script>
+</body>
+
+</html>

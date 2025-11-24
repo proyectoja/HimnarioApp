@@ -1,6 +1,6 @@
 {
   "name": "himnarioadventistapro",
-  "version": "1.0.64",
+  "version": "1.0.65",
   "description": "Himnario Adventista optimizado y fácil de usar, creado por PROYECTO JA",
   "author": "PROYECTO JA - Kendall Torres <kendall.torres.17@gmail.com>",
   "main": "main.js",
@@ -55,6 +55,8 @@
       "!src/videosHimnosNacionales/**",
       "!src/videosHimnosPianoPista/**",
       "!src/versionesBiblias/**",
+      "controlRemoto.js",
+      "control-remoto.html",
       "downloader.js",
       "installer.nsh",
       "log.html",
@@ -140,10 +142,11 @@
     "adm-zip": "^0.5.16",
     "axios": "^1.13.2",
     "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
     "express": "^5.1.0",
     "fs-extra": "^11.3.2",
+    "loudness": "^0.4.2",
     "node-fetch": "^3.3.2",
-    "systeminformation": "^5.27.11",
-    "electron-updater": "^6.6.2"
+    "systeminformation": "^5.27.11"
   }
 }
