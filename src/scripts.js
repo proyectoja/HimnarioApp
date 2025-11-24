@@ -4209,11 +4209,11 @@ const actualizaciones = [
     tipo: ""
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: ""
+    fecha: "2025-11-24",
+    titulo: "Control Remoto Integrado",
+    mensaje: "Ahora el control remoto se integra con el himnario!😱 Es decir, se puede controlar el himnario, también se puede controlar desde el teléfono, tablet y cualquier otro sistema operativo Android o Apple y computadora; Recuerda solo ingresar con la URL y el PIN de acceso, tanto la computadora como el dispositivo móvil tienen que estar conectados a la misma red Wifi, disponible para las personas que apoyan el ministerio siendo premium. Como hoy es mi cumpleaños, se ha lanzado con mucho cariño está funcionalidad para todas aquellas personas que apoyan mi ministerio personal PROYECTO JA, Jesús bendiga sus corazones y nos motive a seguir trabajando para su obra!🥰",
+    version: "v1.0.66",
+    tipo: "Función Nueva"
   },
   {
     fecha: "2025-11-22",
