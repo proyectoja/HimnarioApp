@@ -4222,7 +4222,7 @@ const actualizaciones = [
     fecha: "2025-11-24",
     titulo: "Control Remoto Integrado",
     mensaje: "Ahora el control remoto se integra con el himnario!😱 Es decir, se puede controlar el himnario, también se puede controlar desde el teléfono, tablet y cualquier otro sistema operativo Android o Apple y computadora; Recuerda solo ingresar con la URL y el PIN de acceso, tanto la computadora como el dispositivo móvil tienen que estar conectados a la misma red Wifi, esta funcionalidad sirve mucho cuando la directora/o de cantos pasa adelante y quiere controlar el equipo por si el técnico no está, o por ejemplo, no sé escucha que dijeron en la plataforma y el técnico de equipo no escucho bien que himno se dijo, el/la que está presentando puede reproducir el himno que quiera por cualquier situación, disponible para las personas que apoyan el ministerio siendo premium. Como hoy es mi cumpleaños, se ha lanzado con mucho cariño está funcionalidad para todas aquellas personas que apoyan mi ministerio personal PROYECTO JA, Jesús bendiga sus corazones y nos motive a seguir trabajando para su obra!🥰",
-    version: "v1.0.66",
+    version: "v1.0.69",
     tipo: "Función Nueva"
   },
   {
