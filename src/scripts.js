@@ -3311,7 +3311,7 @@ function enviarDatosASecundaria() {
 
 //CONTADOR DE VISTAS DEL HIMNARIO
 const urlBase =
-  "https://script.google.com/macros/s/AKfycbwxhR2Yqk5DlDWt5aUeNTSzASSaXB50At2Q5STaH4NITGfFYefICIb9o8CNbwuk0WiCYA/exec";
+  "https://script.google.com/macros/s/AKfycby9UwCIJf0t18UkXWKYH4zu2C4xV3AHbKlGon3RGEk3icHpBeCbyYMyRTlQV3vbyXzfbQ/exec";
 
 const IDs = {
   vistas: "himnario_adventista_pro",
