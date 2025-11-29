@@ -10,11 +10,10 @@ let waterMark = "";
 let modo = "live"; // o "sandbox"
 //modo = "sandbox";
 
-
 //VISTA PREVIA EN CONTENEDOR DE LOGS PARA LOS ARCHIVOS QUE SE ESTÁN DESCARGANDO
 if (window.electronAPI && window.electronAPI.onLog) {
-  window.electronAPI.onLog(msg => {
-    const pre = document.getElementById('logs');
+  window.electronAPI.onLog((msg) => {
+    const pre = document.getElementById("logs");
     if (pre) {
       // agregar nueva línea
       pre.textContent += msg + "\n";
@@ -29,14 +28,14 @@ if (window.electronAPI && window.electronAPI.onLog) {
       }
 
       // autoscroll
-      const container = document.getElementById('contenedor-logs');
+      const container = document.getElementById("contenedor-logs");
       if (container) {
         container.scrollTop = container.scrollHeight;
       }
     }
   });
   // Mensaje de prueba inicial
-  const pre = document.getElementById('logs');
+  const pre = document.getElementById("logs");
   if (pre) pre.textContent = "--- Sistema de logs listo ---\n";
 
   // Notificar al main que estamos listos para recibir logs
@@ -46,38 +45,40 @@ if (window.electronAPI && window.electronAPI.onLog) {
 
   if (window.electronAPI.onShowLogs) {
     window.electronAPI.onShowLogs(() => {
-      const container = document.getElementById('contenedor-logs');
+      const container = document.getElementById("contenedor-logs");
       if (container) {
-        container.style.display = 'flex';
-        document.body.classList.add('logs-visible');
+        container.style.display = "flex";
+        document.body.classList.add("logs-visible");
       }
     });
   }
 
   if (window.electronAPI.onHideLogs) {
     window.electronAPI.onHideLogs(() => {
-      const container = document.getElementById('contenedor-logs');
+      const container = document.getElementById("contenedor-logs");
       if (container) {
-        container.style.display = 'none';
-        document.body.classList.remove('logs-visible');
-        
+        container.style.display = "none";
+        document.body.classList.remove("logs-visible");
+
         // Restaurar imágenes originales
-        const images = document.querySelectorAll('.video-container img');
-        images.forEach(img => {
+        const images = document.querySelectorAll(".video-container img");
+        images.forEach((img) => {
           if (img.dataset.originalSrc) {
             img.src = img.dataset.originalSrc;
           }
         });
       }
-      
+
       // Ejecutar mostrarCategoria('todos') cuando todas las descargas hayan terminado
-      console.log('Todas las descargas completadas - Actualizando categoría todos');
-      if (typeof mostrarCategoria === 'function') {
-        mostrarCategoria('todos');
+      console.log(
+        "Todas las descargas completadas - Actualizando categoría todos"
+      );
+      if (typeof mostrarCategoria === "function") {
+        mostrarCategoria("todos");
       }
     });
   }
-  console.error('[ERROR] preload.js no inyectado');
+  console.error("[ERROR] preload.js no inyectado");
 }
 
 // ========================================
@@ -87,64 +88,61 @@ let appInicializada = false;
 
 async function inicializarAplicacion() {
   if (appInicializada) return;
-  
-  console.log('[INIT] 🔄 Iniciando carga de la aplicación...');
-  
+
+  console.log("[INIT] 🔄 Iniciando carga de la aplicación...");
+
   try {
     // 1️⃣ Validar premium
-    console.log('[INIT] ✓ Validando premium...');
+    console.log("[INIT] ✓ Validando premium...");
     await validarPremium();
-    
+
     // 2️⃣ Cargar himnos personalizados (si la función existe)
-    console.log('[INIT] ✓ Cargando himnos...');
-    if (typeof cargarHimnos === 'function') {
+    console.log("[INIT] ✓ Cargando himnos...");
+    if (typeof cargarHimnos === "function") {
       await cargarHimnos();
     }
-    
+
     // 3️⃣ Contador de vistas
-    console.log('[INIT] ✓ Inicializando contador...');
-    if (typeof contadorDeVistas === 'function') {
+    console.log("[INIT] ✓ Inicializando contador...");
+    if (typeof contadorDeVistas === "function") {
       await contadorDeVistas();
     }
-    
+
     // 4️⃣ Pequeña espera para asegurar renderizado
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // 5️⃣ Ocultar loader
-    console.log('[INIT] ✓ Ocultando loader...');
-    const loader = document.getElementById('contenedorLoader');
+    console.log("[INIT] ✓ Ocultando loader...");
+    const loader = document.getElementById("contenedorLoader");
     if (loader) {
-      loader.style.display = 'none';
+      loader.style.display = "none";
     }
-    
+
     // 6️⃣ Mostrar introducción
     //console.log('[INIT] ✓ Mostrando introducción...');
     //mostrarIntro();
-    
+
     // 7️⃣ Notificar que la app está lista para mostrarse
-    console.log('[INIT] ✅ Aplicación completamente cargada');
+    console.log("[INIT] ✅ Aplicación completamente cargada");
     if (window.electronAPI && window.electronAPI.appReady) {
       window.electronAPI.appReady();
     }
-    
+
     appInicializada = true;
-    
   } catch (error) {
-    console.error('[INIT] ❌ Error durante la inicialización:', error);
+    console.error("[INIT] ❌ Error durante la inicialización:", error);
     // Aún así mostrar la ventana en caso de error
-    const loader = document.getElementById('contenedorLoader');
-    if (loader) loader.style.display = 'none';
+    const loader = document.getElementById("contenedorLoader");
+    if (loader) loader.style.display = "none";
     if (window.electronAPI && window.electronAPI.appReady) {
       window.electronAPI.appReady();
     }
   }
 }
 
-
-
 // Iniciar cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', inicializarAplicacion);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", inicializarAplicacion);
 } else {
   // DOM ya está listo
   inicializarAplicacion();
@@ -156,8 +154,8 @@ if (document.readyState === 'loading') {
 // ========================================
 
 // Crear el contenedor de notificación de actualización (oculto inicialmente)
-const updateNotificationContainer = document.createElement('div');
-updateNotificationContainer.id = 'update-notification';
+const updateNotificationContainer = document.createElement("div");
+updateNotificationContainer.id = "update-notification";
 updateNotificationContainer.style.cssText = `
   position: fixed;
   bottom: 20px;
@@ -176,7 +174,7 @@ updateNotificationContainer.style.cssText = `
   animation: slideInRight 0.4s ease-out;
 `;
 
-const updateTitle = document.createElement('div');
+const updateTitle = document.createElement("div");
 updateTitle.style.cssText = `
   color: #fff;
   font-size: 16px;
@@ -184,14 +182,14 @@ updateTitle.style.cssText = `
   margin-bottom: 8px;
 `;
 
-const updateMessage = document.createElement('div');
+const updateMessage = document.createElement("div");
 updateMessage.style.cssText = `
   color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
   line-height: 1.4;
 `;
 
-const progressBarContainer = document.createElement('div');
+const progressBarContainer = document.createElement("div");
 progressBarContainer.style.cssText = `
   width: 100%;
   height: 8px;
@@ -201,7 +199,7 @@ progressBarContainer.style.cssText = `
   display: none;
 `;
 
-const progressBar = document.createElement('div');
+const progressBar = document.createElement("div");
 progressBar.style.cssText = `
   height: 100%;
   background: linear-gradient(90deg, #4CAF50, #8BC34A);
@@ -211,7 +209,7 @@ progressBar.style.cssText = `
 `;
 progressBarContainer.appendChild(progressBar);
 
-const progressText = document.createElement('div');
+const progressText = document.createElement("div");
 progressText.style.cssText = `
   color: rgba(255, 255, 255, 0.8);
   font-size: 11px;
@@ -226,7 +224,7 @@ updateNotificationContainer.appendChild(progressText);
 document.body.appendChild(updateNotificationContainer);
 
 // Agregar animación CSS
-const style = document.createElement('style');
+const style = document.createElement("style");
 style.textContent = `
   @keyframes slideInRight {
     from {
@@ -255,23 +253,23 @@ document.head.appendChild(style);
 function mostrarNotificacionUpdate(titulo, mensaje, mostrarProgreso = false) {
   updateTitle.textContent = titulo;
   updateMessage.textContent = mensaje;
-  updateNotificationContainer.style.display = 'flex';
-  
+  updateNotificationContainer.style.display = "flex";
+
   if (mostrarProgreso) {
-    progressBarContainer.style.display = 'block';
-    progressText.style.display = 'block';
+    progressBarContainer.style.display = "block";
+    progressText.style.display = "block";
   } else {
-    progressBarContainer.style.display = 'none';
-    progressText.style.display = 'none';
+    progressBarContainer.style.display = "none";
+    progressText.style.display = "none";
   }
 }
 
 // Función para ocultar notificación
 function ocultarNotificacionUpdate() {
-  updateNotificationContainer.style.animation = 'slideOutRight 0.4s ease-out';
+  updateNotificationContainer.style.animation = "slideOutRight 0.4s ease-out";
   setTimeout(() => {
-    updateNotificationContainer.style.display = 'none';
-    updateNotificationContainer.style.animation = 'slideInRight 0.4s ease-out';
+    updateNotificationContainer.style.display = "none";
+    updateNotificationContainer.style.animation = "slideInRight 0.4s ease-out";
   }, 400);
 }
 
@@ -279,14 +277,14 @@ function ocultarNotificacionUpdate() {
 if (window.electronAPI) {
   // Cuando empieza la descarga
   window.electronAPI.onUpdateDownloadingStarted(() => {
-    console.log('[UPDATE] Descarga de actualización iniciada');
+    console.log("[UPDATE] Descarga de actualización iniciada");
     mostrarNotificacionUpdate(
-      '📥 Descargando Actualización',
-      'La descarga se está realizando en segundo plano...',
+      "📥 Descargando Actualización",
+      "La descarga se está realizando en segundo plano...",
       true
     );
-    progressBar.style.width = '0%';
-    progressText.textContent = '0% - Preparando descarga...';
+    progressBar.style.width = "0%";
+    progressText.textContent = "0% - Preparando descarga...";
   });
 
   // Progreso de descarga
@@ -298,17 +296,17 @@ if (window.electronAPI) {
 
   // Cuando la descarga se completa
   window.electronAPI.onUpdateDownloaded(() => {
-    console.log('[UPDATE] Descarga completada');
-    progressBar.style.width = '100%';
-    progressText.textContent = '100% - ¡Descarga completada!';
-    
+    console.log("[UPDATE] Descarga completada");
+    progressBar.style.width = "100%";
+    progressText.textContent = "100% - ¡Descarga completada!";
+
     setTimeout(() => {
       mostrarNotificacionUpdate(
-        '✅ Actualización Lista',
-        'La actualización se instalará cuando cierres la aplicación.',
+        "✅ Actualización Lista",
+        "La actualización se instalará cuando cierres la aplicación.",
         false
       );
-      
+
       // Ocultar después de 8 segundos
       setTimeout(ocultarNotificacionUpdate, 8000);
     }, 1500);
@@ -316,18 +314,17 @@ if (window.electronAPI) {
 
   // Cuando ocurre un error
   window.electronAPI.onUpdateError((errorMessage) => {
-    console.error('[UPDATE] Error:', errorMessage);
-    
+    console.error("[UPDATE] Error:", errorMessage);
+
     // Ocultar inmediatamente el widget
     ocultarNotificacionUpdate();
-    
+
     // Log del error para debugging
-    console.log('[UPDATE] Widget ocultado debido a error');
+    console.log("[UPDATE] Widget ocultado debido a error");
   });
 }
 
 // ========================================
-
 
 const contenedorMonitor = document.getElementById("contenedor-monitores");
 
@@ -370,6 +367,7 @@ async function validarPremium() {
 
     if (data.premium === true) {
       localStorage.setItem("premium", "true");
+      localStorage.setItem("lastValidationDate", Date.now().toString());
       aplicarEstadoPremium(true);
     } else {
       localStorage.setItem("premium", "false");
@@ -377,37 +375,54 @@ async function validarPremium() {
     }
   } catch (err) {
     console.error("❌ Error al verificar premium:", err);
+
+    // Verificar periodo de gracia (7 días)
+    const lastValidation = localStorage.getItem("lastValidationDate");
+    if (lastValidation && subscriptionId) {
+      const daysDiff =
+        (Date.now() - parseInt(lastValidation)) / (1000 * 60 * 60 * 24);
+      if (daysDiff < 7) {
+        alert(
+          `[PREMIUM] Modo offline (Sin conexión a internet): Periodo de gracia activo (${
+            7 - Math.floor(daysDiff)
+          } días restantes.)`
+        );
+        aplicarEstadoPremium(true);
+        return;
+      }
+    }
+
     localStorage.setItem("premium", "false");
     aplicarEstadoPremium(false);
   }
 }
 function aplicarEstadoPremium(esPremiumAux) {
   console.log("[PREMIUM] Aplicando estado premium:", esPremiumAux);
-  
+
   // 🔐 Actualizar variable global
   esPremium = esPremiumAux;
-  
+
   // 🔐 Notificar al proceso principal el estado premium (para control remoto)
   if (window.electronAPI && window.electronAPI.setPremiumStatus) {
     window.electronAPI.setPremiumStatus(esPremiumAux);
     console.log("[PREMIUM] Estado premium notificado al proceso principal");
   }
-  
+
   if (esPremiumAux) {
     waterMark = "";
-    if(botonPremium) botonPremium.style.display = "none";
-    if(contenedorPremium) contenedorPremium.style.display = "none";
+    if (botonPremium) botonPremium.style.display = "none";
+    if (contenedorPremium) contenedorPremium.style.display = "none";
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "flex";
     });
-    if(contenedorMonitor) contenedorMonitor.style.display = "flex";
+    if (contenedorMonitor) contenedorMonitor.style.display = "flex";
   } else {
     waterMark = "imagenes/logo-proyectoja.png";
-    if(botonPremium) botonPremium.style.display = "flex";
+    if (botonPremium) botonPremium.style.display = "flex";
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "none";
     });
-    if(contenedorMonitor) contenedorMonitor.style.display = "none";
+    if (contenedorMonitor) contenedorMonitor.style.display = "none";
   }
 }
 
@@ -415,48 +430,48 @@ function aplicarEstadoPremium(esPremiumAux) {
 const botonPremium = document.getElementById("botonPremium");
 const contenedorPremium = document.getElementById("paypal-button-container");
 async function validarCodigos() {
-  const codigoIngresado = document.getElementById('codigoUnico').value.trim();
-  
+  const codigoIngresado = document.getElementById("codigoUnico").value.trim();
+
   // Si el campo está vacío pero hay un subscriptionId almacenado, validar ese
   const subscriptionIdAlmacenado = localStorage.getItem("paypalSubscriptionId");
-  
+
   let codigoAValidar = codigoIngresado;
-  
+
   if (!codigoIngresado && subscriptionIdAlmacenado) {
     codigoAValidar = subscriptionIdAlmacenado;
   }
-  
+
   if (!codigoAValidar) {
     alert("⚠️ Ingresa un código primero.");
     return;
   }
-  
+
   try {
     // Validar en el servidor
     const res = await fetch(
       `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${codigoAValidar}&modo=${modo}`
     );
-    
+
     if (!res.ok) {
-      throw new Error('Error al conectar con el servidor');
+      throw new Error("Error al conectar con el servidor");
     }
-    
+
     const data = await res.json();
 
     if (data.premium === true) {
       alert("✅ Código válido, acceso premium activado");
-      
+
       // Guardar el subscriptionId si es válido
       if (codigoIngresado) {
         localStorage.setItem("paypalSubscriptionId", codigoIngresado);
       }
-      
+
       localStorage.setItem("premium", "true");
+      localStorage.setItem("lastValidationDate", Date.now().toString());
       aplicarEstadoPremium(true);
-      
     } else {
       alert("❌ Código inválido o expirado.");
-      
+
       // Si estamos validando el código almacenado y no es válido, limpiarlo
       if (!codigoIngresado && subscriptionIdAlmacenado) {
         localStorage.removeItem("paypalSubscriptionId");
@@ -482,7 +497,7 @@ botonPremium.addEventListener("click", function () {
     contenedorPremium.textContent = "";
     validarPremium();
     const subscriptionIdDos = localStorage.getItem("paypalSubscriptionId");
-    
+
     // Aplicar estilos mejorados al contenedor principal
     // Aplicar estilos mejorados al contenedor principal
     contenedorPremium.style.display = "flex";
@@ -526,7 +541,8 @@ botonPremium.addEventListener("click", function () {
     const columnaGratis = document.createElement("div");
     columnaGratis.style.flex = "1";
     columnaGratis.style.minWidth = "180px";
-    columnaGratis.style.background = "linear-gradient(135deg, #F5F5DC 0%, #DEB887 100%)";
+    columnaGratis.style.background =
+      "linear-gradient(135deg, #F5F5DC 0%, #DEB887 100%)";
     columnaGratis.style.padding = "12px";
     columnaGratis.style.borderRadius = "8px";
     columnaGratis.style.textAlign = "center";
@@ -558,10 +574,13 @@ botonPremium.addEventListener("click", function () {
         <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Listas de reproducción
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Explorador de Archivos
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
         <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Con marca de agua
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> YouTube limitado
+        <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> YouTube limitado
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
         <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Proyección estándar
@@ -582,7 +601,8 @@ botonPremium.addEventListener("click", function () {
     const columnaPremium = document.createElement("div");
     columnaPremium.style.flex = "1";
     columnaPremium.style.minWidth = "180px";
-    columnaPremium.style.background = "linear-gradient(135deg, #D2691E 0%, #CD853F 100%)";
+    columnaPremium.style.background =
+      "linear-gradient(135deg, #D2691E 0%, #CD853F 100%)";
     columnaPremium.style.padding = "12px";
     columnaPremium.style.borderRadius = "8px";
     columnaPremium.style.textAlign = "center";
@@ -607,6 +627,9 @@ botonPremium.addEventListener("click", function () {
     listaPremium.style.fontSize = "14px";
     listaPremium.innerHTML = `
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Todo lo gratis y:
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
         <span style="color: #FFD700; position: absolute; left: 0;">✅</span> <strong>Sin marca de agua</strong>
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
@@ -625,10 +648,10 @@ botonPremium.addEventListener("click", function () {
         <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Himnos personalizables
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Soporte prioritario
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Control Remoto Celular
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Actualizaciones
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Soporte prioritario y actualizaciones.
       </li>
     `;
 
@@ -664,7 +687,9 @@ botonPremium.addEventListener("click", function () {
     const codigoUnico = document.createElement("input");
     codigoUnico.id = "codigoUnico";
     codigoUnico.type = "text";
-    codigoUnico.placeholder = subscriptionIdDos ? subscriptionIdDos : "Ingresa tu código premium...";
+    codigoUnico.placeholder = subscriptionIdDos
+      ? subscriptionIdDos
+      : "Ingresa tu código premium...";
     codigoUnico.style.width = "100%";
     codigoUnico.style.maxWidth = "250px";
     codigoUnico.style.padding = "10px 12px";
@@ -676,12 +701,12 @@ botonPremium.addEventListener("click", function () {
     codigoUnico.style.color = "#8B4513";
     codigoUnico.style.transition = "all 0.3s ease";
 
-    codigoUnico.addEventListener("focus", function() {
+    codigoUnico.addEventListener("focus", function () {
       this.style.borderColor = "#8B4513";
       this.style.boxShadow = "0 0 8px rgba(139, 69, 19, 0.3)";
     });
 
-    codigoUnico.addEventListener("blur", function() {
+    codigoUnico.addEventListener("blur", function () {
       this.style.borderColor = "#D2B48C";
       this.style.boxShadow = "none";
     });
@@ -700,12 +725,12 @@ botonPremium.addEventListener("click", function () {
     botonValidar.style.boxShadow = "0 3px 10px rgba(139, 69, 19, 0.3)";
     botonValidar.style.minWidth = "150px";
 
-    botonValidar.addEventListener("mouseover", function() {
+    botonValidar.addEventListener("mouseover", function () {
       this.style.transform = "translateY(-1px)";
       this.style.boxShadow = "0 5px 15px rgba(139, 69, 19, 0.4)";
     });
 
-    botonValidar.addEventListener("mouseout", function() {
+    botonValidar.addEventListener("mouseout", function () {
       this.style.transform = "translateY(0)";
       this.style.boxShadow = "0 3px 10px rgba(139, 69, 19, 0.3)";
     });
@@ -728,7 +753,8 @@ botonPremium.addEventListener("click", function () {
 
     const textoSeparador = document.createElement("span");
     textoSeparador.textContent = "O compra tu licencia por $1,99";
-    textoSeparador.style.background = "linear-gradient(135deg, #8B4513 0%, #A0522D 100%)";
+    textoSeparador.style.background =
+      "linear-gradient(135deg, #8B4513 0%, #A0522D 100%)";
     textoSeparador.style.color = "#FFF8DC";
     textoSeparador.style.padding = "6px 15px";
     textoSeparador.style.borderRadius = "15px";
@@ -749,7 +775,8 @@ botonPremium.addEventListener("click", function () {
     mensajeMotivacional.style.border = "1px solid rgba(210, 105, 30, 0.3)";
 
     const textoMotivacional = document.createElement("p");
-    textoMotivacional.innerHTML = "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
+    textoMotivacional.innerHTML =
+      "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
     textoMotivacional.style.color = "#FFF8DC";
     textoMotivacional.style.margin = "0";
     textoMotivacional.style.fontSize = "14px";
@@ -792,7 +819,8 @@ botonPremium.addEventListener("click", function () {
     mensajeMonto.style.border = "1px solid rgba(210, 105, 30, 0.4)";
 
     const textoMonto = document.createElement("p");
-    textoMonto.innerHTML = "💡 <strong>Nota:</strong> El monto puede variar según actualizaciones futuras del servicio. Los suscriptores actuales mantienen su tarifa.";
+    textoMonto.innerHTML =
+      "💡 <strong>Nota:</strong> El monto puede variar según actualizaciones futuras del servicio. Los suscriptores actuales mantienen su tarifa.";
     textoMonto.style.color = "#FFF8DC";
     textoMonto.style.margin = "0";
     textoMonto.style.fontSize = "10px";
@@ -809,17 +837,24 @@ botonPremium.addEventListener("click", function () {
     // Inicializar PayPal después de un pequeño delay para asegurar que el DOM esté listo
     setTimeout(() => {
       console.log("Intentando renderizar botón de PayPal...");
-      const containerInner = document.getElementById("paypal-button-container-inner");
+      const containerInner = document.getElementById(
+        "paypal-button-container-inner"
+      );
       if (!containerInner) {
-          console.error("Error: No se encontró el contenedor interno para el botón de PayPal");
-          return;
+        console.error(
+          "Error: No se encontró el contenedor interno para el botón de PayPal"
+        );
+        return;
       }
       console.log("Contenedor interno encontrado. Limpiando y renderizando...");
       paypalContainer.innerHTML = ""; // Limpiar texto temporal
-      
+
       if (!window.paypal) {
-        console.error("Error: El objeto 'paypal' no está definido. El SDK no se cargó correctamente.");
-        paypalContainer.innerHTML = "<p style='color:red; text-align:center;'>Error: PayPal SDK no cargado.<br>Verifique su conexión a internet.</p>";
+        console.error(
+          "Error: El objeto 'paypal' no está definido. El SDK no se cargó correctamente."
+        );
+        paypalContainer.innerHTML =
+          "<p style='color:red; text-align:center;'>Error: PayPal SDK no cargado.<br>Verifique su conexión a internet.</p>";
         return;
       }
 
@@ -832,7 +867,7 @@ botonPremium.addEventListener("click", function () {
               shape: "rect",
               label: "subscribe",
               height: 40,
-              tagline: false
+              tagline: false,
             },
             createSubscription: function (data, actions) {
               return actions.subscription.create({
@@ -841,10 +876,13 @@ botonPremium.addEventListener("click", function () {
             },
             onApprove: function (data, actions) {
               const subscriptionId = data.subscriptionID;
-              alert("🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium.");
+              alert(
+                "🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium."
+              );
 
               localStorage.setItem("paypalSubscriptionId", subscriptionId);
               localStorage.setItem("premium", "true");
+              localStorage.setItem("lastValidationDate", Date.now().toString());
 
               location.reload();
             },
@@ -864,12 +902,10 @@ botonPremium.addEventListener("click", function () {
         paypalContainer.innerHTML = `<p style='color:red; text-align:center;'>Error al iniciar PayPal:<br>${error.message}</p>`;
       }
     }, 500);
-
   } else {
     contenedorPremium.style.display = "none";
   }
 });
-
 
 const totalHimnos = 614;
 // Referencia al contenedor principal del himnario
@@ -888,7 +924,6 @@ let todosLosMusicaParaOrarDeFondoLista = [];
 let todosHimnosPianoPista = [];
 let todosLosHimnosInfantiles = [];
 let todosLosHimnosAntiguos = [];
-
 
 // Función para crear los contenedores de himnos
 function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
@@ -930,7 +965,7 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
         } catch (err) {
           console.error("Error cargando poster:", err);
         }
-        
+
         // Crear el reproductor Clappr
         player = new Clappr.Player({
           source: videoPath,
@@ -982,7 +1017,6 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
         let libroAux = "";
         let estilosAux = {};
         if (botonFondo == false) {
-          
           /*
           ventanaSecundaria(
             videoPath,
@@ -1005,12 +1039,11 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
             lista: null,
             fondoBody: null,
             imagen: null,
-            waterMark: waterMark
+            waterMark: waterMark,
           });
-          
         } else {
           let fondoBody = imagePath;
-          
+
           enviarDatos({
             videoPath: null,
             imagePath: null,
@@ -1020,16 +1053,14 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
             lista: null,
             fondoBody: fondoBody,
             imagen: null,
-            waterMark: waterMark
+            waterMark: waterMark,
           });
-          
         }
       } else {
         let versiculoAux = "";
         let libroAux = "";
         let estilosAux = {};
         if (botonFondo == false) {
-          
           enviarDatos({
             videoPath: videoPath,
             imagePath: imagePath,
@@ -1039,12 +1070,11 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
             lista: lista,
             fondoBody: null,
             imagen: null,
-            waterMark: waterMark
+            waterMark: waterMark,
           });
-          
         } else {
           let fondoBody = imagePath;
-          
+
           enviarDatos({
             videoPath: null,
             imagePath: null,
@@ -1054,9 +1084,8 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
             lista: null,
             fondoBody: fondoBody,
             imagen: null,
-            waterMark: waterMark
+            waterMark: waterMark,
           });
-          
         }
       }
     }
@@ -1181,13 +1210,13 @@ function cargarReproductorAleatorio(lista) {
 async function cargarHimnosEnLotes(inicio, fin, tamanoLote = 50) {
   for (let i = inicio; i <= fin; i += tamanoLote) {
     const finLote = Math.min(i + tamanoLote - 1, fin);
-    
+
     // Procesar lote actual
     for (let j = i; j <= finLote; j++) {
       const numero = j.toString().padStart(3, "0");
       const titulo = titulos[j - 1] || `Himno ${numero}`;
-      const videoPath = srcAux+`videos/${numero}.mp4`;
-      const imagePath = srcAux+`portadas/${numero}.jpg`;
+      const videoPath = srcAux + `videos/${numero}.mp4`;
+      const imagePath = srcAux + `portadas/${numero}.jpg`;
       const duracionesHimnosAux = duracionesHimnos[j - 1];
 
       crearHimno(titulo, videoPath, imagePath, null, duracionesHimnosAux);
@@ -1199,9 +1228,9 @@ async function cargarHimnosEnLotes(inicio, fin, tamanoLote = 50) {
         duracionesHimnosAux,
       });
     }
-    
+
     // Dar tiempo al navegador para renderizar
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
 }
 
@@ -1876,7 +1905,7 @@ function enviarVersiculo() {
   // Llamar a la función ventanaSecundaria
   let versiculoAux = window.versiculo;
   let libroAux = window.libro;
-  
+
   enviarDatos({
     videoPath: null,
     imagePath: null,
@@ -1886,7 +1915,7 @@ function enviarVersiculo() {
     lista: null,
     fondoBody: null,
     imagen: null,
-    waterMark: waterMark
+    waterMark: waterMark,
   });
 }
 
@@ -1997,7 +2026,7 @@ botonYoutube.addEventListener("click", function () {
 //Función para cerrar ventana secundaria
 function cerrarVentanaReproductor() {
   //if (playerWindow && !playerWindow.closed) {
-    //playerWindow.close();
+  //playerWindow.close();
   //}
   botonPRO = false;
   //toggleContainer.classList.remove("active");
@@ -2012,10 +2041,10 @@ function cerrarVentanaReproductor() {
 
 // Escuchar el mensaje de cierre de la ventana secundaria
 //window.addEventListener("message", (event) => {
-  //if (event.data === "closed") {
-    //audioHimno.pause();
-    //cerrarVentanaReproductor();
-  //}
+//if (event.data === "closed") {
+//audioHimno.pause();
+//cerrarVentanaReproductor();
+//}
 //});
 
 // Función para ocultar el reproductor
@@ -2146,9 +2175,9 @@ async function mostrarCategoria(categoria) {
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
       const numero = titulos2[i].match(/\d{3}/)[0]; // Encuentra los primeros 3 dígitos en el título
-      const videoPath = srcAux+`videosAntiguo/${numero}.mp4`; // Ruta del video con el número
+      const videoPath = srcAux + `videosAntiguo/${numero}.mp4`; // Ruta del video con el número
       const titulo = titulos2[i]; // El título completo del himno
-      const imagePath = srcAux+`portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
+      const imagePath = srcAux + `portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
 
       // Almacenar en el array
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
@@ -2166,9 +2195,9 @@ async function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosCoritos/${numero}.mp4`;
+      const videoPath = srcAux + `videosCoritos/${numero}.mp4`;
       const titulo = titulos3[i];
-      const imagePath = srcAux+`portadasCoritos/${numero}.jpg`;
+      const imagePath = srcAux + `portadasCoritos/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -2184,9 +2213,9 @@ async function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos4.length; i++) {
       const numero = titulos4[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosJA/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosJA/${numero}.mp4`;
       const titulo = titulos4[i];
-      const imagePath = srcAux+`portadasHimnosJA/${numero}.jpg`;
+      const imagePath = srcAux + `portadasHimnosJA/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -2202,9 +2231,9 @@ async function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos5.length; i++) {
       const numero = titulos5[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosNacionales/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosNacionales/${numero}.mp4`;
       const titulo = titulos5[i];
-      const imagePath = srcAux+`portadasHimnosNacionales/${numero}.png`;
+      const imagePath = srcAux + `portadasHimnosNacionales/${numero}.png`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -2220,9 +2249,9 @@ async function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`musicaParaOrarDeFondo/${numero}.mp4`;
+      const videoPath = srcAux + `musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
-      const imagePath = srcAux+`portadasParaOrarDeFondo/${numero}.png`;
+      const imagePath = srcAux + `portadasParaOrarDeFondo/${numero}.png`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -2238,7 +2267,7 @@ async function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosPianoPista/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosPianoPista/${numero}.mp4`;
       const titulo = tituloHimnosPianoPista[i];
       const imagePath = `portadasHimnosPianoPista/001.jpg`;
 
@@ -2256,9 +2285,9 @@ async function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosInfantiles/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosInfantiles/${numero}.mp4`;
       const titulo = tituloHimnosInfantiles[i];
-      const imagePath = srcAux+`portadasHimnosInfantiles/${numero}.jpg`;
+      const imagePath = srcAux + `portadasHimnosInfantiles/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -2274,9 +2303,9 @@ async function mostrarCategoria(categoria) {
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosAntiguos/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosAntiguos/${numero}.mp4`;
       const titulo = tituloHimnosAntiguos[i];
-      const imagePath = srcAux+`portadasHimnosAntiguos/${numero}.jpg`;
+      const imagePath = srcAux + `portadasHimnosAntiguos/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
@@ -2290,7 +2319,7 @@ async function mostrarCategoria(categoria) {
     //Lista música para orar de fondo
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`musicaParaOrarDeFondo/${numero}.mp4`;
+      const videoPath = srcAux + `musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
       const imagePath = `portadasParaOrarDeFondo/${numero}.png`;
 
@@ -2316,9 +2345,9 @@ async function mostrarCategoria(categoria) {
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
       const numero = titulos2[i].match(/\d{3}/)[0]; // Encuentra los primeros 3 dígitos en el título
-      const videoPath = srcAux+`videosAntiguo/${numero}.mp4`; // Ruta del video con el número
+      const videoPath = srcAux + `videosAntiguo/${numero}.mp4`; // Ruta del video con el número
       const titulo = `Antiguos`; // El título completo del himno
-      const imagePath = srcAux+`portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
+      const imagePath = srcAux + `portadasAntiguo/${numero}.jpg`; // Ruta de la imagen con el número
 
       // Almacenar en el array
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
@@ -2331,9 +2360,9 @@ async function mostrarCategoria(categoria) {
     //Lista de los coritos adventistas: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosCoritos/${numero}.mp4`;
+      const videoPath = srcAux + `videosCoritos/${numero}.mp4`;
       const titulo = `Coritos`;
-      const imagePath = srcAux+`portadasCoritos/${numero}.jpg`;
+      const imagePath = srcAux + `portadasCoritos/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosCoritosLista.push({ numero, titulo, videoPath, imagePath });
@@ -2346,8 +2375,8 @@ async function mostrarCategoria(categoria) {
     for (let i = 1; i <= 614; i++) {
       const numero = i.toString().padStart(3, "0");
       const titulo = titulos[i - 1] || `Himno ${numero}`;
-      const videoPath = srcAux+`videos/${numero}.mp4`;
-      const imagePath = srcAux+`portadas/${numero}.jpg`;
+      const videoPath = srcAux + `videos/${numero}.mp4`;
+      const imagePath = srcAux + `portadas/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosCantadosLista.push({ numero, titulo, videoPath, imagePath });
@@ -2359,7 +2388,7 @@ async function mostrarCategoria(categoria) {
     //Lista de los piano pista: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosPianoPista/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosPianoPista/${numero}.mp4`;
       const titulo = `Himnos Piano Pista`;
       const imagePath = `portadasHimnosPianoPista/${numero}.jpg`;
 
@@ -2373,9 +2402,9 @@ async function mostrarCategoria(categoria) {
     //Lista de los infantiles: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosInfantiles/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosInfantiles/${numero}.mp4`;
       const titulo = `Himnos Infantiles`;
-      const imagePath = srcAux+`portadasHimnosInfantiles/${numero}.jpg`;
+      const imagePath = srcAux + `portadasHimnosInfantiles/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosHimnosInfantiles.push({ numero, titulo, videoPath, imagePath });
@@ -2387,9 +2416,9 @@ async function mostrarCategoria(categoria) {
     //Lista de los antiguos 1962: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
-      const videoPath = srcAux+`videosHimnosAntiguos/${numero}.mp4`;
+      const videoPath = srcAux + `videosHimnosAntiguos/${numero}.mp4`;
       const titulo = `Himnos Antiguos 1962`;
-      const imagePath = srcAux+`portadasHimnosAntiguos/${numero}.jpg`;
+      const imagePath = srcAux + `portadasHimnosAntiguos/${numero}.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosLosHimnosAntiguos.push({ numero, titulo, videoPath, imagePath });
@@ -2398,7 +2427,6 @@ async function mostrarCategoria(categoria) {
     imagePathAux = `imagenes/portadaListaHimnosAntiguos.jpg`;
     crearHimno(tituloAux, null, imagePathAux, todosLosHimnosAntiguos, null);
 
-    
     tituloAux = `Todas las Listas`;
     imagePathAux = `imagenes/portadaListaTodos.jpg`;
     crearHimno(tituloAux, null, imagePathAux, todosLosHimnosLista, null);
@@ -2672,7 +2700,6 @@ photos.forEach((photo) => {
   button.addEventListener("click", () => {
     fondoImage = photo.src;
     if (botonPRO) {
-      
       enviarDatos({
         videoPath: null,
         imagePath: null,
@@ -2682,7 +2709,7 @@ photos.forEach((photo) => {
         lista: null,
         fondoBody: fondoImage,
         imagen: null,
-        waterMark: waterMark
+        waterMark: waterMark,
       });
     }
   });
@@ -2742,7 +2769,6 @@ async function buscarVideos() {
   let premiumCategoria = localStorage.getItem("premium") === "true";
 
   let velocidadDeBusqueda = 0;
-  
 
   if (input !== "" && !input.includes("youtube.com")) {
     // URL de tu API desplegada en Vercel
@@ -2756,11 +2782,11 @@ async function buscarVideos() {
       if (!response.ok) throw new Error("Error en la respuesta de la API");
 
       let videos = await response.json();
-      if(premiumCategoria){
+      if (premiumCategoria) {
         velocidadDeBusqueda = 100;
-      }else{
+      } else {
         velocidadDeBusqueda = 30000;
-        videos = videos.slice(0,8);
+        videos = videos.slice(0, 8);
       }
       // Mostrar videos uno por uno
       for (let video of videos) {
@@ -2912,13 +2938,16 @@ function youtubeClapprEstandar(url, poster) {
   });
   playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
     console.log("✅ Player listo, esperando 2 segundos...");
-  
+
     setTimeout(() => {
-      const poster = document.querySelector('.player-poster.clickable');
+      const poster = document.querySelector(".player-poster.clickable");
       if (poster) {
         console.log("🎬 Simulando clic en póster tras PLAYER_READY");
-  
-        const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+        const clickEvent = new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+        });
         poster.dispatchEvent(clickEvent);
       } else {
         console.log("⚠️ No se encontró póster, intentando play() directo");
@@ -2926,11 +2955,7 @@ function youtubeClapprEstandar(url, poster) {
       }
     }, 1000);
   });
-  
-  
 }
-
-
 
 function expandirIframeYouTube() {
   const maxIntentos = 1000000;
@@ -2975,7 +3000,7 @@ function youtubeClappr(auxUrlOnce, poster) {
     lista: null,
     fondoBody: null,
     imagen: null,
-    waterMark: waterMark
+    waterMark: waterMark,
   });
 }
 
@@ -3022,7 +3047,7 @@ function videosLocalesPro(auxUrlOnce, poster) {
     lista: null,
     fondoBody: null,
     imagen: null,
-    waterMark: waterMark
+    waterMark: waterMark,
   });
 }
 
@@ -3382,11 +3407,9 @@ function mostrarSiTodoListo() {
     stats.vistasUnicas &&
     stats.descargasUnicas
   ) {
-    document.getElementById("contenedor-vistas").innerHTML = `${
-      stats.online
-    } &nbsp;| ${stats.vistas} | ${stats.vistasUnicas} | ${
-      stats.descargasUnicas
-    }`;
+    document.getElementById(
+      "contenedor-vistas"
+    ).innerHTML = `${stats.online} &nbsp;| ${stats.vistas} | ${stats.vistasUnicas} | ${stats.descargasUnicas}`;
   }
 }
 
@@ -3423,8 +3446,6 @@ setInterval(refrescarStatsUnicasCada5Min, 5 * 60 * 1000);
 //localStorage.removeItem("ultimaVistaDiaria");
 //localStorage.removeItem("entradaRegistrada");
 
-
-
 //LÓGICA DE IMAGEN Y VIDEO PARA EL BOTÓN DETENCIÓN DE ARCHIVOS EXPLORADOR INTERNO PC CON ELECTRON
 const botonVideoImgLocal = document.getElementById("botonVideoImgLocal");
 botonVideoImgLocal.addEventListener("click", async () => {
@@ -3445,7 +3466,6 @@ botonVideoImgLocal.addEventListener("click", async () => {
       const dataUrl = `data:image/${extension};base64,${base64}`;
 
       if (botonPRO) {
-        
         enviarDatos({
           videoPath: null,
           imagePath: null,
@@ -3455,7 +3475,7 @@ botonVideoImgLocal.addEventListener("click", async () => {
           lista: null,
           fondoBody: null,
           imagen: dataUrl,
-          waterMark: waterMark
+          waterMark: waterMark,
         });
       } else {
         videoPlayerContainer.innerHTML = "";
@@ -3489,19 +3509,6 @@ botonVideoImgLocal.addEventListener("click", async () => {
     console.warn("❌ Archivo no soportado.");
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //FUNCIONES PARA PERSONALIZAR LOS HIMNOS CON LETRAS ACCESIBLES Y AUDIOS CANTADO Y PISTA, FUNCIÓN PRO
 
@@ -3608,7 +3615,7 @@ function mostrarTitulo(himno) {
     else if (carpetaSelect.value === "audiosHimnosLetra")
       carpeta = "audiosHimnosLetra";
     else carpeta = "audiosHimnos";
-    audioHimno.src = srcAux+`${carpeta}/${numeroFormateado}.mp3`;
+    audioHimno.src = srcAux + `${carpeta}/${numeroFormateado}.mp3`;
     audioHimno.play().catch((err) => console.log("Error al reproducir:", err));
 
     // 🔹 Marcar título como seleccionado (toggle)
@@ -3779,17 +3786,17 @@ audioHimno.addEventListener("ended", () => {
     backgroundImage: backgroundImageAux2,
   };
   textoGlobal = ".";
-  
+
   enviarDatos({
     videoPath: null,
     imagePath: null,
-    versiculo: versiculoAux = textoGlobal,
+    versiculo: (versiculoAux = textoGlobal),
     libroAux: null,
     estilosAux: estilosAux,
     lista: null,
     fondoBody: null,
     imagen: null,
-    waterMark: waterMark
+    waterMark: waterMark,
   });
 });
 
@@ -3808,7 +3815,7 @@ function mostrarContenido(texto) {
 
   // Llamar a la función ventanaSecundaria
   let versiculoAux = texto;
-  
+
   enviarDatos({
     videoPath: null,
     imagePath: null,
@@ -3818,7 +3825,7 @@ function mostrarContenido(texto) {
     lista: null,
     fondoBody: null,
     imagen: null,
-    waterMark: waterMark
+    waterMark: waterMark,
   });
 }
 
@@ -3882,12 +3889,6 @@ botonCargarImagen.addEventListener("click", async () => {
   }
 });
 
-
-
-
-
-
-
 //FUNCIÓN PARA COMUNICACIÓN AQUÍ CON EL PRELOAD Y EL MAIN
 function enviarDatos(data) {
   if (window.electronAPI) {
@@ -3896,9 +3897,6 @@ function enviarDatos(data) {
     console.error("electronAPI no está disponible");
   }
 }
-
-
-
 
 //CÓDIGO IMPORTANTE PARA LA PROYECCIÓN EN MONITORES
 // 🔄 Cuando se detecte cambio en los monitores
@@ -3942,7 +3940,7 @@ function precargarImagenes() {
 }
 
 // Llamar a precarga después de que la página esté cargada
-window.addEventListener('load', precargarImagenes);
+window.addEventListener("load", precargarImagenes);
 
 async function cargarMonitores() {
   // 🚀 Inicializar opciones
@@ -3963,7 +3961,9 @@ async function cargarMonitores() {
   monitores.forEach((m) => {
     const option = document.createElement("option");
     option.value = m.id;
-    option.textContent = `✅ Monitor ${m.id}: ${m.nombre} ${m.principal ? "(Principal)" : ""}`;
+    option.textContent = `✅ Monitor ${m.id}: ${m.nombre} ${
+      m.principal ? "(Principal)" : ""
+    }`;
     select.appendChild(option);
   });
 
@@ -4024,12 +4024,7 @@ function activarModoNormal() {
   himnarioContainer.style.display = "grid";
 }
 
-
-
-
-
-
-document.getElementById("ministerio").addEventListener("mouseover",()=>{
+document.getElementById("ministerio").addEventListener("mouseover", () => {
   const contenedor = document.createElement("div");
   contenedor.id = "ministerio-year"; // Add an ID to the div
   contenedor.textContent = anioMinisterio();
@@ -4040,7 +4035,7 @@ document.getElementById("ministerio").addEventListener("mouseover",()=>{
   contenedor.style.left = "10px"; // Adjust from the left
   contenedor.style.padding = "5px 10px"; // Add padding
   contenedor.style.borderRadius = "1rem"; // Rounded corners
-  contenedor.style.width ="auto";
+  contenedor.style.width = "auto";
   contenedor.style.height = "auto";
   contenedor.style.color = "white";
   contenedor.style.fontSize = "20px"; // Smaller font size
@@ -4060,8 +4055,6 @@ document.getElementById("ministerio").addEventListener("mouseout", () => {
   }
 });
 
-
-
 // 🗓️ Array de actualizaciones
 const actualizaciones = [
   {
@@ -4069,284 +4062,306 @@ const actualizaciones = [
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
     fecha: "",
     titulo: "",
     mensaje: "",
     version: "",
-    tipo: ""
+    tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: ""
+    fecha: "2025-11-28",
+    titulo: "Mejoras en el sistema de códigos",
+    mensaje:
+      "Se mejoró el sistema premium. Ahora si compras una licencia, pero no tienes conexión a internet, desde la útlima vez que usaste el himnario con internet, habrá un periodo de gracia premium para que uses el himnario desde el momento que el sistema tuvo conexión a internet. Si te quedas sin internet durante el transcurso del programa y eres usuario premium, puedes utilizarlo con normalidad, porque contarás con 7 días para que pueda el sistema detecte que tienes licencia.",
+    version: "v1.0.70",
+    tipo: "Mejora",
   },
   {
     fecha: "2025-11-24",
     titulo: "Control Remoto Integrado",
-    mensaje: "Ahora el control remoto se integra con el himnario!😱 Es decir, se puede controlar el himnario, también se puede controlar desde el teléfono, tablet y cualquier otro sistema operativo Android o Apple y computadora; Recuerda solo ingresar con la URL y el PIN de acceso, tanto la computadora como el dispositivo móvil tienen que estar conectados a la misma red Wifi, esta funcionalidad sirve mucho cuando la directora/o de cantos pasa adelante y quiere controlar el equipo por si el técnico no está, o por ejemplo, no sé escucha que dijeron en la plataforma y el técnico de equipo no escucho bien que himno se dijo, el/la que está presentando puede reproducir el himno que quiera por cualquier situación, disponible para las personas que apoyan el ministerio siendo premium. Como hoy es mi cumpleaños, se ha lanzado con mucho cariño está funcionalidad para todas aquellas personas que apoyan mi ministerio personal PROYECTO JA, Jesús bendiga sus corazones y nos motive a seguir trabajando para su obra!🥰",
+    mensaje:
+      "Ahora el control remoto se integra con el himnario!😱 Es decir, se puede controlar el himnario, también se puede controlar desde el teléfono, tablet y cualquier otro sistema operativo Android o Apple y computadora; Recuerda solo ingresar con la URL y el PIN de acceso, tanto la computadora como el dispositivo móvil tienen que estar conectados a la misma red Wifi, esta funcionalidad sirve mucho cuando la directora/o de cantos pasa adelante y quiere controlar el equipo por si el técnico no está, o por ejemplo, no sé escucha que dijeron en la plataforma y el técnico de equipo no escucho bien que himno se dijo, el/la que está presentando puede reproducir el himno que quiera por cualquier situación, disponible para las personas que apoyan el ministerio siendo premium. Como hoy es mi cumpleaños, se ha lanzado con mucho cariño está funcionalidad para todas aquellas personas que apoyan mi ministerio personal PROYECTO JA, Jesús bendiga sus corazones y nos motive a seguir trabajando para su obra!🥰",
     version: "v1.0.69",
-    tipo: "Función Nueva"
+    tipo: "Función Nueva",
   },
   {
     fecha: "2025-11-22",
     titulo: "Biblia con nuevas funciones",
-    mensaje: "Ahora la Biblia y sus versiones pasan los versículos ya sea presionando sobre el mismo, con botón o con las teclas izquierda o derecha del teclado de la computadora; además, automáticamente se pasan los versículos y capítulos al siguiente capítulo con su versículo, incluso se pasa al siguiente libro. También se actualizan cada estilo personalizado en tiempo real(letras,colores,espacios,tamaños,imágenes...). Espero sea de gran bendición. Esta funcionalidad fue idea de un seguidor, gracias a -Albeiro Navarro-",
+    mensaje:
+      "Ahora la Biblia y sus versiones pasan los versículos ya sea presionando sobre el mismo, con botón o con las teclas izquierda o derecha del teclado de la computadora; además, automáticamente se pasan los versículos y capítulos al siguiente capítulo con su versículo, incluso se pasa al siguiente libro. También se actualizan cada estilo personalizado en tiempo real(letras,colores,espacios,tamaños,imágenes...). Espero sea de gran bendición. Esta funcionalidad fue idea de un seguidor, gracias a -Albeiro Navarro-",
     version: "v1.0.54",
-    tipo: "Función nueva"
+    tipo: "Función nueva",
   },
   {
     fecha: "2025-11-21",
     titulo: "Himnario Adventista PRO Multiplataforma",
-    mensaje: "Está es la primer versión beta que se estará probando para sistemas opertativos Windows, Mac, Linux y Ubuntu. Esperamos en las próximas horas tener más actualizaciones de pruebas con los usuarios de las diferentes plataformas.",
+    mensaje:
+      "Está es la primer versión beta que se estará probando para sistemas opertativos Windows, Mac, Linux y Ubuntu. Esperamos en las próximas horas tener más actualizaciones de pruebas con los usuarios de las diferentes plataformas.",
     version: "v1.0.48",
-    tipo: "Mejor"
+    tipo: "Mejora",
   },
   {
     fecha: "2025-11-21",
     titulo: "Iconos",
-    mensaje: "Se reparó el acceso directo y de inicio de los iconos principales del programa. Esto ayuda a encontrar más fácilmente el programa.",
+    mensaje:
+      "Se reparó el acceso directo y de inicio de los iconos principales del programa. Esto ayuda a encontrar más fácilmente el programa.",
     version: "v1.0.32",
-    tipo: "Correción"
+    tipo: "Correción",
   },
   {
     fecha: "2025-11-21",
     titulo: "Mejora de estética en la instalación de inicio",
-    mensaje: "Se mejoró el diseño y traslado de la consola de descarga, ahora aparecerá en el inicio con una interfaz más amigable y menos incomoda para disfrutar mejor de la experiencia del software.",
+    mensaje:
+      "Se mejoró el diseño y traslado de la consola de descarga, ahora aparecerá en el inicio con una interfaz más amigable y menos incomoda para disfrutar mejor de la experiencia del software.",
     version: "v1.0.30",
-    tipo: "Mejor"
+    tipo: "Mejora",
   },
   {
     fecha: "2025-11-20",
     titulo: "Mejora de descarga en la instalación de inicio",
-    mensaje: "Como saben, tenemos un servidor gratis, el cual es de una entidad pública donde almacenamos todos nuestros archivos, y muchos hermanos han presentado el problema que a veces algunos archivos no se descargan correctamente, En esta nueva mejora, se ha implementado la detección de archivo por archivo por si algún archivo no se descarga bien, se vuelve a descargar o se vuelve a descargar si se vuelve abrir el programa. Con esta nueva funcionalidad ya no se tendrá que sufrir por si se quedó un archivo a media en la descarga o a veces la conexión de internet es muy lenta y la descarga no sigue. Este es un excelentísimo aporte, espero sea de gran bendición. Dios me los bendiga!",
+    mensaje:
+      "Como saben, tenemos un servidor gratis, el cual es de una entidad pública donde almacenamos todos nuestros archivos, y muchos hermanos han presentado el problema que a veces algunos archivos no se descargan correctamente, En esta nueva mejora, se ha implementado la detección de archivo por archivo por si algún archivo no se descarga bien, se vuelve a descargar o se vuelve a descargar si se vuelve abrir el programa. Con esta nueva funcionalidad ya no se tendrá que sufrir por si se quedó un archivo a media en la descarga o a veces la conexión de internet es muy lenta y la descarga no sigue. Este es un excelentísimo aporte, espero sea de gran bendición. Dios me los bendiga!",
     version: "v1.0.30",
-    tipo: "Mejor"
+    tipo: "Mejora",
   },
   {
     fecha: "2025-11-20",
-    titulo: "Versiones antiguas afectan la instalación en algunas instalaciones recientes",
-    mensaje: "Se agrego una mejora en el sistema de detención en el instalador cuando hay accesos directos antiguos en el computador. Esta nueva versión limpia carpetas, accesos directos y archivos temporales y antiguos del software.",
+    titulo:
+      "Versiones antiguas afectan la instalación en algunas instalaciones recientes",
+    mensaje:
+      "Se agrego una mejora en el sistema de detención en el instalador cuando hay accesos directos antiguos en el computador. Esta nueva versión limpia carpetas, accesos directos y archivos temporales y antiguos del software.",
     version: "v1.0.30",
-    tipo: "Mejor"
+    tipo: "Mejora",
   },
   {
     fecha: "2025-11-18",
     titulo: "Versiones antiguas no funcionales",
-    mensaje: "Las versiones antiguas dejaran de funcionar, es necesaria actualizar a la reciente y mantenerse actualizado a nuevas funciones del software.",
+    mensaje:
+      "Las versiones antiguas dejaran de funcionar, es necesaria actualizar a la reciente y mantenerse actualizado a nuevas funciones del software.",
     version: "v1.0.29",
-    tipo: "Corrección"
+    tipo: "Corrección",
   },
   {
     fecha: "2025-11-18",
     titulo: "Error de proyección de YouTube",
-    mensaje: "Se reparó el fallo que daba en la proyección con el monitor para reproducir automáticamente video de YouTube, ¡ya lista para usar!",
+    mensaje:
+      "Se reparó el fallo que daba en la proyección con el monitor para reproducir automáticamente video de YouTube, ¡ya lista para usar!",
     version: "v1.0.28",
-    tipo: "Corrección"
+    tipo: "Corrección",
   },
   {
     fecha: "2025-11-17",
     titulo: "Apariencia y mejoramiento",
-    mensaje: "La apariencia para el pago de suscripción se mejoró y se agregaron más características premium al sistema de ayuda del ministerio PROYECTO JA.",
+    mensaje:
+      "La apariencia para el pago de suscripción se mejoró y se agregaron más características premium al sistema de ayuda del ministerio PROYECTO JA.",
     version: "v1.0.26",
-    tipo: "Mejor"
+    tipo: "Mejora",
   },
   {
     fecha: "2025-11-17",
     titulo: "Bug Pantalla Negra en Algunas Laptops",
-    mensaje: "Se corrigió un pequeño fallo de optimización en la iniciación del software. Algunas personas presentaron problemas cuando abrian el programa: 1-Cargaba muy lento, 2-Se quedaba en negra parte de la pantalla y no cargaban los himnos. Se optimizó el programa y ahora carga en 0.500 milisegundos en computadora de 4/8gigas de Ram con Disco SSD con dos nucleos mínimo y procesador 2300 herts balanceado.",
+    mensaje:
+      "Se corrigió un pequeño fallo de optimización en la iniciación del software. Algunas personas presentaron problemas cuando abrian el programa: 1-Cargaba muy lento, 2-Se quedaba en negra parte de la pantalla y no cargaban los himnos. Se optimizó el programa y ahora carga en 0.500 milisegundos en computadora de 4/8gigas de Ram con Disco SSD con dos nucleos mínimo y procesador 2300 herts balanceado.",
     version: "v1.0.25",
-    tipo: "Corrección"
+    tipo: "Corrección",
   },
   {
     fecha: "2025-11-17",
     titulo: "Buscador de Youtube",
-    mensaje: "Se mejoró el buscador de YouTube para evitar caídas repentinas con el contenido.",
+    mensaje:
+      "Se mejoró el buscador de YouTube para evitar caídas repentinas con el contenido.",
     version: "v1.0.24",
-    tipo: "Mejor"
+    tipo: "Mejora",
   },
   {
     fecha: "2025-10-6",
-    titulo: "Mejoramiento del reproductor de proyección y vista automática del video de YouTube",
-    mensaje: "Se mejoró el reproductor profesional de proyección: Ya no se observa la barra de control cuando se coloca un himno, además, también se implementó en YouTube la mejora; además, ahora YouTube se reproduce automáticamente. Además, se agregó un botón de novedades para que revices qué actualizaciones han salido desde que se creó el software y te mantengas actualizado.",
+    titulo:
+      "Mejoramiento del reproductor de proyección y vista automática del video de YouTube",
+    mensaje:
+      "Se mejoró el reproductor profesional de proyección: Ya no se observa la barra de control cuando se coloca un himno, además, también se implementó en YouTube la mejora; además, ahora YouTube se reproduce automáticamente. Además, se agregó un botón de novedades para que revices qué actualizaciones han salido desde que se creó el software y te mantengas actualizado.",
     version: "v1.0.23",
-    tipo: "Mejora"
+    tipo: "Mejora",
   },
   {
     fecha: "2025-09-10",
-    titulo: "Nueva funcionalidad para personalizar los himnos tanto español como inglés.",
-    mensaje: "Se agregó y automatizó el software corriendo en su servidor propio. Nuevo botón para personalizar el himnario con ajustes de letra y versiones como cantado, instrumental, solo letra e inglés(se sigue modificando cada estrofa a su idioma con traductores voluntarios), además, en la misma sección, se puede cargar una imagen a proyección en el himno. Además se agregó la funcionalidad potente de auto-actualización de este software para futuras actualizaciones: ya no tendrás que descargar el mismo archivo zip todo el tiempo, este software desde esta versión se actualiza automáticamente.",
+    titulo:
+      "Nueva funcionalidad para personalizar los himnos tanto español como inglés.",
+    mensaje:
+      "Se agregó y automatizó el software corriendo en su servidor propio. Nuevo botón para personalizar el himnario con ajustes de letra y versiones como cantado, instrumental, solo letra e inglés(se sigue modificando cada estrofa a su idioma con traductores voluntarios), además, en la misma sección, se puede cargar una imagen a proyección en el himno. Además se agregó la funcionalidad potente de auto-actualización de este software para futuras actualizaciones: ya no tendrás que descargar el mismo archivo zip todo el tiempo, este software desde esta versión se actualiza automáticamente.",
     version: "v1.0.19",
-    tipo: "Función nueva"
+    tipo: "Función nueva",
   },
   {
     fecha: "2025-08-30",
     titulo: "Nuevas funciones!",
-    mensaje: "Se transladó la opción PRO al lado superior de la pantalla, allí mismo se implenta un apartado de estadísticas nerd, además, se agregó funcionalidad de búsqueda de monitores disponibles en tu computador. Se repara la búsqueda en YouTube(nuevas políticas de navegadores web), Se agrega un reloj contador para predicadores. Se agregó también un botón para búsqueda de archivos en el explorador de archivos del disco.",
+    mensaje:
+      "Se transladó la opción PRO al lado superior de la pantalla, allí mismo se implenta un apartado de estadísticas nerd, además, se agregó funcionalidad de búsqueda de monitores disponibles en tu computador. Se repara la búsqueda en YouTube(nuevas políticas de navegadores web), Se agrega un reloj contador para predicadores. Se agregó también un botón para búsqueda de archivos en el explorador de archivos del disco.",
     version: "v1.0.18",
-    tipo: "Función nueva"
+    tipo: "Función nueva",
   },
   {
     fecha: "2025-07-30",
     titulo: "Nuevos himnario implementados y nueva función de You Tube",
-    mensaje: "Se agregaron nuevas versiones de himnario tanto orquestado, antiguo, cantado, instrumental, infantil, piano y listas de reproducción actualizadas. Además, nueva función potente, búsquedas de YouTube sin anuncios para reproducir en tu iglesia, tanto en modo local o activando el modo profesional.",
+    mensaje:
+      "Se agregaron nuevas versiones de himnario tanto orquestado, antiguo, cantado, instrumental, infantil, piano y listas de reproducción actualizadas. Además, nueva función potente, búsquedas de YouTube sin anuncios para reproducir en tu iglesia, tanto en modo local o activando el modo profesional.",
     version: "v1.0.2",
-    tipo: "Función nueva"
+    tipo: "Función nueva",
   },
   {
     fecha: "2025-01-27",
     titulo: "Nuevas listas de reproducción.",
-    mensaje: "Se implementa listas de reproducción en modo bucle y play automático tanto en local y profesional",
+    mensaje:
+      "Se implementa listas de reproducción en modo bucle y play automático tanto en local y profesional",
     version: "v1.0.1",
-    tipo: "Mejora"
+    tipo: "Mejora",
   },
   {
     fecha: "2024-011-09",
     titulo: "Publicación del Software",
-    mensaje: "Creación del software del himnario con funcionalidad de proyección y búsqueda avanzada, himnario solo cantado. Funciones modo reproducción local y profesional.",
+    mensaje:
+      "Creación del software del himnario con funcionalidad de proyección y búsqueda avanzada, himnario solo cantado. Funciones modo reproducción local y profesional.",
     version: "v1.0.0",
-    tipo: "Función nueva"
-  }
+    tipo: "Función nueva",
+  },
   /**
    * Función Nueva
-   * Mejor
+   * Mejora
    * Corrección
    */
 ];
@@ -4360,20 +4375,21 @@ function mostrarActualizaciones() {
   ventanaYouTube.style.display = "none";
   const contenedorPadre = document.getElementById("himnario");
   contenedorPadre.innerHTML = "";
-  const contenedor  = document.createElement("div");
+  const contenedor = document.createElement("div");
   contenedor.className = "contenedorHijo";
-  
+
   const card = document.createElement("div");
   card.className = "actualizacion";
-  card.textContent = "Recuerda darnos tu opinión o dejarnos un comentario para seguir mejorando. Aquí mismo puedes dejarnos tus comentarios. (LEEMOS SOLO AQUÍ)";
+  card.textContent =
+    "Recuerda darnos tu opinión o dejarnos un comentario para seguir mejorando. Aquí mismo puedes dejarnos tus comentarios. (LEEMOS SOLO AQUÍ)";
   contenedor.appendChild(card);
 
-  actualizaciones.forEach(item => {
-    if(item.fecha != ""){
+  actualizaciones.forEach((item) => {
+    if (item.fecha != "") {
       const card = document.createElement("div");
-    card.className = "actualizacion";
+      card.className = "actualizacion";
 
-    card.innerHTML = `
+      card.innerHTML = `
       <div class="fecha">${item.fecha} | PROYECTO JA</div>
       <h3>${item.titulo}</h3>
       <p>${item.mensaje}</p>
@@ -4382,20 +4398,14 @@ function mostrarActualizaciones() {
         <span class="tipo ${item.tipo.toLowerCase()}">${item.tipo}</span>
       </div>
     `;
-    contenedor.appendChild(card);
+      contenedor.appendChild(card);
     }
   });
   contenedorPadre.appendChild(contenedor);
-  
+
   // ✅ Inicializar carrusel de posts
   inicializarCarrusel(contenedor);
 }
-
-
-
-
-
-
 
 //TÍTULO DE LOS VIDEOS | SIEMPRE ABAJO DE TODO EL CÓDIGO PARA MAYOR FÁCILIDAD
 const titulos = [
@@ -6050,7 +6060,7 @@ let carruselPostsPorPagina = 3; // Por defecto
 // Calcular cuántos posts mostrar según el ancho de pantalla
 function calcularPostsPorPagina() {
   const ancho = window.innerWidth || document.documentElement.clientWidth;
-  
+
   if (ancho >= 3200) {
     return 5;
   } else if (ancho >= 2560) {
@@ -6065,14 +6075,16 @@ function calcularPostsPorPagina() {
 // Cargar posts desde JSON
 async function cargarCarruselPosts() {
   try {
-    const response = await fetch('https://proyectoja.github.io/carrusel-posts.json', { cache: 'no-store' });
-    if (!response.ok) throw new Error('No se pudo cargar el carrusel');
-    
+    const response = await fetch(
+      "https://proyectoja.github.io/carrusel-posts.json",
+      { cache: "no-store" }
+    );
+    if (!response.ok) throw new Error("No se pudo cargar el carrusel");
+
     carruselPosts = await response.json();
     console.log(`[CARRUSEL] ✓ Cargados ${carruselPosts.length} posts`);
-    
   } catch (error) {
-    console.error('[CARRUSEL] Error al cargar posts:', error);
+    console.error("[CARRUSEL] Error al cargar posts:", error);
     carruselPosts = [];
   }
 }
@@ -6097,35 +6109,44 @@ function crearCarruselHTML() {
 
 // Renderizar posts visibles
 function renderizarCarruselPosts() {
-  const track = document.getElementById('carrusel-posts-track');
+  const track = document.getElementById("carrusel-posts-track");
   if (!track) return;
-  
-  track.innerHTML = '';
+
+  track.innerHTML = "";
   carruselPostsPorPagina = calcularPostsPorPagina();
-  
+
   // Calcular posts visibles (con bucle)
   const totalPosts = carruselPosts.length;
   if (totalPosts === 0) {
-    track.innerHTML = '<p style="color: white; text-align: center; grid-column: 1/-1;">No hay posts disponibles</p>';
+    track.innerHTML =
+      '<p style="color: white; text-align: center; grid-column: 1/-1;">No hay posts disponibles</p>';
     return;
   }
-  
+
   for (let i = 0; i < carruselPostsPorPagina; i++) {
     const index = (carruselIndexActual + i) % totalPosts;
     const post = carruselPosts[index];
-    
-    const card = document.createElement('div');
-    card.className = 'carrusel-post-card';
+
+    const card = document.createElement("div");
+    card.className = "carrusel-post-card";
     card.innerHTML = `
-      <img src="${post.imagen}" alt="${post.iglesia}" class="carrusel-post-imagen" loading="lazy">
+      <img src="${post.imagen}" alt="${
+      post.iglesia
+    }" class="carrusel-post-imagen" loading="lazy">
       <div class="carrusel-post-info">
         <h4 class="carrusel-post-iglesia">${post.iglesia}</h4>
         <p class="carrusel-post-pais">🌍 ${post.pais}</p>
-        <p class="carrusel-post-fecha">📅 ${formatearFecha(post.fechaPublicada)}</p>
-        ${post.descripcion ? `<p class="carrusel-post-descripcion">${post.descripcion}</p>` : ''}
+        <p class="carrusel-post-fecha">📅 ${formatearFecha(
+          post.fechaPublicada
+        )}</p>
+        ${
+          post.descripcion
+            ? `<p class="carrusel-post-descripcion">${post.descripcion}</p>`
+            : ""
+        }
       </div>
     `;
-    
+
     track.appendChild(card);
   }
 }
@@ -6133,51 +6154,54 @@ function renderizarCarruselPosts() {
 // Formatear fecha
 function formatearFecha(fechaISO) {
   const fecha = new Date(fechaISO);
-  const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
-  return fecha.toLocaleDateString('es-ES', opciones);
+  const opciones = { year: "numeric", month: "long", day: "numeric" };
+  return fecha.toLocaleDateString("es-ES", opciones);
 }
 
 // Navegar al siguiente grupo
 function carruselSiguiente() {
   if (carruselPosts.length === 0) return;
-  carruselIndexActual = (carruselIndexActual + carruselPostsPorPagina) % carruselPosts.length;
+  carruselIndexActual =
+    (carruselIndexActual + carruselPostsPorPagina) % carruselPosts.length;
   renderizarCarruselPosts();
 }
 
 // Navegar al anterior grupo
 function carruselAnterior() {
   if (carruselPosts.length === 0) return;
-  carruselIndexActual = (carruselIndexActual - carruselPostsPorPagina + carruselPosts.length) % carruselPosts.length;
+  carruselIndexActual =
+    (carruselIndexActual - carruselPostsPorPagina + carruselPosts.length) %
+    carruselPosts.length;
   renderizarCarruselPosts();
 }
 
 // Inicializar carrusel en el contenedorHijo
 async function inicializarCarrusel(contenedorHijo) {
   if (!contenedorHijo) return;
-  
+
   await cargarCarruselPosts();
-  
+
   // Agregar carrusel al INICIO del contenedorHijo
-  contenedorHijo.insertAdjacentHTML('afterbegin', crearCarruselHTML());
-  
+  contenedorHijo.insertAdjacentHTML("afterbegin", crearCarruselHTML());
+
   // Renderizar posts iniciales
   renderizarCarruselPosts();
-  
+
   // Event listeners para botones
-  const btnPrev = document.getElementById('carrusel-prev-btn');
-  const btnNext = document.getElementById('carrusel-next-btn');
-  
-  if (btnPrev) btnPrev.addEventListener('click', carruselAnterior);
-  if (btnNext) btnNext.addEventListener('click', carruselSiguiente);
-  
+  const btnPrev = document.getElementById("carrusel-prev-btn");
+  const btnNext = document.getElementById("carrusel-next-btn");
+
+  if (btnPrev) btnPrev.addEventListener("click", carruselAnterior);
+  if (btnNext) btnNext.addEventListener("click", carruselSiguiente);
+
   // Actualizar al cambiar tamaño de ventana
-  window.addEventListener('resize', () => {
+  window.addEventListener("resize", () => {
     const nuevosPostsPorPagina = calcularPostsPorPagina();
     if (nuevosPostsPorPagina !== carruselPostsPorPagina) {
       carruselIndexActual = 0; // Reset al redimensionar
       renderizarCarruselPosts();
     }
   });
-  
-  console.log('[CARRUSEL] ✅ Carrusel inicializado');
+
+  console.log("[CARRUSEL] ✅ Carrusel inicializado");
 }
