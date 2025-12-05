@@ -660,6 +660,73 @@ botonPremium.addEventListener("click", function () {
     contenedorComparacion.appendChild(columnaPremium);
 
     contenedorInterno.appendChild(contenedorComparacion);
+// Mensaje motivacional
+const mensajeMotivacional = document.createElement("div");
+mensajeMotivacional.style.textAlign = "center";
+mensajeMotivacional.style.marginBottom = "15px";
+mensajeMotivacional.style.padding = "10px";
+mensajeMotivacional.style.background = "rgba(210, 105, 30, 0.2)";
+mensajeMotivacional.style.borderRadius = "8px";
+mensajeMotivacional.style.border = "1px solid rgba(210, 105, 30, 0.3)";
+
+const textoMotivacional = document.createElement("p");
+textoMotivacional.innerHTML =
+  "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
+textoMotivacional.style.color = "#FFF8DC";
+textoMotivacional.style.margin = "0";
+textoMotivacional.style.fontSize = "14px";
+textoMotivacional.style.lineHeight = "1.3";
+textoMotivacional.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
+
+mensajeMotivacional.appendChild(textoMotivacional);
+contenedorInterno.appendChild(mensajeMotivacional);
+
+    // Separador
+    const separador = document.createElement("div");
+    separador.style.width = "100%";
+    separador.style.textAlign = "center";
+    separador.style.margin = "10px 0";
+    separador.style.position = "relative";
+
+    const textoSeparador = document.createElement("span");
+    textoSeparador.textContent = "Compra tu licencia por $1,99 por mes";
+    textoSeparador.style.background =
+      "linear-gradient(135deg, #8B4513 0%, #A0522D 100%)";
+    textoSeparador.style.color = "#FFF8DC";
+    textoSeparador.style.padding = "6px 15px";
+    textoSeparador.style.borderRadius = "15px";
+    textoSeparador.style.fontSize = "14px";
+    textoSeparador.style.fontWeight = "bold";
+    textoSeparador.style.fontFamily = "Verdana";
+    textoSeparador.style.border = "1px solid #D2691E";
+
+    separador.appendChild(textoSeparador);
+    contenedorInterno.appendChild(separador);
+
+    
+
+    // Contenedor de PayPal - ESPACIO RESERVADO
+    const paypalContainer = document.createElement("div");
+    paypalContainer.id = "paypal-button-container-inner";
+    paypalContainer.style.width = "100%";
+    paypalContainer.style.minHeight = "50px";
+    paypalContainer.style.display = "flex";
+    paypalContainer.style.justifyContent = "center";
+    paypalContainer.style.alignItems = "center";
+    paypalContainer.style.marginBottom = "10px";
+
+    // Texto temporal mientras carga PayPal
+    const textoCargaPayPal = document.createElement("div");
+    textoCargaPayPal.textContent = "Cargando opciones de pago...";
+    textoCargaPayPal.style.color = "#FFF8DC";
+    textoCargaPayPal.style.fontSize = "12px";
+    textoCargaPayPal.style.fontStyle = "italic";
+    paypalContainer.appendChild(textoCargaPayPal);
+
+    contenedorInterno.appendChild(paypalContainer);
+
+    // Agregar contenedor interno al principal
+    contenedorPremium.appendChild(contenedorInterno);
 
     // Sección de código de suscripción
     const seccionCodigo = document.createElement("div");
@@ -744,70 +811,7 @@ botonPremium.addEventListener("click", function () {
     seccionCodigo.appendChild(contenedorInput);
     contenedorInterno.appendChild(seccionCodigo);
 
-    // Separador
-    const separador = document.createElement("div");
-    separador.style.width = "100%";
-    separador.style.textAlign = "center";
-    separador.style.margin = "10px 0";
-    separador.style.position = "relative";
-
-    const textoSeparador = document.createElement("span");
-    textoSeparador.textContent = "O compra tu licencia por $1,99";
-    textoSeparador.style.background =
-      "linear-gradient(135deg, #8B4513 0%, #A0522D 100%)";
-    textoSeparador.style.color = "#FFF8DC";
-    textoSeparador.style.padding = "6px 15px";
-    textoSeparador.style.borderRadius = "15px";
-    textoSeparador.style.fontSize = "14px";
-    textoSeparador.style.fontWeight = "bold";
-    textoSeparador.style.border = "1px solid #D2691E";
-
-    separador.appendChild(textoSeparador);
-    contenedorInterno.appendChild(separador);
-
-    // Mensaje motivacional
-    const mensajeMotivacional = document.createElement("div");
-    mensajeMotivacional.style.textAlign = "center";
-    mensajeMotivacional.style.marginBottom = "15px";
-    mensajeMotivacional.style.padding = "10px";
-    mensajeMotivacional.style.background = "rgba(210, 105, 30, 0.2)";
-    mensajeMotivacional.style.borderRadius = "8px";
-    mensajeMotivacional.style.border = "1px solid rgba(210, 105, 30, 0.3)";
-
-    const textoMotivacional = document.createElement("p");
-    textoMotivacional.innerHTML =
-      "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
-    textoMotivacional.style.color = "#FFF8DC";
-    textoMotivacional.style.margin = "0";
-    textoMotivacional.style.fontSize = "14px";
-    textoMotivacional.style.lineHeight = "1.3";
-    textoMotivacional.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
-
-    mensajeMotivacional.appendChild(textoMotivacional);
-    contenedorInterno.appendChild(mensajeMotivacional);
-
-    // Contenedor de PayPal - ESPACIO RESERVADO
-    const paypalContainer = document.createElement("div");
-    paypalContainer.id = "paypal-button-container-inner";
-    paypalContainer.style.width = "100%";
-    paypalContainer.style.minHeight = "50px";
-    paypalContainer.style.display = "flex";
-    paypalContainer.style.justifyContent = "center";
-    paypalContainer.style.alignItems = "center";
-    paypalContainer.style.marginBottom = "10px";
-
-    // Texto temporal mientras carga PayPal
-    const textoCargaPayPal = document.createElement("div");
-    textoCargaPayPal.textContent = "Cargando opciones de pago...";
-    textoCargaPayPal.style.color = "#FFF8DC";
-    textoCargaPayPal.style.fontSize = "12px";
-    textoCargaPayPal.style.fontStyle = "italic";
-    paypalContainer.appendChild(textoCargaPayPal);
-
-    contenedorInterno.appendChild(paypalContainer);
-
-    // Agregar contenedor interno al principal
-    contenedorPremium.appendChild(contenedorInterno);
+    
 
     // NUEVO: Mensaje sobre cambios en el monto
     const mensajeMonto = document.createElement("div");
