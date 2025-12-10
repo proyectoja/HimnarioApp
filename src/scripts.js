@@ -4385,11 +4385,12 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2025-12-09",
+    titulo: "Premium",
+    mensaje:
+      "Se mejoró el sistema de pagos, ahora acepta mensual y anual a través del método de pago con PayPal, próximamente se aceptará con Stripe, un poco más fácil pero más dificil de manejar dentro del Software. Nos han preguntando que unas iglesias no tienen internet, la respuesta es que usen el celular para la primera conexión con el software o bien, usar lo más principal: El modo sin internet del himnario que cubre los himnos cantados que se pueden usar en modo sin internet y el lector de archivo para imágenes y videos internos del computador, las demás cosas se requieren internet o bien, que se conecten la primera vez y ya no se necesiten internet durante el transcurso de programa o las actividades que se realizan. Más novedades en los siguientes días, bendiciones!",
+    version: "1.0.73",
+    tipo: "Mejora",
   },
   {
     fecha: "2025-11-28",
