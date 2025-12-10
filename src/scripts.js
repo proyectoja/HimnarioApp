@@ -8,6 +8,7 @@ let botonFondo = false;
 let esPremium = false;
 let waterMark = "";
 let modo = "live"; // o "sandbox"
+let modoAux = "test";
 //modo = "sandbox";
 
 //VISTA PREVIA EN CONTENEDOR DE LOGS PARA LOS ARCHIVOS QUE SE ESTÁN DESCARGANDO
@@ -350,51 +351,75 @@ async function validarCodigo(codigoAux) {
 
 //Validación premium
 async function validarPremium() {
-  const subscriptionId = localStorage.getItem("paypalSubscriptionId");
-  console.log("Id de suscripción en almacanamiento: ", subscriptionId);
+  const paypalId = localStorage.getItem("paypalSubscriptionId");
+  const stripeId = localStorage.getItem("stripeSubscriptionId");
 
-  if (!subscriptionId) {
+  console.log("IDs de suscripción:", { paypalId, stripeId });
+
+  if (!paypalId && !stripeId) {
     localStorage.setItem("premium", "false");
     aplicarEstadoPremium(false);
     return;
   }
 
-  try {
-    const res = await fetch(
-      `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${subscriptionId}&modo=${modo}`
-    );
-    const data = await res.json();
+  // Intentar validar PayPal primero si existe
+  if (paypalId) {
+    try {
+      const res = await fetch(
+        `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal`
+      );
+      const data = await res.json();
 
-    if (data.premium === true) {
-      localStorage.setItem("premium", "true");
-      localStorage.setItem("lastValidationDate", Date.now().toString());
-      aplicarEstadoPremium(true);
-    } else {
-      localStorage.setItem("premium", "false");
-      aplicarEstadoPremium(false);
+      if (data.premium === true) {
+        localStorage.setItem("premium", "true");
+        localStorage.setItem("lastValidationDate", Date.now().toString());
+        aplicarEstadoPremium(true);
+        return; // Salir si ya validó
+      }
+    } catch (err) {
+      console.error("❌ Error al verificar PayPal:", err);
     }
-  } catch (err) {
-    console.error("❌ Error al verificar premium:", err);
+  }
 
-    // Verificar periodo de gracia (7 días)
-    const lastValidation = localStorage.getItem("lastValidationDate");
-    if (lastValidation && subscriptionId) {
-      const daysDiff =
-        (Date.now() - parseInt(lastValidation)) / (1000 * 60 * 60 * 24);
-      if (daysDiff < 7) {
-        alert(
-          `[PREMIUM] Modo offline (Sin conexión a internet): Periodo de gracia activo (${
-            7 - Math.floor(daysDiff)
-          } días restantes.)`
-        );
+  // Intentar validar Stripe si existe (y PayPal falló o no existe)
+
+  if (stripeId) {
+    try {
+      const res = await fetch(
+        `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe`
+      );
+      const data = await res.json();
+
+      if (data.premium === true) {
+        localStorage.setItem("premium", "true");
+        localStorage.setItem("lastValidationDate", Date.now().toString());
         aplicarEstadoPremium(true);
         return;
       }
+    } catch (err) {
+      console.error("❌ Error al verificar Stripe:", err);
     }
-
-    localStorage.setItem("premium", "false");
-    aplicarEstadoPremium(false);
   }
+
+  // Si llegamos aquí, ninguna validación funcionó
+  // Verificar periodo de gracia (7 días)
+  const lastValidation = localStorage.getItem("lastValidationDate");
+  if (lastValidation && (paypalId || stripeId)) {
+    const daysDiff =
+      (Date.now() - parseInt(lastValidation)) / (1000 * 60 * 60 * 24);
+    if (daysDiff < 7) {
+      alert(
+        `[PREMIUM] Modo offline (Sin conexión a internet): Periodo de gracia activo (${
+          7 - Math.floor(daysDiff)
+        } días restantes.)`
+      );
+      aplicarEstadoPremium(true);
+      return;
+    }
+  }
+
+  localStorage.setItem("premium", "false");
+  aplicarEstadoPremium(false);
 }
 function aplicarEstadoPremium(esPremiumAux) {
   console.log("[PREMIUM] Aplicando estado premium:", esPremiumAux);
@@ -426,19 +451,23 @@ function aplicarEstadoPremium(esPremiumAux) {
   }
 }
 
+//Variables para pruebas unitarias
 //localStorage.setItem("paypalSubscriptionId", "");
+//localStorage.setItem("stripeSubscriptionId", "");
+
 const botonPremium = document.getElementById("botonPremium");
 const contenedorPremium = document.getElementById("paypal-button-container");
 async function validarCodigos() {
   const codigoIngresado = document.getElementById("codigoUnico").value.trim();
-
-  // Si el campo está vacío pero hay un subscriptionId almacenado, validar ese
-  const subscriptionIdAlmacenado = localStorage.getItem("paypalSubscriptionId");
+  const paypalIdAlmacenado = localStorage.getItem("paypalSubscriptionId");
+  const stripeIdAlmacenado = localStorage.getItem("stripeSubscriptionId");
 
   let codigoAValidar = codigoIngresado;
 
-  if (!codigoIngresado && subscriptionIdAlmacenado) {
-    codigoAValidar = subscriptionIdAlmacenado;
+  // Si no ingresó nada, intentar usar lo almacenado
+  if (!codigoIngresado) {
+    if (paypalIdAlmacenado) codigoAValidar = paypalIdAlmacenado;
+    else if (stripeIdAlmacenado) codigoAValidar = stripeIdAlmacenado;
   }
 
   if (!codigoAValidar) {
@@ -446,47 +475,59 @@ async function validarCodigos() {
     return;
   }
 
-  try {
-    // Validar en el servidor
-    const res = await fetch(
-      `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${codigoAValidar}&modo=${modo}`
-    );
+  // Función auxiliar para validar
+  const validarConProveedor = async (id, proveedor) => {
+    let url = `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${id}&proveedor=${proveedor}`;
+    if (proveedor === "paypal") url += `&modo=${modo}`;
+    if (proveedor === "stripe") url += `&modo=${modoAux}`;
 
-    if (!res.ok) {
-      throw new Error("Error al conectar con el servidor");
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Error servidor");
+    return await res.json();
+  };
+
+  try {
+    // 1. Intentar validar como PayPal
+    console.log("Intentando validar como PayPal...");
+    try {
+      const dataPaypal = await validarConProveedor(codigoAValidar, "paypal");
+      if (dataPaypal.premium === true) {
+        alert("✅ Código PayPal válido, acceso premium activado");
+        if (codigoIngresado) {
+          localStorage.setItem("paypalSubscriptionId", codigoIngresado);
+          localStorage.removeItem("stripeSubscriptionId"); // Limpiar el otro para evitar conflictos
+        }
+        localStorage.setItem("premium", "true");
+        localStorage.setItem("lastValidationDate", Date.now().toString());
+        aplicarEstadoPremium(true);
+        return;
+      }
+    } catch (e) {
+      console.log("Fallo validación PayPal, intentando Stripe...");
     }
 
-    const data = await res.json();
-
-    if (data.premium === true) {
-      alert("✅ Código válido, acceso premium activado");
-
-      // Guardar el subscriptionId si es válido
+    // 2. Intentar validar como Stripe
+    console.log("Intentando validar como Stripe...");
+    const dataStripe = await validarConProveedor(codigoAValidar, "stripe");
+    if (dataStripe.premium === true) {
+      alert("✅ Código Stripe válido, acceso premium activado");
       if (codigoIngresado) {
-        localStorage.setItem("paypalSubscriptionId", codigoIngresado);
+        localStorage.setItem("stripeSubscriptionId", codigoIngresado);
+        localStorage.removeItem("paypalSubscriptionId"); // Limpiar el otro
       }
-
       localStorage.setItem("premium", "true");
       localStorage.setItem("lastValidationDate", Date.now().toString());
       aplicarEstadoPremium(true);
-    } else {
-      alert("❌ Código inválido o expirado.");
-
-      // Si estamos validando el código almacenado y no es válido, limpiarlo
-      if (!codigoIngresado && subscriptionIdAlmacenado) {
-        localStorage.removeItem("paypalSubscriptionId");
-        localStorage.setItem("premium", "false");
-        aplicarEstadoPremium(false);
-      } else {
-        localStorage.setItem("premium", "false");
-        aplicarEstadoPremium(false);
-      }
+      return;
     }
-  } catch (err) {
-    console.error("❌ Error al verificar premium:", err);
-    alert("❌ Error al conectar con el servidor. Intenta nuevamente.");
+
+    // Si llegamos aquí, fallaron ambos
+    alert("❌ Código inválido o expirado en ambos proveedores.");
     localStorage.setItem("premium", "false");
     aplicarEstadoPremium(false);
+  } catch (err) {
+    console.error("❌ Error general al verificar:", err);
+    alert("❌ Error al conectar con el servidor. Intenta nuevamente.");
   }
 }
 
@@ -660,26 +701,26 @@ botonPremium.addEventListener("click", function () {
     contenedorComparacion.appendChild(columnaPremium);
 
     contenedorInterno.appendChild(contenedorComparacion);
-// Mensaje motivacional
-const mensajeMotivacional = document.createElement("div");
-mensajeMotivacional.style.textAlign = "center";
-mensajeMotivacional.style.marginBottom = "15px";
-mensajeMotivacional.style.padding = "10px";
-mensajeMotivacional.style.background = "rgba(210, 105, 30, 0.2)";
-mensajeMotivacional.style.borderRadius = "8px";
-mensajeMotivacional.style.border = "1px solid rgba(210, 105, 30, 0.3)";
+    // Mensaje motivacional
+    const mensajeMotivacional = document.createElement("div");
+    mensajeMotivacional.style.textAlign = "center";
+    mensajeMotivacional.style.marginBottom = "15px";
+    mensajeMotivacional.style.padding = "10px";
+    mensajeMotivacional.style.background = "rgba(210, 105, 30, 0.2)";
+    mensajeMotivacional.style.borderRadius = "8px";
+    mensajeMotivacional.style.border = "1px solid rgba(210, 105, 30, 0.3)";
 
-const textoMotivacional = document.createElement("p");
-textoMotivacional.innerHTML =
-  "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
-textoMotivacional.style.color = "#FFF8DC";
-textoMotivacional.style.margin = "0";
-textoMotivacional.style.fontSize = "14px";
-textoMotivacional.style.lineHeight = "1.3";
-textoMotivacional.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
+    const textoMotivacional = document.createElement("p");
+    textoMotivacional.innerHTML =
+      "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
+    textoMotivacional.style.color = "#FFF8DC";
+    textoMotivacional.style.margin = "0";
+    textoMotivacional.style.fontSize = "14px";
+    textoMotivacional.style.lineHeight = "1.3";
+    textoMotivacional.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
 
-mensajeMotivacional.appendChild(textoMotivacional);
-contenedorInterno.appendChild(mensajeMotivacional);
+    mensajeMotivacional.appendChild(textoMotivacional);
+    contenedorInterno.appendChild(mensajeMotivacional);
 
     // Separador
     const separador = document.createElement("div");
@@ -703,12 +744,12 @@ contenedorInterno.appendChild(mensajeMotivacional);
     separador.appendChild(textoSeparador);
     contenedorInterno.appendChild(separador);
 
-    
-
-    // Contenedor de PayPal - ESPACIO RESERVADO
+    // Contenedor de PayPal - ESPACIO RESERVADO (MENSUAL)
     const paypalContainer = document.createElement("div");
     paypalContainer.id = "paypal-button-container-inner";
     paypalContainer.style.width = "100%";
+    paypalContainer.style.maxWidth = "300px";
+    paypalContainer.style.alignSelf = "center";
     paypalContainer.style.minHeight = "50px";
     paypalContainer.style.display = "flex";
     paypalContainer.style.justifyContent = "center";
@@ -724,6 +765,111 @@ contenedorInterno.appendChild(mensajeMotivacional);
     paypalContainer.appendChild(textoCargaPayPal);
 
     contenedorInterno.appendChild(paypalContainer);
+
+    // Separador para Plan Anual
+    const separadorAnual = document.createElement("div");
+    separadorAnual.style.width = "100%";
+    separadorAnual.style.textAlign = "center";
+    separadorAnual.style.margin = "10px 0";
+    separadorAnual.innerHTML =
+      "<span style='color: #FFF8DC; font-weight: bold; font-family: Verdana; font-size: 14px;'>O con el Plan Anual de $23.88</span>";
+    contenedorInterno.appendChild(separadorAnual);
+
+    // Contenedor de PayPal - ESPACIO RESERVADO (ANUAL)
+    const paypalContainerAnual = document.createElement("div");
+    paypalContainerAnual.id = "paypal-button-container-anual";
+    paypalContainerAnual.style.width = "100%";
+    paypalContainerAnual.style.maxWidth = "300px";
+    paypalContainerAnual.style.alignSelf = "center";
+    paypalContainerAnual.style.minHeight = "50px";
+    paypalContainerAnual.style.display = "flex";
+    paypalContainerAnual.style.justifyContent = "center";
+    paypalContainerAnual.style.alignItems = "center";
+    paypalContainerAnual.style.marginBottom = "10px";
+    contenedorInterno.appendChild(paypalContainerAnual);
+
+    // --- SECCIÓN STRIPE ---
+    const separadorStripe = document.createElement("div");
+    separadorStripe.style.width = "100%";
+    separadorStripe.style.textAlign = "center";
+    separadorStripe.style.margin = "15px 0 10px 0";
+    separadorStripe.innerHTML =
+      "<span style='color: #FFF8DC; font-weight: bold; font-family: Verdana; font-size: 14px;'>💳 O paga con Tarjeta (Stripe) (Próximamente)</span>";
+    contenedorInterno.appendChild(separadorStripe);
+
+    const contenedorStripe = document.createElement("div");
+    contenedorStripe.style.display = "flex";
+    contenedorStripe.style.flexDirection = "column";
+    contenedorStripe.style.gap = "10px";
+    contenedorStripe.style.alignItems = "center";
+    contenedorStripe.style.width = "100%";
+
+    // Botón Stripe Mensual
+    const btnStripeMensual = document.createElement("a");
+    btnStripeMensual.href = "#"; // REEMPLAZAR CON URL DE PAGO STRIPE MENSUAL
+    btnStripeMensual.target = "_blank";
+    btnStripeMensual.textContent = "Suscripción Mensual ($1.99)";
+    btnStripeMensual.style.display = "block";
+    btnStripeMensual.style.width = "100%";
+    btnStripeMensual.style.maxWidth = "300px";
+    btnStripeMensual.style.padding = "10px";
+    btnStripeMensual.style.textAlign = "center";
+    btnStripeMensual.style.background = "#6772e5"; // Color Stripe
+    btnStripeMensual.style.color = "white";
+    btnStripeMensual.style.borderRadius = "4px";
+    btnStripeMensual.style.textDecoration = "none";
+    btnStripeMensual.style.fontWeight = "bold";
+    btnStripeMensual.style.fontFamily =
+      "Helvetica Neue, Helvetica, Arial, sans-serif";
+    btnStripeMensual.onclick = (e) => {
+      e.preventDefault();
+      // Abrir en navegador externo si es Electron
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        window.electronAPI.openExternal("PONER_AQUI_URL_STRIPE_MENSUAL");
+      } else {
+        window.open("PONER_AQUI_URL_STRIPE_MENSUAL", "_blank");
+      }
+    };
+    contenedorStripe.appendChild(btnStripeMensual);
+
+    // Botón Stripe Anual
+    const btnStripeAnual = document.createElement("a");
+    btnStripeAnual.href = "#"; // REEMPLAZAR CON URL DE PAGO STRIPE ANUAL
+    btnStripeAnual.target = "_blank";
+    btnStripeAnual.textContent = "Suscripción Anual ($23.88)";
+    btnStripeAnual.style.display = "block";
+    btnStripeAnual.style.width = "100%";
+    btnStripeAnual.style.maxWidth = "300px";
+    btnStripeAnual.style.padding = "10px";
+    btnStripeAnual.style.textAlign = "center";
+    btnStripeAnual.style.background = "#5469d4"; // Color Stripe un poco más oscuro
+    btnStripeAnual.style.color = "white";
+    btnStripeAnual.style.borderRadius = "4px";
+    btnStripeAnual.style.textDecoration = "none";
+    btnStripeAnual.style.fontWeight = "bold";
+    btnStripeAnual.style.fontFamily =
+      "Helvetica Neue, Helvetica, Arial, sans-serif";
+    btnStripeAnual.onclick = (e) => {
+      e.preventDefault();
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        window.electronAPI.openExternal("PONER_AQUI_URL_STRIPE_ANUAL");
+      } else {
+        window.open("PONER_AQUI_URL_STRIPE_ANUAL", "_blank");
+      }
+    };
+    contenedorStripe.appendChild(btnStripeAnual);
+
+    // Nota Stripe
+    const notaStripe = document.createElement("p");
+    notaStripe.textContent =
+      "Recibirás un código de activación en tu correo tras el pago.";
+    notaStripe.style.color = "#FFF8DC";
+    notaStripe.style.fontSize = "11px";
+    notaStripe.style.fontStyle = "italic";
+    notaStripe.style.marginTop = "5px";
+    contenedorStripe.appendChild(notaStripe);
+
+    //contenedorInterno.appendChild(contenedorStripe);
 
     // Agregar contenedor interno al principal
     contenedorPremium.appendChild(contenedorInterno);
@@ -811,8 +957,6 @@ contenedorInterno.appendChild(mensajeMotivacional);
     seccionCodigo.appendChild(contenedorInput);
     contenedorInterno.appendChild(seccionCodigo);
 
-    
-
     // NUEVO: Mensaje sobre cambios en el monto
     const mensajeMonto = document.createElement("div");
     mensajeMonto.style.textAlign = "center";
@@ -899,7 +1043,46 @@ contenedorInterno.appendChild(mensajeMotivacional);
             },
           })
           .render("#paypal-button-container-inner");
-        console.log("✅ Botón de PayPal renderizado correctamente");
+
+        // RENDERIZAR BOTÓN ANUAL
+        window.paypal
+          .Buttons({
+            style: {
+              layout: "vertical",
+              color: "blue", // Diferenciar color para el anual
+              shape: "rect",
+              label: "subscribe",
+              height: 40,
+              tagline: false,
+            },
+            createSubscription: function (data, actions) {
+              return actions.subscription.create({
+                plan_id: "P-4P300126BF854730HNE4GATY",
+              });
+            },
+            onApprove: function (data, actions) {
+              const subscriptionId = data.subscriptionID;
+              alert(
+                "🎉 ¡Suscripción Anual exitosa! Ahora disfrutas de todas las ventajas premium."
+              );
+
+              localStorage.setItem("paypalSubscriptionId", subscriptionId);
+              localStorage.setItem("premium", "true");
+              localStorage.setItem("lastValidationDate", Date.now().toString());
+
+              location.reload();
+            },
+            onCancel: function () {
+              alert("Suscripción cancelada.");
+            },
+            onError: function (err) {
+              console.error("Error interno de PayPal (Anual):", err);
+              alert("Error en el proceso de pago: " + err);
+            },
+          })
+          .render("#paypal-button-container-anual");
+
+        console.log("✅ Botones de PayPal renderizados correctamente");
       } catch (error) {
         console.error("Error al renderizar botones de PayPal:", error);
         // Mostrar el error específico en pantalla

@@ -11,9 +11,17 @@ const {
 const { autoUpdater } = require("electron-updater");
 const si = require("systeminformation");
 const path = require("path");
-const { setMainWindow, flushBuffer, log, enviarArchivoDescargado } = require("./logHelper");
+const {
+  setMainWindow,
+  flushBuffer,
+  log,
+  enviarArchivoDescargado,
+} = require("./logHelper");
 const { verificarCarpetasYReiniciarSiFaltan } = require("./verificarWrapper");
-const { iniciarControlRemoto, detenerControlRemoto } = require("./controlRemoto");
+const {
+  iniciarControlRemoto,
+  detenerControlRemoto,
+} = require("./controlRemoto");
 let tray = null; // Bandeja del sistema
 let win = null; // Ventana principal
 const express = require("express");
@@ -25,7 +33,7 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const server = express();
 server.use(express.static(path.join(__dirname, "src")));
-server.use(express.static(path.join(app.getPath('userData'), 'src')));
+server.use(express.static(path.join(app.getPath("userData"), "src")));
 server.listen(3000, () => {
   console.log("Servidor corriendo en http://localhost:3000");
 });
@@ -51,12 +59,12 @@ function createWindow() {
       devTools: false, // Desactiva devTools
     },
   });
-  
+
   //win.webContents.openDevTools({ mode: 'undocked' });
 
   setMainWindow(win);
-global.mainWindow = win; // para compatibilidad con módulos que usen global
-flushBuffer();
+  global.mainWindow = win; // para compatibilidad con módulos que usen global
+  flushBuffer();
   // Maximizar la ventana al iniciar
   win.maximize();
   win.loadURL("http://localhost:3000/index.html"); // Archivo HTML del himnario
@@ -107,13 +115,13 @@ flushBuffer();
   });
 
   // Escuchar cuando el renderer esté listo para recibir logs
-  ipcMain.on('renderer-ready', () => {
+  ipcMain.on("renderer-ready", () => {
     log("[MAIN] Renderer ready, flushing buffer...");
     flushBuffer();
   });
 
   // ✅ Mostrar ventana solo cuando la app esté COMPLETAMENTE lista
-  ipcMain.on('app-ready', () => {
+  ipcMain.on("app-ready", () => {
     log("[MAIN] App completamente cargada, mostrando ventana...");
     if (win && !win.isDestroyed()) {
       win.show();
@@ -149,11 +157,10 @@ flushBuffer();
     //   src: path.join(app.getPath("userData"), "src"),
     // });
   });
-
 }
 
 // ✅ IPC Síncrono para obtener paths inmediatamente en preload
-ipcMain.on('get-paths-sync', (event) => {
+ipcMain.on("get-paths-sync", (event) => {
   event.returnValue = {
     userData: app.getPath("userData"),
     src: path.join(app.getPath("userData"), "src"),
@@ -164,28 +171,28 @@ ipcMain.on('get-paths-sync', (event) => {
 let esPremiumGlobal = false;
 
 // 🔐 IPC para recibir el estado premium desde el renderer
-ipcMain.on('set-premium-status', (event, esPremium) => {
+ipcMain.on("set-premium-status", (event, esPremium) => {
   console.log(`[PREMIUM] Estado premium actualizado: ${esPremium}`);
   esPremiumGlobal = esPremium;
-  
+
   // Control remoto solo para usuarios premium
   if (esPremium && win && !win.isDestroyed()) {
     // Si es premium y el control remoto no está activo, iniciarlo
     if (!global.controlRemotoEstado || !global.controlRemotoEstado.activo) {
-      console.log('[CONTROL REMOTO] Iniciando para usuario premium...');
+      console.log("[CONTROL REMOTO] Iniciando para usuario premium...");
       iniciarControlRemoto(win);
     }
   } else {
     // Si no es premium y el control remoto está activo, detenerlo
     if (global.controlRemotoEstado && global.controlRemotoEstado.activo) {
-      console.log('[CONTROL REMOTO] Deteniendo - usuario no premium');
+      console.log("[CONTROL REMOTO] Deteniendo - usuario no premium");
       detenerControlRemoto();
     }
   }
 });
 
 // 🔐 IPC para verificar estado premium desde el renderer
-ipcMain.handle('get-premium-status', () => {
+ipcMain.handle("get-premium-status", () => {
   return esPremiumGlobal;
 });
 
@@ -240,14 +247,16 @@ async function ejecutarVerificacion() {
     //});
 
     // createWindow() ya se llamó al inicio de ejecutarVerificacion
-    
+
     // Esperar un momento para asegurar que el renderer esté listo (opcional, pero ayuda)
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
 
     const reinicio = await verificarCarpetasYReiniciarSiFaltan(app);
 
     if (reinicio) {
-      log("[MAIN] Archivos faltantes. Mostrando logs, reiniciando categorías...");
+      log(
+        "[MAIN] Archivos faltantes. Mostrando logs, reiniciando categorías..."
+      );
 
       // Esperar 3 segundos para que el usuario vea el mensaje final, luego ocultar logs
       setTimeout(() => {
@@ -370,29 +379,32 @@ ipcMain.on("abrir-ventana", (event, monitorIndex) => {
 // Control remoto - obtener estado actual
 ipcMain.handle("obtener-estado-control-remoto", async () => {
   if (global.controlRemotoEstado && global.controlRemotoEstado.activo) {
-    console.log('📡 Solicitando estado del control remoto:', global.controlRemotoEstado);
+    console.log(
+      "📡 Solicitando estado del control remoto:",
+      global.controlRemotoEstado
+    );
     return global.controlRemotoEstado;
   }
-  console.log('⚠️ Control remoto no está activo aún');
+  console.log("⚠️ Control remoto no está activo aún");
   return null;
 });
 
 // Control de volumen del sistema
 ipcMain.handle("obtener-volumen", async () => {
   try {
-    const loudness = require('loudness');
+    const loudness = require("loudness");
     const volumen = await loudness.getVolume();
     return volumen;
   } catch (error) {
-    console.error('Error al obtener volumen:', error);
+    console.error("Error al obtener volumen:", error);
     return 100;
   }
 });
 
 ipcMain.handle("cambiar-volumen", async (event, volumen) => {
   try {
-    const loudness = require('loudness');
-    
+    const loudness = require("loudness");
+
     if (volumen === 0) {
       // Silenciar el sistema
       await loudness.setMuted(true);
@@ -407,17 +419,20 @@ ipcMain.handle("cambiar-volumen", async (event, volumen) => {
       await loudness.setVolume(volumen);
       console.log(`🔊 Volumen del sistema cambiado a: ${volumen}%`);
     }
-    
+
     return true;
   } catch (error) {
-    console.error('Error al cambiar volumen:', error);
+    console.error("Error al cambiar volumen:", error);
     return false;
   }
 });
 
 //ACTUALIZACIONES DE LA APP - SISTEMA MEJORADO
-const fs = require('fs');
-const updateStatusPath = path.join(app.getPath('userData'), 'update-status.json');
+const fs = require("fs");
+const updateStatusPath = path.join(
+  app.getPath("userData"),
+  "update-status.json"
+);
 
 // Estado de la actualización
 let updateDownloaded = false;
@@ -428,7 +443,7 @@ function saveUpdateStatus(status) {
   try {
     fs.writeFileSync(updateStatusPath, JSON.stringify(status));
   } catch (err) {
-    log('[UPDATE] Error al guardar estado: ' + err.message);
+    log("[UPDATE] Error al guardar estado: " + err.message);
   }
 }
 
@@ -436,10 +451,10 @@ function saveUpdateStatus(status) {
 function readUpdateStatus() {
   try {
     if (fs.existsSync(updateStatusPath)) {
-      return JSON.parse(fs.readFileSync(updateStatusPath, 'utf8'));
+      return JSON.parse(fs.readFileSync(updateStatusPath, "utf8"));
     }
   } catch (err) {
-    log('[UPDATE] Error al leer estado: ' + err.message);
+    log("[UPDATE] Error al leer estado: " + err.message);
   }
   return null;
 }
@@ -452,41 +467,45 @@ autoUpdater.autoInstallOnAppQuit = true; // Instalar al cerrar si ya se descarg�
 autoUpdater.on("update-available", (info) => {
   updateAvailable = true;
   log(`[UPDATE] Actualización disponible: v${info.version}`);
-  
+
   // Preguntar al usuario qué quiere hacer
-  dialog.showMessageBox(win, {
-    type: "info",
-    title: "Actualización Disponible",
-    message: `Himnario Adventista PRO v${info.version} está disponible`,
-    detail: `Versión actual: v${app.getVersion()}\nNueva versión: v${info.version}\n\n¿Desea descargar la actualización ahora?\n\nLa descarga se realizará en segundo plano y no interrumpirá su trabajo.`,
-    buttons: ["Descargar Ahora", "Más Tarde"],
-    defaultId: 0,
-    cancelId: 1
-  }).then((response) => {
-    if (response.response === 0) {
-      // Usuario eligió descargar ahora
-      log('[UPDATE] Usuario eligió descargar ahora');
-      autoUpdater.downloadUpdate();
-      
-      // Notificar al usuario que la descarga comenzó
-      if (win && !win.isDestroyed()) {
-        win.webContents.send('update-downloading-started');
+  dialog
+    .showMessageBox(win, {
+      type: "info",
+      title: "Actualización Disponible",
+      message: `Himnario Adventista PRO v${info.version} está disponible`,
+      detail: `Versión actual: v${app.getVersion()}\nNueva versión: v${
+        info.version
+      }\n\n¿Desea descargar la actualización ahora?\n\nLa descarga se realizará en segundo plano y no interrumpirá su trabajo.`,
+      buttons: ["Descargar Ahora", "Más Tarde"],
+      defaultId: 0,
+      cancelId: 1,
+    })
+    .then((response) => {
+      if (response.response === 0) {
+        // Usuario eligió descargar ahora
+        log("[UPDATE] Usuario eligió descargar ahora");
+        autoUpdater.downloadUpdate();
+
+        // Notificar al usuario que la descarga comenzó
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("update-downloading-started");
+        }
+      } else {
+        // Usuario pospuso la actualización
+        log("[UPDATE] Usuario pospuso la actualización");
+        saveUpdateStatus({
+          postponed: true,
+          version: info.version,
+          date: Date.now(),
+        });
       }
-    } else {
-      // Usuario pospuso la actualización
-      log('[UPDATE] Usuario pospuso la actualización');
-      saveUpdateStatus({
-        postponed: true,
-        version: info.version,
-        date: Date.now()
-      });
-    }
-  });
+    });
 });
 
 // Cuando no hay actualizaciones disponibles
 autoUpdater.on("update-not-available", () => {
-  log('[UPDATE] No hay actualizaciones disponibles');
+  log("[UPDATE] No hay actualizaciones disponibles");
   updateAvailable = false;
   // Limpiar el estado de actualización pospuesta si existe
   if (fs.existsSync(updateStatusPath)) {
@@ -496,16 +515,20 @@ autoUpdater.on("update-not-available", () => {
 
 // Progreso de descarga
 autoUpdater.on("download-progress", (progressObj) => {
-  const logMessage = `Descarga en progreso: ${Math.round(progressObj.percent)}% - ${(progressObj.transferred / 1048576).toFixed(2)}MB de ${(progressObj.total / 1048576).toFixed(2)}MB`;
+  const logMessage = `Descarga en progreso: ${Math.round(
+    progressObj.percent
+  )}% - ${(progressObj.transferred / 1048576).toFixed(2)}MB de ${(
+    progressObj.total / 1048576
+  ).toFixed(2)}MB`;
   log(`[UPDATE] ${logMessage}`);
-  
+
   // Enviar progreso al renderer
   if (win && !win.isDestroyed()) {
-    win.webContents.send('update-download-progress', {
+    win.webContents.send("update-download-progress", {
       percent: Math.round(progressObj.percent),
       transferred: (progressObj.transferred / 1048576).toFixed(2),
       total: (progressObj.total / 1048576).toFixed(2),
-      speed: (progressObj.bytesPerSecond / 1048576).toFixed(2)
+      speed: (progressObj.bytesPerSecond / 1048576).toFixed(2),
     });
   }
 });
@@ -514,76 +537,79 @@ autoUpdater.on("download-progress", (progressObj) => {
 autoUpdater.on("update-downloaded", (info) => {
   updateDownloaded = true;
   log(`[UPDATE] Actualización v${info.version} descargada completamente`);
-  
+
   // Limpiar estado de pospuesta ya que ahora está descargada
   if (fs.existsSync(updateStatusPath)) {
     fs.unlinkSync(updateStatusPath);
   }
-  
+
   // Notificar al renderer que la descarga terminó
   if (win && !win.isDestroyed()) {
-    win.webContents.send('update-downloaded');
+    win.webContents.send("update-downloaded");
   }
-  
+
   // Preguntar al usuario si quiere reiniciar ahora
-  dialog.showMessageBox(win, {
-    type: "info",
-    title: "Actualización Lista para Instalar",
-    message: `Himnario Adventista PRO v${info.version} está listo para instalarse`,
-    detail: "La actualización se ha descargado correctamente.\n\n¿Desea reiniciar la aplicación ahora para completar la instalación?\n\nSi elige 'Más Tarde', la actualización se instalará la próxima vez que cierre la aplicación.",
-    buttons: ["Reiniciar Ahora", "Más Tarde"],
-    defaultId: 0,
-    cancelId: 1
-  }).then((response) => {
-    if (response.response === 0) {
-      // Usuario quiere reiniciar ahora
-      log('[UPDATE] Usuario eligió reiniciar ahora');
-      autoUpdater.quitAndInstall(false, true);
-    } else {
-      // Usuario pospuso el reinicio pero la actualización se instalará al cerrar
-      log('[UPDATE] Usuario pospuso el reinicio - se instalará al cerrar');
-    }
-  });
+  dialog
+    .showMessageBox(win, {
+      type: "info",
+      title: "Actualización Lista para Instalar",
+      message: `Himnario Adventista PRO v${info.version} está listo para instalarse`,
+      detail:
+        "La actualización se ha descargado correctamente.\n\n¿Desea reiniciar la aplicación ahora para completar la instalación?\n\nSi elige 'Más Tarde', la actualización se instalará la próxima vez que cierre la aplicación.",
+      buttons: ["Reiniciar Ahora", "Más Tarde"],
+      defaultId: 0,
+      cancelId: 1,
+    })
+    .then((response) => {
+      if (response.response === 0) {
+        // Usuario quiere reiniciar ahora
+        log("[UPDATE] Usuario eligió reiniciar ahora");
+        autoUpdater.quitAndInstall(false, true);
+      } else {
+        // Usuario pospuso el reinicio pero la actualización se instalará al cerrar
+        log("[UPDATE] Usuario pospuso el reinicio - se instalará al cerrar");
+      }
+    });
 });
 
 // Manejo de errores
 autoUpdater.on("error", (err) => {
-  log('[UPDATE] Error en autoUpdater: ' + err.message);
+  log("[UPDATE] Error en autoUpdater: " + err.message);
   updateAvailable = false;
   updateDownloaded = false;
-  
+
   // Notificar al renderer para ocultar el widget
   if (win && !win.isDestroyed()) {
-    win.webContents.send('update-error', err.message);
-    
+    win.webContents.send("update-error", err.message);
+
     dialog.showMessageBox(win, {
       type: "error",
       title: "Error de Actualización",
       message: "Ocurrió un error al intentar actualizar la aplicación",
       detail: err.message,
-      buttons: ["OK"]
+      buttons: ["OK"],
     });
   }
 });
 
 // Función para verificar actualizaciones manualmente (puede ser llamada desde el renderer)
-ipcMain.on('check-for-updates', () => {
-  log('[UPDATE] Verificación manual de actualizaciones solicitada');
+ipcMain.on("check-for-updates", () => {
+  log("[UPDATE] Verificación manual de actualizaciones solicitada");
   autoUpdater.checkForUpdates();
 });
 
 // Función para descargar actualización cuando el usuario lo decida después
-ipcMain.on('download-update-now', () => {
+ipcMain.on("download-update-now", () => {
   if (updateAvailable && !updateDownloaded) {
-    log('[UPDATE] Descarga manual iniciada por el usuario');
+    log("[UPDATE] Descarga manual iniciada por el usuario");
     autoUpdater.downloadUpdate();
   }
 });
 
 // Función para instalar actualización cuando esté descargada
-ipcMain.on('install-update-now', () => {
+ipcMain.on("install-update-now", () => {
   if (updateDownloaded) {
-    log('[UPDATE] Instalación manual iniciada por el usuario');
+    log("[UPDATE] Instalación manual iniciada por el usuario");
     autoUpdater.quitAndInstall(false, true);
   }
 });
@@ -594,10 +620,10 @@ app.whenReady().then(() => {
   ejecutarVerificacion(); // ✅ ahora con lógica de reinicio/cierre de logs
   console.log("Monitores disponibles:");
   mostrarMonitores();
-  
+
   // 📱 Nota: El control remoto se iniciará solo cuando el renderer confirme que el usuario es premium
   // Ver el IPC handler 'set-premium-status' más abajo
-  
+
   // 📡 Detectar cuando se agrega un monitor
   screen.on("display-added", (event, newDisplay) => {
     console.log("🟢 Monitor agregado:", newDisplay.model);
@@ -616,8 +642,8 @@ app.whenReady().then(() => {
   });
 });
 
-ipcMain.on('renderer-error', (evt, err) => {
-  console.error('Renderer error capturado:', err);
+ipcMain.on("renderer-error", (evt, err) => {
+  console.error("Renderer error capturado:", err);
 });
 
 app.on("window-all-closed", () => {
