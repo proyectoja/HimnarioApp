@@ -164,6 +164,7 @@ html {
   margin: 0;
   padding: 0;
   z-index: 5;
+  box-sizing: border-box;
 }
 #videoPlayerContainer {
   position: absolute;
@@ -603,8 +604,6 @@ h5 {
     Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
-
-
 /* Estilo de la clase tooltip-text que muestra el tooltip */
 #tooltip {
   color: white;
@@ -652,7 +651,8 @@ h5 {
   margin: 15px;
   margin-bottom: 60px;
   overflow: hidden;
-  height: 100%;
+  width: 100%;
+  height: calc(100% - 70px);
 }
 #menu,
 #contenido {
@@ -969,8 +969,8 @@ h5 {
 }
 
 .contenedor-buscador .botonBiblia {
-  margin-right: 15px;
-  margin-left: 0px;
+  margin-right: 0px;
+  margin-left: 15px;
   display: none;
 }
 .contenedor-buscador .botonYouTube {
@@ -1179,7 +1179,6 @@ h5 {
   right: 0px;
   width: 35px;
   height: 35px;
-  border-bottom-left-radius: 1rem;
   margin: 0px;
   padding: 0px;
   background-image: url("iconos/ico_mode_voices.png");
@@ -1190,6 +1189,7 @@ h5 {
   mix-blend-mode: luminosity;
   filter: contrast(3);
 }
+
 .contenedor-video-duracion {
   display: flex;
   position: absolute;
@@ -1262,20 +1262,45 @@ h5 {
   transform: scale(1);
 }
 
+/* Contenedor de dos columnas */
+.contenedor-columnas {
+  display: flex;
+  position: relative;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100%; /* ← Ocupa el espacio disponible en el contenedor padre flex */
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* ← Previene desbordamiento */
+}
+
+/* El himnario visible por defecto */
+#himnario {
+  display: grid; /*GRID*/
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  overflow-y: auto;
+  width: 100%;
+  height: 100%;
+}
+
 /*ESTILOS CONTENEDOR YOU TUBE*/
-.contenedor-principal #contenedor-youtube {
+#contenedor-youtube {
   display: none;
   flex-direction: column;
   position: relative;
+  flex-wrap: nowrap;
   overflow: hidden;
-  height: 100%;
+  width: 100%;
+  height: calc(100% - 70px);
   background-color: brown;
   padding: 5px;
   margin: 15px;
-  margin-bottom: 60px;
   border-radius: 1rem;
   box-sizing: border-box;
 }
+
 #contenedor-youtube img {
   width: 100px;
   height: auto;
@@ -1384,7 +1409,9 @@ h5 {
   font-size: 24px;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
-  width: 450px;
+  min-width: 100px;
+  width: 100%;
+  max-width: 450px;
   margin-left: 10px;
   margin-right: 10px;
   border-radius: 1rem;
@@ -1411,7 +1438,7 @@ h5 {
   position: relative;
   align-items: center;
   justify-content: center;
-  width: 150px;
+  width: auto;
   height: auto;
   font-size: 30px;
   margin: 0%;
@@ -1550,8 +1577,9 @@ h5 {
   margin-left: 15px;
   display: none;
   position: relative;
-  width: 150px;
-  height: auto;
+  min-width: 140px;
+  max-width: 140px;
+  min-height: 30px;
   background-color: brown;
   border-radius: 30px;
   padding: 0px;
@@ -1748,9 +1776,6 @@ input[type="number"] {
   overflow: hidden;
   font-size: 16px;
   z-index: 10;
-
-  
-  
 }
 
 #chatbro {
@@ -1781,7 +1806,8 @@ input[type="number"] {
   flex-direction: row;
   position: relative;
   overflow: hidden;
-  height: 100%;
+  width: 100%;
+  height: calc(100% - 70px);
   background-color: brown;
   padding: 5px;
   margin: 15px;
@@ -1824,7 +1850,6 @@ input[type="number"] {
   font-size: 20px;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
-  
 }
 .himno:hover {
   background: rgb(100, 12, 12);
@@ -1873,14 +1898,13 @@ audio {
   margin-bottom: 10px;
   width: 100%;
   background-color: brown;
-      padding: 10px;
-      font-size: 20px;
-      border: 5px solid rgb(235, 117, 117);
-      border-radius: 8px;
-      background-color: #f9f9f9;
-      color: #333;
-      cursor: pointer;
-      
+  padding: 10px;
+  font-size: 20px;
+  border: 5px solid rgb(235, 117, 117);
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  color: #333;
+  cursor: pointer;
 }
 #tituloHimno {
   padding: 8px;
@@ -1896,7 +1920,6 @@ audio {
 }
 #tituloHimno:hover {
   background: #d4d4d4;
-
 }
 
 .contenedor-buscador .botonHimnosPro {
@@ -1905,7 +1928,7 @@ audio {
   display: none;
 }
 
-#previsualizacion img{
+#previsualizacion img {
   width: 50%;
   height: auto;
   left: 100%;
@@ -1919,23 +1942,9 @@ audio {
   background: white;
 }
 .himno-seleccionado {
-  background-color:  rgb(0, 0, 0, 0.5); 
+  background-color: rgb(0, 0, 0, 0.5);
   color: #ccc;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /************************************************************/
 /*CONFIGURACIÓN DEL PANEL 2*/
@@ -2071,14 +2080,6 @@ audio {
   box-shadow: 0 0 10px white;
 }
 
-
-
-
-
-
-
-
-
 /*ESTILOS PARA CARGAR IMAGEN PARA FONDO DE LOS HIMNOS PERSONALIZADOS EN PROYECCIÓN Y SWITH*/
 /* Contenedor del switch */
 .contenedor-imagenes2 .switch2 {
@@ -2123,14 +2124,14 @@ audio {
 
 /* Cuando está activado */
 .contenedor-imagenes2 input:checked + .slider2 {
-  background-color: #2196F3;
+  background-color: #2196f3;
 }
 
 .contenedor-imagenes2 input:checked + .slider2:before {
   transform: translateX(26px);
 }
 
-#botonCargarImagen{
+#botonCargarImagen {
   width: auto;
   padding: 10px;
   border-radius: 1rem;
@@ -2140,9 +2141,8 @@ audio {
   cursor: pointer;
 }
 
-
 /*ESTILOS PARA EL SELECT PRO MONITOR*/
-#contenedorVisitasYMonitores{
+#contenedorVisitasYMonitores {
   display: flex;
   position: relative;
   width: 100%;
@@ -2154,13 +2154,14 @@ audio {
   text-wrap: nowrap;
   border-top: 1px solid rgb(255, 255, 255);
   border-bottom: 1px solid rgb(255, 255, 255);
-  color: white;  
+  color: white;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
   font-style: italic;
   background-color: rgba(165, 42, 42, 0.5);
+  margin-bottom: 5px;
 }
-#contenedor-monitores{
+#contenedor-monitores {
   display: none;
   position: relative;
   flex-direction: row;
@@ -2169,11 +2170,11 @@ audio {
   justify-content: center;
   align-items: center;
 }
-#contenedor-monitores img{
+#contenedor-monitores img {
   width: auto;
   height: 100%;
 }
-#selectMonitores{
+#selectMonitores {
   display: flex;
   position: relative;
   width: auto;
@@ -2188,8 +2189,6 @@ audio {
   padding-left: 10px;
   padding-right: 10px;
 }
-
-
 
 /*ESTILOS PARA ACTUALIZACIÓN MENSAJES DE CADA VERSIÓN*/
 .contenedorHijo {
@@ -2211,7 +2210,7 @@ audio {
   border-left: 5px solid #2b6cb0;
   border-radius: 10px;
   padding: 15px 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .actualizacion h3 {
   margin: 5px 0;
@@ -2233,41 +2232,47 @@ audio {
   border-radius: 5px;
   text-transform: capitalize;
 }
-.tipo.mejoras, .tipo.mejora { background-color: #d9fdd3; }
-.tipo.corrección { background-color: #ffe6e6; }
-.tipo.función { background-color: #e6f0ff; }
+.tipo.mejoras,
+.tipo.mejora {
+  background-color: #d9fdd3;
+}
+.tipo.corrección {
+  background-color: #ffe6e6;
+}
+.tipo.función {
+  background-color: #e6f0ff;
+}
 
 #contenedor-logs {
-    display: none;
-    flex-direction: column;
-    width: 500px;
-    height: 150px;
-    background: #111;
-    color: #0f0;
-    font-family: monospace;
-    overflow-y: auto;
-    padding: 10px;
-    box-sizing: border-box;
-    border-top: 1px solid rgba(255, 255, 255, 0.8);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.8);
-    border-right: 1px solid rgba(255, 255, 255, 0.8);
-    border-top-right-radius: 1rem;
-    border-bottom-right-radius: 1rem;
-    position: fixed;
-    bottom: 60px;
-    left: 0;
-    z-index: 24;
-    
-    /* Ocultar scrollbar pero mantener funcionalidad */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* IE y Edge */
+  display: none;
+  flex-direction: column;
+  width: 500px;
+  height: 150px;
+  background: #111;
+  color: #0f0;
+  font-family: monospace;
+  overflow-y: auto;
+  padding: 10px;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  border-right: 1px solid rgba(255, 255, 255, 0.8);
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  position: fixed;
+  bottom: 60px;
+  left: 0;
+  z-index: 24;
+
+  /* Ocultar scrollbar pero mantener funcionalidad */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE y Edge */
 }
 
 /* Webkit (Chrome, Safari, Edge) */
 #contenedor-logs::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
-
 
 /* ========================================
    CARRUSEL DE POSTS DE IGLESIAS
@@ -2283,7 +2288,11 @@ audio {
   gap: 15px;
   margin-top: 0; /* Posicionar arriba */
   margin-bottom: 15px; /* Separación con el contenido inferior */
-  background: linear-gradient(135deg, rgba(139, 69, 19, 0.95) 0%, rgba(160, 82, 45, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(139, 69, 19, 0.95) 0%,
+    rgba(160, 82, 45, 0.95) 100%
+  );
   border-radius: 15px;
   padding: 20px;
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.5);
@@ -2297,7 +2306,7 @@ audio {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #FFF8DC;
+  color: #fff8dc;
   padding: 0 10px;
 }
 
@@ -2381,7 +2390,7 @@ audio {
   width: 100%;
   height: 60%;
   object-fit: cover;
-  background: #D2B48C;
+  background: #d2b48c;
 }
 
 .carrusel-post-info {
@@ -2390,13 +2399,13 @@ audio {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: #FFF8DC;
+  background: #fff8dc;
 }
 
 .carrusel-post-iglesia {
   font-size: 16px;
   font-weight: bold;
-  color: #8B4513;
+  color: #8b4513;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -2405,7 +2414,7 @@ audio {
 
 .carrusel-post-pais {
   font-size: 14px;
-  color: #A0522D;
+  color: #a0522d;
   margin: 0;
   display: flex;
   align-items: center;
@@ -2436,7 +2445,7 @@ audio {
   top: 50%;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.9);
-  border: 3px solid #8B4513;
+  border: 3px solid #8b4513;
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -2446,15 +2455,15 @@ audio {
   cursor: pointer;
   font-size: 24px;
   font-weight: bold;
-  color: #8B4513;
+  color: #8b4513;
   transition: all 0.3s ease;
   z-index: 10;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .carrusel-nav-btn:hover {
-  background: #8B4513;
-  color: #FFF8DC;
+  background: #8b4513;
+  color: #fff8dc;
   transform: translateY(-50%) scale(1.1);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
 }
@@ -2485,4 +2494,70 @@ audio {
 
 .carrusel-post-card {
   animation: carruselFadeIn 0.5s ease-out;
+}
+
+/*ESTILOS PARA EL CONTENEDOR-CHAT*/
+#contenedor-chat {
+  display: none;
+  position: relative;
+  min-width: 300px;
+  width: 100%;
+  max-width: 50%;
+  height: calc(100% - 60px);
+  background-color: brown;
+  border-left: 1px solid rgb(255, 255, 255, 0.5);
+  border-top: 1px solid rgb(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgb(255, 255, 255, 0.5);
+  border-top-left-radius: 1rem;
+  border-bottom-left-radius: 1rem;
+  overflow: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0; /* No se reduce */
+}
+#contenedor-chat.activo {
+  display: flex;
+}
+
+.contenedor-favorito {
+  display: flex;
+  position: absolute;
+  top: 35px;
+  right: 0px;
+  width: 35px;
+  height: 35px;
+  border-bottom-left-radius: 1rem;
+  margin: 0px;
+  padding: 0px;
+  background-image: url("iconos/favorito.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-color: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.contenedor-favorito.active {
+  background-image: url("iconos/favorito-seleccionado.png");
+}
+
+.boton-eliminar-favoritos {
+  display: flex;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  background-color: rgba(255, 0, 0, 0.7);
+  border-bottom-left-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.boton-eliminar-favoritos:hover {
+  background-color: rgba(255, 0, 0, 0.9);
+  transform: scale(1.1);
 }

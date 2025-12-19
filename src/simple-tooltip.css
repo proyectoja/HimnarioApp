@@ -1,0 +1,32 @@
+/* Estilos mínimos para Simple Tooltip */
+
+.simple-tooltip-container {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.simple-tooltip {
+    position: relative;
+    pointer-events: none;
+}
+
+.simple-tooltip-arrow {
+    content: "";
+    position: absolute;
+    border-style: solid;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .simple-tooltip {
+        font-size: 16px !important;
+        padding: 4px 8px !important;
+    }
+    
+    .simple-tooltip-arrow {
+        border-width: 10px !important;
+        margin-left: -50px !important;
+        margin-top: -50px !important;
+    }
+}

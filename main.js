@@ -60,7 +60,7 @@ function createWindow() {
     },
   });
 
-  //win.webContents.openDevTools({ mode: 'undocked' });
+  //win.webContents.openDevTools({ mode: "undocked" });
 
   setMainWindow(win);
   global.mainWindow = win; // para compatibilidad con módulos que usen global

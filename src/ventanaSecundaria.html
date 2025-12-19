@@ -193,7 +193,7 @@
 </head>
 
 <body>
-  <div id="contenedor-principal">
+  <div id="contenedor-principal" class="contenedor-principal">
     <div id="vista-previaVS">
       <div id="fondoVS"></div>
       <p id="versiculoVS">Hola</p></br>
@@ -229,35 +229,69 @@
     const fondoContainer = document.getElementById("fondoVS");
     const videoPlayerContainer = document.getElementById("videoPlayerContainer");
     const waterMarkBiblia = document.getElementById("waterMark");
+    // Variables para almacenar estado actual
+    let categoriaActualVS = "";
+    let esPremiumVS = false;
+
+    // Función para limpiar lowerthird si la categoría no es "todos" o si el usuario es premium
+    function limpiarLowerThirdSiNoEsTodos() {
+      if (esPremiumVS) {
+        const existing = document.querySelector('#lowerthird-overlay');
+        if (existing) existing.remove();
+      }
+    }
+
+    // Función para verificar si se debe mostrar el lowerthird
+    function debeMostrarLowerThird() {
+      return !esPremiumVS;
+    }
+
     window.electronAPI.onActualizarDatos((event, data) => {
-      console.log("Datos recibidos:", data);
-      const { videoPath, imagePath, versiculo, libroAux, estilosAux, lista, fondoBody, imagen, waterMark } = data;
+      console.log("DEBUG [VS]: Datos recibidos completos:", data);
+      const { videoPath, imagePath, versiculo, libroAux, estilosAux, lista, fondoBody, imagen, waterMark, categoria, esPremium } = data;
+
+      // Almacenar la categoría si está presente
+      if (categoria !== undefined) {
+        categoriaActualVS = categoria;
+        console.log("DEBUG [VS]: Categoría actualizada:", categoriaActualVS);
+      }
+
+      // Almacenar el estado premium si está presente
+      if (esPremium !== undefined) {
+        esPremiumVS = esPremium;
+        console.log("DEBUG [VS]: Estado Premium actualizado:", esPremiumVS);
+      }
+
+      // Limpiar lowerthird si no corresponde mostrarlo
+      limpiarLowerThirdSiNoEsTodos();
 
       waterMarkAux = waterMark;
       waterMarkBiblia.src = waterMark;
       videoPlayerContainer.innerHTML = "";
       contenedorPrincipal.style.display = "none";
       videoPlayerContainer.style.display = "none";
+      document.getElementById("player-container-youtube").style.display = "none";
+      document.getElementById("contenedorImg").style.display = "none";
 
-
-
-
-
+      console.log("DEBUG [VS]: Analizando ramas de renderizado...");
       if (fondoBody) {
+        console.log("DEBUG [VS]: Rama fondoBody detectada:", fondoBody);
         if (player) {
+          console.log("DEBUG [VS]: Destruyendo player local previo");
           player.destroy();
           player = null;
         }
         if (playerYouTube) {
+          console.log("DEBUG [VS]: Destruyendo player YouTube previo");
           playerYouTube.destroy();
           playerYouTube = null;
         }
-        //document.getElementById("player-container-youtube").style.display = "none";
         document.body.style.backgroundImage = "url('" + fondoBody + "')";
         contenedorPrincipal.style.display = "none";
         videoPlayerContainer.style.display = "none";
 
       } else if (imagen) {
+        console.log("DEBUG [VS]: Rama imagen detectada (base64)");
         if (player) {
           player.destroy();
           player = null;
@@ -266,17 +300,18 @@
           playerYouTube.destroy();
           playerYouTube = null;
         }
-        //document.getElementById("player-container-youtube").style.display = "none";
         document.getElementById("idImg").src = imagen;
         document.getElementById("contenedorImg").style.display = "flex";
         contenedorPrincipal.style.display = "none";
         videoPlayerContainer.style.display = "none";
-      } else {
-        document.getElementById("contenedorImg").style.display = "none";
       }
+
+      // Variables para manejo de listas en reproducción secuencial
+      let listaAux = lista;
 
       // Mostrar contenido según los datos enviados
       if (versiculo) {
+        console.log("DEBUG [VS]: Rama versiculo detectada:", versiculo);
         if (player) {
           player.destroy();
           player = null;
@@ -285,54 +320,224 @@
           playerYouTube.destroy();
           playerYouTube = null;
         }
-        //document.getElementById("player-container-youtube").style.display = "none";
         if (versiculo === ".") { versiculoContainer.innerText = ""; } else { versiculoContainer.innerText = versiculo; }
         tituloLibro.innerText = libroAux;
         // Aplica estilos al versículo
-        Object.keys(estilosAux).forEach(key => {
-          if (key !== "opacity") {
-            vistaPrevia.style[key] = estilosAux[key];
-          } else if (key == "opacity") {
-            fondoContainer.style[key] = estilosAux[key];
-          } else {
-            fondoContainer.style.opacity = '0';
-          }
-
-          if (key == "fontSize") {
-            // Calcular tamaño reducido para el libro
-            let size = parseInt(estilosAux[key]);
-            if (!isNaN(size)) {
-              tituloLibro.style[key] = (size * 0.6) + "px"; // 60% del tamaño original
+        if (estilosAux) {
+          Object.keys(estilosAux).forEach(key => {
+            if (key !== "opacity") {
+              vistaPrevia.style[key] = estilosAux[key];
+            } else if (key == "opacity") {
+              fondoContainer.style[key] = estilosAux[key];
             } else {
-              tituloLibro.style[key] = estilosAux[key]; // Fallback
+              fondoContainer.style.opacity = '0';
             }
-          } else if (key == "fontFamily") {
-            tituloLibro.style[key] = estilosAux[key];
-          } else if (key == "color") {
-            tituloLibro.style[key] = estilosAux[key];
-          }
-        });
+
+            if (key == "fontSize") {
+              // Calcular tamaño reducido para el libro
+              let size = parseInt(estilosAux[key]);
+              if (!isNaN(size)) {
+                tituloLibro.style[key] = (size * 0.6) + "px"; // 60% del tamaño original
+              } else {
+                tituloLibro.style[key] = estilosAux[key]; // Fallback
+              }
+            } else if (key == "fontFamily") {
+              tituloLibro.style[key] = estilosAux[key];
+            } else if (key == "color") {
+              tituloLibro.style[key] = estilosAux[key];
+            }
+          });
+        }
         contenedorPrincipal.style.display = "block";
 
+      } else if (videoPath) {
+        console.log("DEBUG [VS]: Rama videoPath detectada:", videoPath);
+
+        // Detectar si es YouTube (ID de 11 caracteres o URL)
+        let isYouTube = false;
+        let youtubeId = videoPath;
+        let regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+        let match = videoPath.match(regex);
+
+        if (match) {
+          youtubeId = match[1];
+          isYouTube = true;
+          console.log("DEBUG [VS]: YouTube detectado vía Regex, ID:", youtubeId);
+        } else if (videoPath.length === 11) {
+          isYouTube = true;
+          console.log("DEBUG [VS]: YouTube detectado vía longitud 11, ID:", youtubeId);
+        }
+
+        if (isYouTube) {
+          if (player) {
+            player.destroy();
+            player = null;
+          }
+          if (playerYouTube) {
+            playerYouTube.destroy();
+            playerYouTube = null;
+          }
+
+          document.body.style.backgroundImage = "url('imagenes/fondoBienvenida.jpg')";
+          console.log("DEBUG [VS]: Inicializando playerYouTube for ID:", youtubeId);
+          document.getElementById("player-container-youtube").style.display = "flex";
+
+          playerYouTube = new Clappr.Player({
+            source: youtubeId,
+            watermark: waterMarkAux,
+            position: "bottom-right",
+            width: "100%",
+            height: "100vh",
+            allowUserInteraction: true,
+            chromeless: true,
+            preload: 'auto',
+            autoPlay: true,
+            exitFullscreenOnEnd: false,
+            disableVideoTagContextMenu: true,
+            volume: 100,
+            poster: 'https://i.ytimg.com/vi/' + youtubeId + '/hqdefault.jpg',
+            playbackNotSupportedMessage: "No se puede reproducir el contenido",
+            plugins: [YoutubePlugin, YoutubePluginControl],
+            YoutubeVars: { "languageCode": "en" },
+            parentId: "#player-youtube"
+          });
+
+          playerYouTube.on(Clappr.Events.PLAYER_ENDED, function () {
+            console.log("DEBUG [VS]: Video YouTube terminado");
+            if (listaAux && listaAux.length > 0) {
+              console.log("DEBUG [VS]: Lista presente, cargando siguiente aleatorio...");
+              cargarReproductorAleatorioVS(listaAux);
+            } else {
+              ocultarReproductor();
+            }
+          });
+
+          playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
+            console.log("DEBUG [VS]: Player YouTube listo");
+            setTimeout(() => {
+              playerYouTube.play();
+            }, 300);
+          });
+
+          expandirIframeYouTube();
+
+        } else {
+          console.log("DEBUG [VS]: Inicializando player local para path:", videoPath);
+          if (player) {
+            player.destroy();
+            player = null;
+          }
+          if (playerYouTube) {
+            playerYouTube.destroy();
+            playerYouTube = null;
+          }
+          videoPlayerContainer.style.display = "block";
+          player = new Clappr.Player({
+            source: videoPath,
+            parentId: "#videoPlayerContainer",
+            width: "100%",
+            height: "100vh",
+            preload: 'auto',
+            autoPlay: true,
+            allowUserInteraction: true,
+            chromeless: true,
+            exitFullscreenOnEnd: false,
+            disableVideoTagContextMenu: true,
+            volume: 100,
+            poster: imagePath,
+            watermark: waterMarkAux,
+            playbackNotSupportedMessage: "No se puede reproducir el contenido",
+            position: "bottom-right"
+          });
+
+          player.on(Clappr.Events.PLAYER_ENDED, function () {
+            console.log("DEBUG [VS]: Video local terminado");
+            if (listaAux && listaAux.length > 0) {
+              console.log("DEBUG [VS]: Lista presente, cargando siguiente aleatorio...");
+              cargarReproductorAleatorioVS(listaAux);
+            } else {
+              ocultarReproductor();
+            }
+          });
+        }
       } else if (lista) {
+        console.log("DEBUG [VS]: Rama lista detectada (sin videoPath), cargando aleatorio...");
         cargarReproductorAleatorioVS(lista);
 
-      } else if (videoPath.length <= 11) {
-        if (player) {
-          player.destroy();
-          player = null;
-        }
-        if (playerYouTube) {
-          playerYouTube.destroy();
-          playerYouTube = null;
-        }
+      } else {
+        console.log("DEBUG [VS]: Ninguna rama de contenido detectada (videoPath, versiculo, lista son nulos)");
+      }
+    });
 
+    function expandirIframeYouTube() {
+      const maxIntentos = 1000000;
+      let intentos = 0;
+
+      const intentarExpandir = () => {
+        const iframe = document.querySelector('#player-youtube iframe');
+
+        if (iframe) {
+          iframe.style.width = '100%';
+          iframe.style.height = '100%';
+          iframe.style.position = 'fixed';
+          iframe.style.top = '0';
+          iframe.style.left = '0';
+          iframe.style.border = 'none';
+          iframe.style.margin = '0';
+          iframe.style.padding = '0';
+          iframe.style.zIndex = '6';
+          iframe.style.objectFit = 'cover';
+          console.log("Iframe ajustado correctamente.");
+        } else {
+          intentos++;
+          if (intentos < maxIntentos) {
+            setTimeout(intentarExpandir, 300);
+          } else {
+            console.warn("No se pudo encontrar el iframe de YouTube.");
+          }
+        }
+      };
+
+      intentarExpandir();
+    }
+
+    function cargarReproductorAleatorioVS(lista) {
+      if (player) {
+        player.destroy();
+        player = null;
+      }
+      if (playerYouTube) {
+        playerYouTube.destroy();
+        playerYouTube = null;
+      }
+
+      videoPlayerContainer.innerHTML = "";
+
+      // Seleccionar un video aleatorio de la lista
+      const himnoAleatorio = lista[Math.floor(Math.random() * lista.length)];
+      let videoPath = himnoAleatorio.videoPath;
+      let imagePath = himnoAleatorio.imagePath;
+
+      // Validar si es YouTube ID
+      let isYouTube = false;
+      let youtubeId = videoPath;
+      if (videoPath) {
+        let regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+        let match = videoPath.match(regex);
+        if (match) {
+          youtubeId = match[1];
+          isYouTube = true;
+        } else if (videoPath.length === 11) {
+          isYouTube = true;
+        }
+      }
+
+      if (isYouTube) {
         document.body.style.backgroundImage = "url('imagenes/fondoBienvenida.jpg')";
-        console.log("Id ventana YouTube: " + videoPath);
         document.getElementById("player-container-youtube").style.display = "flex";
-        const playerYoutube = document.getElementById("player-youtube");
+
         playerYouTube = new Clappr.Player({
-          source: videoPath,
+          source: youtubeId,
           watermark: waterMarkAux,
           position: "bottom-right",
           width: "100%",
@@ -340,96 +545,55 @@
           allowUserInteraction: true,
           chromeless: true,
           preload: 'auto',
+          autoPlay: true,
           exitFullscreenOnEnd: false,
           disableVideoTagContextMenu: true,
           volume: 100,
-          poster: 'https://i.ytimg.com/vi/' + videoPath + '/hqdefault.jpg',
+          poster: 'https://i.ytimg.com/vi/' + youtubeId + '/hqdefault.jpg',
           playbackNotSupportedMessage: "No se puede reproducir el contenido",
           plugins: [YoutubePlugin, YoutubePluginControl],
-          //YoutubePluginControl,
           YoutubeVars: { "languageCode": "en" },
           parentId: "#player-youtube"
         });
-        // Escuchar cuando el video termine
+
+        // Función local para expandir iframe
+        const expandirIframeYouTubeLocal = () => {
+          const maxIntentos = 1000000;
+          let intentos = 0;
+          const intentarExpandir = () => {
+            const iframe = document.querySelector('#player-youtube iframe');
+            if (iframe) {
+              iframe.style.width = '100%';
+              iframe.style.height = '100%';
+              iframe.style.position = 'fixed';
+              iframe.style.top = '0';
+              iframe.style.left = '0';
+              iframe.style.border = 'none';
+              iframe.style.margin = '0';
+              iframe.style.padding = '0';
+              iframe.style.zIndex = '6';
+              iframe.style.objectFit = 'cover';
+            } else {
+              intentos++;
+              if (intentos < maxIntentos) {
+                setTimeout(intentarExpandir, 300);
+              }
+            }
+          };
+          intentarExpandir();
+        };
+        expandirIframeYouTubeLocal();
+
         playerYouTube.on(Clappr.Events.PLAYER_ENDED, function () {
-          ocultarReproductor();
+          cargarReproductorAleatorioVS(lista);
         });
         playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
-          console.log("✅ Player listo, esperando 2 segundos...");
-
           setTimeout(() => {
-            const poster = document.querySelector('.player-poster.clickable');
-            if (poster) {
-              console.log("🎬 Simulando clic en póster tras PLAYER_READY");
-
-              const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
-              poster.dispatchEvent(clickEvent);
-            } else {
-              console.log("⚠️ No se encontró póster, intentando play() directo");
-              playerYouTube.play();
-            }
-          }, 300);
+            playerYouTube.play();
+          }, 1000);
         });
-
-
-
-
-        console.log("Clappr version:", Clappr.version);
-
-        // Esperar a que el póster esté en el DOM
-        const observer = new MutationObserver(() => {
-          const poster = document.querySelector('.player-poster.clickable');
-          if (poster) {
-            poster.addEventListener('click', () => {
-              console.log("🟢 Clic en el póster detectado");
-
-              // Escuchar cuando el video haya avanzado al menos 2 segundos
-              playerYouTube.on(Clappr.Events.PLAYER_TIMEUPDATE, function checkTime(event) {
-                const currentTime = event.current || (event.progress && event.progress.current);
-                console.log("⏱ Tiempo actual:", currentTime);
-
-                if (currentTime >= 2) {
-                  console.log("✅ Verificando pantalla completa...");
-
-                  if (!document.fullscreenElement) {
-                    console.log("✅ Solicitando pantalla completa...");
-                    document.documentElement.requestFullscreen()
-                      .then(() => console.log("🟢 Fullscreen activado"))
-                      .catch(err => console.warn("❌ No se pudo activar fullscreen:", err));
-                  } else {
-                    console.log("🔁 Ya estás en pantalla completa, no se solicita nuevamente.");
-                  }
-
-                  playerYouTube.off(Clappr.Events.PLAYER_TIMEUPDATE, checkTime); // detener escucha
-                }
-
-              });
-            });
-
-            observer.disconnect(); // dejamos de observar
-          }
-        });
-
-        // Observar el DOM por si el póster aparece luego
-        observer.observe(document.body, { childList: true, subtree: true });
-        expandirIframeYouTube();
-
-
-
-
-
-
-
 
       } else {
-        if (player) {
-          player.destroy();
-          player = null;
-        }
-        if (playerYouTube) {
-          playerYouTube.destroy();
-          playerYouTube = null;
-        }
         videoPlayerContainer.style.display = "block";
         player = new Clappr.Player({
           source: videoPath,
@@ -441,127 +605,19 @@
           allowUserInteraction: true,
           chromeless: true,
           exitFullscreenOnEnd: false,
-          disableVideoTagContextMenu: true,
           volume: 100,
-          //plugins: [MediaControl.MainPlugin],
-          //mediaControl: {
-          //    disableBeforeVideoStarts: true
-          //},
           poster: imagePath,
           watermark: waterMarkAux,
           playbackNotSupportedMessage: "No se puede reproducir el contenido",
           position: "bottom-right"
         });
-
-
+        player.unmute();
+        player.on(Clappr.Events.PLAYER_ENDED, function () {
+          cargarReproductorAleatorioVS(lista);
+        });
       }
-
-
-
-      function expandirIframeYouTube() {
-        const maxIntentos = 1000000;
-        let intentos = 0;
-
-        const intentarExpandir = () => {
-          const iframe = document.querySelector('#player-youtube iframe');
-
-          if (iframe) {
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.position = 'fixed';
-            iframe.style.top = '0';
-            iframe.style.left = '0';
-            iframe.style.border = 'none';
-            iframe.style.margin = '0';
-            iframe.style.padding = '0';
-            iframe.style.zIndex = '6';
-            iframe.style.objectFit = 'cover';
-            console.log("Iframe ajustado correctamente.");
-          } else {
-            intentos++;
-            if (intentos < maxIntentos) {
-              setTimeout(intentarExpandir, 300);
-            } else {
-              console.warn("No se pudo encontrar el iframe de YouTube.");
-            }
-          }
-        };
-
-        intentarExpandir();
-      }
-
-
-
-
-    });
-
-    function ajustarZoom() {
-      let container = document.getElementById("player-container-youtube");
-      let playerElement = document.getElementById("player-youtube");
-
-      let contenedorAncho = container.clientWidth;
-      let contenedorAlto = container.clientHeight;
-
-      let escalaAncho = contenedorAncho / 640; // Escala basada en el ancho
-      let escalaAlto = contenedorAlto / 360; // Escala basada en la altura
-
-      let escalaFinal = Math.min(escalaAncho, escalaAlto); // Mantener proporción
-
-      playerElement.style.transform = "scale(" + escalaFinal + ")";
-
-      //playerElement.style.transformOrigin = "top left"; // Evitar desajustes
     }
 
-    //window.addEventListener("resize", ajustarZoom);
-    //ajustarZoom(); // Ajustar al cargar
-
-    //Función para listas de reproducción automática en ventana secundaria
-    function cargarReproductorAleatorioVS(lista) {
-      if (player) {
-        player.destroy();
-        player = null;
-      }
-      if (playerYouTube) {
-        playerYouTube.destroy();
-        playerYouTube = null;
-      }
-
-
-      videoPlayerContainer.innerHTML = "";
-
-      // Seleccionar un video aleatorio de la lista
-      const himnoAleatorio = lista[Math.floor(Math.random() * lista.length)];
-      videoPlayerContainer.style.display = "block";
-      player = new Clappr.Player({
-        source: himnoAleatorio.videoPath,
-        parentId: "#videoPlayerContainer",
-        width: "100%",
-        height: "100vh",
-        preload: 'auto',
-        autoPlay: true,
-        allowUserInteraction: true,
-        chromeless: true,
-        exitFullscreenOnEnd: false,
-        volume: 100,
-        //plugins: [MediaControl.MainPlugin],
-        //mediaControl: {
-        //    disableBeforeVideoStarts: true
-        //},
-        poster: himnoAleatorio.imagePath,
-        watermark: waterMarkAux,
-        playbackNotSupportedMessage: "No se puede reproducir el contenido",
-        position: "bottom-right"
-      });
-      player.unmute();
-      // Escuchar cuando el video termine
-      player.on(Clappr.Events.PLAYER_ENDED, function () {
-
-        cargarReproductorAleatorioVS(lista); // Cargar y reproducir un nuevo video aleatorio
-      });
-
-    }
-
-    // Función para activar pantalla completa
     function toggleFullScreen() {
       if (!document.fullscreenElement) {
         document.body.requestFullscreen()
@@ -576,13 +632,11 @@
       }
     }
 
-
-    // Mostrar el botón cuando la ventana no está en pantalla completa
     document.addEventListener('fullscreenchange', () => {
       if (document.fullscreenElement) {
-        fullscreenButton.classList.add('hidden'); // Oculta el botón
+        fullscreenButton.classList.add('hidden');
       } else {
-        fullscreenButton.classList.remove('hidden'); // Muestra el botón
+        fullscreenButton.classList.remove('hidden');
       }
       ajustarTamanoReproductorFullscreen();
     });
@@ -591,7 +645,6 @@
 
     function ajustarTamanoReproductorFullscreen() {
       const isFullscreen = !!document.fullscreenElement;
-
       const container = document.getElementById("videoPlayerContainer");
       const playerYoutube = document.getElementById("player-youtube");
 
@@ -606,7 +659,6 @@
           playerYoutube.style.width = "100%";
           playerYoutube.style.height = "100%";
         }
-
       } else {
         container.style.width = "100%";
         container.style.height = "100vh";
@@ -614,8 +666,122 @@
       }
     }
 
+    function injectLowerThirdClappr(texto) {
+      if (!debeMostrarLowerThird()) {
+        const existing = document.querySelector('#lowerthird-overlay');
+        if (existing) existing.remove();
+        return;
+      }
 
+      const player = document.querySelector('[data-player]');
+      if (!player) return;
 
+      let lower = player.querySelector('#lowerthird-overlay');
+      if (lower) lower.remove();
+
+      lower = document.createElement('div');
+      lower.id = 'lowerthird-overlay';
+
+      Object.assign(lower.style, {
+        position: 'absolute',
+        left: '0',
+        bottom: '0',
+        width: '100%',
+        height: '55px',
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        zIndex: '10000',
+        background: 'rgba(0,0,0,0.85)',
+        transform: 'translateY(100%)',
+        transition: 'transform 1.2s ease-in-out'
+      });
+
+      function showLower() { lower.style.transform = 'translateY(0)'; }
+      function hideLower() { lower.style.transform = 'translateY(100%)'; }
+
+      const track = document.createElement('div');
+      Object.assign(track.style, {
+        position: 'absolute',
+        whiteSpace: 'nowrap',
+        display: 'flex',
+        alignItems: 'center',
+        height: '100%',
+        transform: 'translateX(100%)'
+      });
+
+      const badge = document.createElement('div');
+      badge.textContent = 'VERSIÓN GRATIS';
+      Object.assign(badge.style, {
+        background: '#c62828',
+        color: '#fff',
+        fontWeight: 'bold',
+        padding: '6px 14px',
+        marginRight: '15px',
+        borderRadius: '4px',
+        fontSize: '24px'
+      });
+
+      const message = document.createElement('div');
+      message.textContent = texto;
+      Object.assign(message.style, {
+        color: '#fff',
+        fontSize: '24px',
+        fontWeight: 'bold',
+        paddingRight: '0px'
+      });
+
+      track.appendChild(badge);
+      track.appendChild(message);
+      lower.appendChild(track);
+      player.appendChild(lower);
+
+      requestAnimationFrame(() => {
+        const distancia = track.offsetWidth + player.offsetWidth;
+        const pxPorSegundo = 100;
+        const duracion = distancia / pxPorSegundo;
+        track.style.animation = `lowerTicker ${duracion}s linear infinite`;
+
+        if (!document.getElementById('lowerthird-style')) {
+          const style = document.createElement('style');
+          style.id = 'lowerthird-style';
+          style.textContent = `
+            @keyframes lowerTicker {
+              from { transform: translateX(${player.offsetWidth}px); }
+              to { transform: translateX(-${track.offsetWidth}px); }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+      });
+
+      function startLowerLoop() {
+        showLower();
+        setTimeout(() => {
+          hideLower();
+          setTimeout(() => {
+            startLowerLoop();
+          }, 40000);
+        }, 20000);
+      }
+      setTimeout(startLowerLoop, 1000);
+    }
+
+    const lowerObserver = new MutationObserver(() => {
+      if (!debeMostrarLowerThird()) return;
+      const player = document.querySelector('[data-player]');
+      if (player && !player.querySelector('#lowerthird-overlay')) {
+        injectLowerThirdClappr('PROYECTO JA - HIMNARIO ADVENTISTA PRO - COMPARTIENDO ESPERANZA! | Obtén tu licencia y elimina este mensaje');
+      }
+    });
+
+    lowerObserver.observe(document.body, { childList: true, subtree: true });
+
+    function ocultarReproductor() {
+      if (player) { player.destroy(); player = null; }
+      if (playerYouTube) { playerYouTube.destroy(); playerYouTube = null; }
+      document.getElementById("player-container-youtube").style.display = "none";
+      videoPlayerContainer.style.display = "none";
+    }
   </script>
   <script type="text/javascript" charset="utf-8" src="clappr.js"></script>
   <script type="text/javascript" charset="utf-8" src="clappr-playback-rate.js"></script>

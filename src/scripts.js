@@ -11,6 +11,15 @@ let modo = "live"; // o "sandbox"
 let modoAux = "test";
 //modo = "sandbox";
 
+function esMonitorActivo() {
+  const selectMonitores = document.getElementById("selectMonitores");
+  return (
+    selectMonitores &&
+    selectMonitores.value !== "" &&
+    selectMonitores.value !== "-1"
+  );
+}
+
 //VISTA PREVIA EN CONTENEDOR DE LOGS PARA LOS ARCHIVOS QUE SE ESTÁN DESCARGANDO
 if (window.electronAPI && window.electronAPI.onLog) {
   window.electronAPI.onLog((msg) => {
@@ -447,7 +456,7 @@ function aplicarEstadoPremium(esPremiumAux) {
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "none";
     });
-    if (contenedorMonitor) contenedorMonitor.style.display = "none";
+    if (contenedorMonitor) contenedorMonitor.style.display = "flex";
   }
 }
 
@@ -624,7 +633,7 @@ botonPremium.addEventListener("click", function () {
         <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> YouTube limitado
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Proyección estándar
+        <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> Proyección estándar
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
         <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Biblia y versiones
@@ -997,12 +1006,12 @@ botonPremium.addEventListener("click", function () {
       console.log("Contenedor interno encontrado. Limpiando y renderizando...");
       paypalContainer.innerHTML = ""; // Limpiar texto temporal
 
-      if (!window.paypal) {
+      if (!window.paypal || typeof window.paypal.Buttons !== "function") {
         console.error(
-          "Error: El objeto 'paypal' no está definido. El SDK no se cargó correctamente."
+          "Error: El SDK de PayPal no se cargó correctamente o la función 'Buttons' no está disponible."
         );
         paypalContainer.innerHTML =
-          "<p style='color:red; text-align:center;'>Error: PayPal SDK no cargado.<br>Verifique su conexión a internet.</p>";
+          "<p style='color:red; text-align:center;'>Error: PayPal SDK no pudo inicializarse.<br>Verifique su conexión a internet y recargue la aplicación.</p>";
         return;
       }
 
@@ -1086,7 +1095,7 @@ botonPremium.addEventListener("click", function () {
       } catch (error) {
         console.error("Error al renderizar botones de PayPal:", error);
         // Mostrar el error específico en pantalla
-        paypalContainer.innerHTML = `<p style='color:red; text-align:center;'>Error al iniciar PayPal:<br>${error.message}</p>`;
+        paypalContainer.innerHTML = `<p style='color:red; text-align:center;'>Error al iniciar PayPal</p>`;
       }
     }, 500);
   } else {
@@ -1111,6 +1120,8 @@ let todosLosMusicaParaOrarDeFondoLista = [];
 let todosHimnosPianoPista = [];
 let todosLosHimnosInfantiles = [];
 let todosLosHimnosAntiguos = [];
+let todosLosFavoritosLista = [];
+let todosLosFavoritosYouTubeLista = [];
 
 // Función para crear los contenedores de himnos
 function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
@@ -1135,7 +1146,35 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
 
   // evento de clic en la imagen
   img.onclick = async function () {
-    if (botonPRO == false) {
+    const monitorActivo = esMonitorActivo();
+
+    // Validar si es un link de YouTube
+    let isYouTube = false;
+    let youtubeId = videoPath;
+    if (videoPath) {
+      let regex =
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+      let match = videoPath.match(regex);
+      if (match) {
+        youtubeId = match[1];
+        isYouTube = true;
+      } else if (videoPath.length === 11) {
+        // Asumimos que si tiene longitud 11 es un ID de YouTube (como en youtubeInicio)
+        isYouTube = true;
+      }
+    }
+
+    if (isYouTube) {
+      if (botonPRO == false && !monitorActivo) {
+        youtubeClapprEstandar(youtubeId, imagePath, lista);
+      } else {
+        youtubeClappr(youtubeId, imagePath, lista);
+      }
+      return;
+    }
+
+    // Si NO es modo PRO y NO hay monitor activo, usar reproductor local
+    if (botonPRO == false && !monitorActivo) {
       audioHimno.pause();
       // Limpiar el contenedor de video antes de cargar uno nuevo
       videoPlayerContainer.innerHTML = "";
@@ -1298,7 +1337,6 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
     const contenedorNotaCantado = document.createElement("div");
     contenedorNotaCantado.classList.add("contenedor-nota-cantado");
     contenedorNotaCantado.textContent = "";
-
     container.appendChild(contenedorNotaCantado);
 
     const contenedorNotaDuracion = document.createElement("div");
@@ -1307,6 +1345,78 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
     container.appendChild(contenedorNotaDuracion);
   }
 
+  // Botón de favoritos - Para TODOS los himnos (excepto listas de reproducción)
+  // Solo mostrar si NO es una lista (cuando videoPath existe y lista es null)
+  if (videoPath && !lista) {
+    const contenedorFavorito = document.createElement("div");
+    contenedorFavorito.classList.add("contenedor-favorito");
+    contenedorFavorito.textContent = "";
+
+    // Cargar favoritos desde localStorage
+    let favoritosGuardados = [];
+    try {
+      const favoritosString = localStorage.getItem("himnosFavoritos");
+      if (favoritosString) {
+        favoritosGuardados = JSON.parse(favoritosString);
+      }
+    } catch (error) {
+      console.error("Error al cargar favoritos:", error);
+    }
+
+    // Crear clave única para este himno (usando videoPath como identificador único)
+    const claveHimno = videoPath;
+
+    // Verificar si este himno ya está en favoritos
+    const esFavorito = favoritosGuardados.some(
+      (fav) => fav.videoPath === claveHimno
+    );
+    if (esFavorito) {
+      contenedorFavorito.classList.add("active");
+    }
+
+    // Agregar evento click para toggle favorito
+    contenedorFavorito.onclick = function (event) {
+      event.stopPropagation(); // Prevenir que se active el click de la imagen
+
+      // Cargar favoritos actuales
+      let favoritos = [];
+      try {
+        const favoritosString = localStorage.getItem("himnosFavoritos");
+        if (favoritosString) {
+          favoritos = JSON.parse(favoritosString);
+        }
+      } catch (error) {
+        console.error("Error al cargar favoritos:", error);
+      }
+
+      // Verificar si ya existe en favoritos
+      const indice = favoritos.findIndex((fav) => fav.videoPath === claveHimno);
+
+      if (indice > -1) {
+        // Si ya existe, quitarlo
+        favoritos.splice(indice, 1);
+        contenedorFavorito.classList.remove("active");
+      } else {
+        // Si no existe, agregarlo
+        favoritos.push({
+          numero: titulo.match(/\d{3}/)?.[0] || "",
+          titulo: titulo,
+          videoPath: videoPath,
+          imagePath: imagePath,
+        });
+        contenedorFavorito.classList.add("active");
+      }
+
+      // Guardar en localStorage
+      try {
+        localStorage.setItem("himnosFavoritos", JSON.stringify(favoritos));
+      } catch (error) {
+        console.error("Error al guardar favoritos:", error);
+      }
+    };
+    container.appendChild(contenedorFavorito);
+  }
+  //localStorage.removeItem("himnosFavoritos");
   const contenedorPremiumActivado = document.createElement("div");
   contenedorPremiumActivado.classList.add("contenedorPremiumActivado");
   contenedorPremiumActivado.id = "contenedorPremiumActivado";
@@ -1345,6 +1455,28 @@ obtenerDuracion();
 function cargarReproductorAleatorio(lista) {
   // Seleccionar un video aleatorio de la lista
   const himnoAleatorio = lista[Math.floor(Math.random() * lista.length)];
+  let videoPath = himnoAleatorio.videoPath;
+  let imagePath = himnoAleatorio.imagePath;
+
+  // Validar si es YouTube ID
+  let isYouTube = false;
+  let youtubeId = videoPath;
+  if (videoPath) {
+    let regex =
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+    let match = videoPath.match(regex);
+    if (match) {
+      youtubeId = match[1];
+      isYouTube = true;
+    } else if (videoPath.length === 11) {
+      isYouTube = true;
+    }
+  }
+
+  if (isYouTube) {
+    youtubeClapprEstandar(youtubeId, imagePath, lista);
+    return;
+  }
 
   // Limpiar el contenedor de video antes de cargar uno nuevo
   videoPlayerContainer.innerHTML = "";
@@ -1353,7 +1485,7 @@ function cargarReproductorAleatorio(lista) {
 
   // Crear el reproductor Clappr
   player = new Clappr.Player({
-    source: himnoAleatorio.videoPath,
+    source: videoPath,
     parentId: "#videoPlayerContainer",
     width: "100%",
     height: "100vh",
@@ -1361,7 +1493,7 @@ function cargarReproductorAleatorio(lista) {
     autoPlay: true,
     volume: 100,
     disableVideoTagContextMenu: true,
-    poster: himnoAleatorio.imagePath,
+    poster: imagePath,
     playbackNotSupportedMessage: "No se puede reproducir el contenido",
     watermark: waterMark,
     position: "bottom-right",
@@ -2267,8 +2399,21 @@ function exitFullscreen() {
   }
 }
 
+//FUNCIÓN BOTON DEL CHAT
+const botonChat = document.getElementById("botonChat");
+const contenedorChat = document.getElementById("contenedor-chat");
+if (botonChat && contenedorChat) {
+  botonChat.addEventListener("click", () => {
+    contenedorChat.classList.toggle("activo");
+  });
+}
+
+// Variable global para almacenar la categoría actual
+let categoriaActual = ""; // Inicialmente vacío
+
 // Función para mostrar los himnos por categoría
 async function mostrarCategoria(categoria) {
+  categoriaActual = categoria; // Almacenar la categoría actual
   todosLosHimnos = []; // Limpiar el array anterior
   himnarioContainer.innerHTML = ""; // Limpiar himnos anteriores
   himnarioContainer.scrollTop = 0;
@@ -2288,9 +2433,9 @@ async function mostrarCategoria(categoria) {
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     // Cargar en lotes para mejor rendimiento
     await cargarHimnosEnLotes(inicio, fin, 50);
-  } else if (categoria === "1-100") {
+  } else if (categoria === "1-150") {
     inicio = 1;
-    fin = 100;
+    fin = 150;
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
@@ -2299,19 +2444,8 @@ async function mostrarCategoria(categoria) {
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
-  } else if (categoria === "101-200") {
-    inicio = 101;
-    fin = 200;
-    ventanaHimnosPro.style.display = "none";
-    ventanaBiblia.style.display = "none";
-    ventanaYouTube.style.display = "none";
-    himnarioContainer.style.display = "grid";
-    document.getElementsByClassName(
-      "contenedor-principal"
-    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
-    await cargarHimnosEnLotes(inicio, fin, 50);
-  } else if (categoria === "201-300") {
-    inicio = 201;
+  } else if (categoria === "151-300") {
+    inicio = 151;
     fin = 300;
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
@@ -2321,9 +2455,20 @@ async function mostrarCategoria(categoria) {
       "contenedor-principal"
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
-  } else if (categoria === "301-400") {
+  } else if (categoria === "301-450") {
     inicio = 301;
-    fin = 400;
+    fin = 450;
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    himnarioContainer.style.display = "grid";
+    document.getElementsByClassName(
+      "contenedor-principal"
+    )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
+    await cargarHimnosEnLotes(inicio, fin, 50);
+  } else if (categoria === "451-614") {
+    inicio = 451;
+    fin = 614;
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
@@ -2503,6 +2648,176 @@ async function mostrarCategoria(categoria) {
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "listas") {
     botonLista = true;
+
+    //Lista de los favoritos del usuario: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+    // Cargar favoritos desde localStorage
+    let favoritosGuardados = [];
+    try {
+      const favoritosString = localStorage.getItem("himnosFavoritos");
+      console.log("[FAVORITOS] String guardado:", favoritosString);
+      if (favoritosString) {
+        favoritosGuardados = JSON.parse(favoritosString);
+        console.log("[FAVORITOS] Favoritos parseados:", favoritosGuardados);
+      }
+    } catch (error) {
+      console.error("[FAVORITOS] Error al cargar favoritos:", error);
+    }
+
+    // Crear lista de favoritos
+    todosLosFavoritosLista = [];
+    for (let i = 0; i < favoritosGuardados.length; i++) {
+      const himnoFav = favoritosGuardados[i];
+      todosLosFavoritosLista.push({
+        numero: himnoFav.numero,
+        titulo: himnoFav.titulo,
+        videoPath: himnoFav.videoPath,
+        imagePath: himnoFav.imagePath,
+      });
+      // También agregar a la lista general
+      todosLosHimnosLista.push({
+        numero: himnoFav.numero,
+        titulo: himnoFav.titulo,
+        videoPath: himnoFav.videoPath,
+        imagePath: himnoFav.imagePath,
+      });
+    }
+    console.log(
+      "[FAVORITOS] Lista creada, total:",
+      todosLosFavoritosLista.length
+    );
+
+    // Crear el himno de favoritos solo si hay favoritos
+    if (todosLosFavoritosLista.length > 0) {
+      console.log("[FAVORITOS] Creando tarjeta de favoritos...");
+      let tituloFavoritos = "Favoritos";
+      let imagePathFavoritos = "imagenes/portadaListaFavoritos.jpg";
+      crearHimno(
+        tituloFavoritos,
+        null,
+        imagePathFavoritos,
+        todosLosFavoritosLista,
+        null
+      );
+      console.log("[FAVORITOS] Tarjeta creada exitosamente");
+
+      // Agregar botón de eliminar a la tarjeta de favoritos
+      // Esperar un momento para que se cree el elemento en el DOM
+      setTimeout(() => {
+        const contenedoresFavoritos =
+          document.querySelectorAll(".video-container");
+        const tarjetaFavoritos = Array.from(contenedoresFavoritos).find(
+          (container) => {
+            const h3 = container.querySelector("h3");
+            return h3 && h3.textContent === "Favoritos";
+          }
+        );
+
+        if (tarjetaFavoritos) {
+          const botonEliminar = document.createElement("div");
+          botonEliminar.classList.add("boton-eliminar-favoritos");
+          botonEliminar.innerHTML = "🗑️";
+          botonEliminar.title = "Eliminar todos los favoritos";
+
+          botonEliminar.onclick = function (event) {
+            event.stopPropagation();
+            const confirmar = confirm(
+              "¿Estás seguro de que deseas eliminar TODOS los favoritos?"
+            );
+            if (confirmar) {
+              localStorage.removeItem("himnosFavoritos");
+              console.log("[FAVORITOS] Lista de favoritos eliminada");
+              // Recargar la categoría listas para actualizar la vista
+              mostrarCategoria("listas");
+            }
+          };
+
+          tarjetaFavoritos.appendChild(botonEliminar);
+          console.log("[FAVORITOS] Botón de eliminar agregado");
+        }
+      }, 100);
+    }
+
+    //Lista de favoritos de YouTube:
+    // Cargar favoritos de YouTube desde localStorage
+    let favoritosYT = [];
+    try {
+      const favYTString = localStorage.getItem("youtubesFavoritos");
+      console.log("[YT FAVORITOS] String guardado:", favYTString);
+      if (favYTString) {
+        favoritosYT = JSON.parse(favYTString);
+        console.log("[YT FAVORITOS] Favoritos parseados:", favoritosYT);
+      }
+    } catch (error) {
+      console.error("[YT FAVORITOS] Error al cargar favoritos:", error);
+    }
+
+    // Crear lista de favoritos de YouTube
+    todosLosFavoritosYouTubeLista = [];
+    for (let i = 0; i < favoritosYT.length; i++) {
+      const videoYT = favoritosYT[i];
+      todosLosFavoritosYouTubeLista.push({
+        videoPath: videoYT.id,
+        titulo: videoYT.title,
+        imagePath: videoYT.thumbnail,
+        duration: videoYT.duration,
+        views: videoYT.views,
+        uploadedAt: videoYT.uploadedAt,
+        channel: videoYT.channel,
+      });
+    }
+    console.log(
+      "[YT FAVORITOS] Lista creada, total:",
+      todosLosFavoritosYouTubeLista.length
+    );
+
+    // Crear la tarjeta de favoritos de YouTube solo si hay favoritos
+    if (todosLosFavoritosYouTubeLista.length > 0) {
+      console.log("[YT FAVORITOS] Creando tarjeta de favoritos de YouTube...");
+      let tituloFavoritosYT = "Favoritos YouTube";
+      let imagePathFavoritosYT = "imagenes/portadaListaYouTube.jpg";
+      crearHimno(
+        tituloFavoritosYT,
+        null,
+        imagePathFavoritosYT,
+        todosLosFavoritosYouTubeLista,
+        null
+      );
+      console.log("[YT FAVORITOS] Tarjeta creada exitosamente");
+
+      // Agregar botón de eliminar a la tarjeta de favoritos de YouTube
+      setTimeout(() => {
+        const contenedoresFavYT = document.querySelectorAll(".video-container");
+        const tarjetaFavYT = Array.from(contenedoresFavYT).find((container) => {
+          const h3 = container.querySelector("h3");
+          return h3 && h3.textContent === "Favoritos YouTube";
+        });
+
+        if (tarjetaFavYT) {
+          const botonEliminarYT = document.createElement("div");
+          botonEliminarYT.classList.add("boton-eliminar-favoritos");
+          botonEliminarYT.innerHTML = "🗑️";
+          botonEliminarYT.title = "Eliminar todos los favoritos de YouTube";
+
+          botonEliminarYT.onclick = function (event) {
+            event.stopPropagation();
+            const confirmar = confirm(
+              "¿Estás seguro de que deseas eliminar TODOS los favoritos de YouTube?"
+            );
+            if (confirmar) {
+              localStorage.removeItem("youtubesFavoritos");
+              console.log(
+                "[YT FAVORITOS] Lista de favoritos de YouTube eliminada"
+              );
+              mostrarCategoria("listas");
+            }
+          };
+
+          tarjetaFavYT.appendChild(botonEliminarYT);
+          console.log("[YT FAVORITOS] Botón de eliminar agregado");
+        }
+      }, 150);
+    }
+
     //Lista música para orar de fondo
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
@@ -2758,29 +3073,32 @@ document.getElementById("masContenido").addEventListener("click", function () {
 });
 
 //PayPal
-document.getElementById("paypal").addEventListener("click", function (event) {
-  document.getElementById("contenedor-ventanas-opciones").style.display =
-    "block";
-  document.getElementById("contenedor-ventanas-opciones").style.width = "250px";
-  document
-    .getElementById("contenedor-ventanas-opciones")
-    .querySelector(".opcion1").style.display = "none";
-  document
-    .getElementById("contenedor-ventanas-opciones")
-    .querySelector(".opcion2").style.display = "none";
-  document
-    .getElementById("contenedor-ventanas-opciones")
-    .querySelector(".opcion3").style.display = "block";
-  document
-    .getElementById("contenedor-ventanas-opciones")
-    .querySelector(".opcion4").style.display = "none";
-  document
-    .getElementById("contenedor-ventanas-opciones")
-    .querySelector(".opcion5").style.display = "none";
-  document
-    .getElementById("contenedor-ventanas-opciones")
-    .querySelector(".opcion6").style.display = "none";
-});
+document
+  .getElementById("botonPaypalMenu")
+  .addEventListener("click", function (event) {
+    document.getElementById("contenedor-ventanas-opciones").style.display =
+      "block";
+    document.getElementById("contenedor-ventanas-opciones").style.width =
+      "250px";
+    document
+      .getElementById("contenedor-ventanas-opciones")
+      .querySelector(".opcion1").style.display = "none";
+    document
+      .getElementById("contenedor-ventanas-opciones")
+      .querySelector(".opcion2").style.display = "none";
+    document
+      .getElementById("contenedor-ventanas-opciones")
+      .querySelector(".opcion3").style.display = "block";
+    document
+      .getElementById("contenedor-ventanas-opciones")
+      .querySelector(".opcion4").style.display = "none";
+    document
+      .getElementById("contenedor-ventanas-opciones")
+      .querySelector(".opcion5").style.display = "none";
+    document
+      .getElementById("contenedor-ventanas-opciones")
+      .querySelector(".opcion6").style.display = "none";
+  });
 
 //Reseñas:
 document.getElementById("resenia").addEventListener("click", function (event) {
@@ -2886,7 +3204,8 @@ photos.forEach((photo) => {
   button.textContent = "Enviar";
   button.addEventListener("click", () => {
     fondoImage = photo.src;
-    if (botonPRO) {
+    const monitorActivo = esMonitorActivo();
+    if (botonPRO || monitorActivo) {
       enviarDatos({
         videoPath: null,
         imagePath: null,
@@ -3007,6 +3326,79 @@ async function buscarVideos() {
 
         div.onclick = () => youtubeInicio(video.id, video.thumbnail);
 
+        // Agregar botón de favoritos para YouTube
+        const botonFavoritoYT = document.createElement("div");
+        botonFavoritoYT.classList.add("contenedor-favorito");
+        botonFavoritoYT.textContent = "";
+
+        // Cargar favoritos de YouTube desde localStorage
+        let favoritosYT = [];
+        try {
+          const favYTString = localStorage.getItem("youtubesFavoritos");
+          if (favYTString) {
+            favoritosYT = JSON.parse(favYTString);
+          }
+        } catch (error) {
+          console.error("Error al cargar favoritos de YouTube:", error);
+        }
+
+        // Verificar si este video ya está en favoritos
+        const esFavoritoYT = favoritosYT.some((fav) => fav.id === video.id);
+        if (esFavoritoYT) {
+          botonFavoritoYT.classList.add("active");
+        }
+
+        // Evento click del botón de favoritos
+        botonFavoritoYT.onclick = function (event) {
+          event.stopPropagation();
+
+          let favs = [];
+          try {
+            const favsString = localStorage.getItem("youtubesFavoritos");
+            if (favsString) {
+              favs = JSON.parse(favsString);
+            }
+          } catch (error) {
+            console.error("Error al cargar favoritos de YouTube:", error);
+          }
+
+          const indice = favs.findIndex((fav) => fav.id === video.id);
+
+          if (indice > -1) {
+            // Quitar de favoritos
+            favs.splice(indice, 1);
+            botonFavoritoYT.classList.remove("active");
+            console.log(
+              "[YT FAVORITOS] Video eliminado de favoritos:",
+              video.title
+            );
+          } else {
+            // Agregar a favoritos
+            favs.push({
+              id: video.id,
+              title: video.title,
+              thumbnail: video.thumbnail,
+              duration: video.duration,
+              views: video.views,
+              uploadedAt: video.uploadedAt,
+              channel: video.channel,
+            });
+            botonFavoritoYT.classList.add("active");
+            console.log(
+              "[YT FAVORITOS] Video agregado a favoritos:",
+              video.title
+            );
+          }
+
+          try {
+            localStorage.setItem("youtubesFavoritos", JSON.stringify(favs));
+          } catch (error) {
+            console.error("Error al guardar favoritos de YouTube:", error);
+          }
+        };
+
+        div.appendChild(botonFavoritoYT);
+
         if (premiumCategoria) {
           const contenedorPremiumActivado = document.createElement("div");
           contenedorPremiumActivado.classList.add("contenedorPremiumActivado");
@@ -3048,13 +3440,14 @@ async function buscarVideos() {
             src="https://www.youtube.com/embed/${videoId}?mute=1" 
             frameborder="0" allowfullscreen>
           </iframe>
-          <h3 id="enviarVideo" style="cursor: pointer; pointer-events: all;" onclick='youtubeInicio("${videoId}", "${img}")'>Enviar</h3>
+          <h3 id="enviarVideo" style="cursor: pointer; pointer-events: all; text-wrap: nowrap;" onclick='youtubeInicio("${videoId}", "${img}")'>Reproducir video</h3>
         </div>
       `;
       lista.innerHTML = videosHTML;
       botonYoutubeAux.style.pointerEvents = "all";
       botonYoutubeAux.style.cursor = "pointer";
       botonYoutubeAux.style.opacity = "1";
+      document.getElementById("busqueda-youtube").disabled = false;
     }
   } else {
     botonYoutubeAux.style.pointerEvents = "all";
@@ -3069,16 +3462,20 @@ let auxUrlOnce = null;
 let auxUrlDoce = null;
 function youtubeInicio(url, poster) {
   // Si es una URL completa, extraemos el ID
-  let regex =
-    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+  if (url) {
+    let regex =
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
 
-  let match = url.match(regex);
-  if (match) {
-    url = match[1];
+    let match = url.match(regex);
+    if (match) {
+      url = match[1];
+    }
   }
 
+  const monitorActivo = esMonitorActivo();
+
   // Validamos el ID y llamamos a youtubeClappr
-  if (url && url.length === 11 && botonPRO == true) {
+  if (url && url.length === 11 && (botonPRO == true || monitorActivo)) {
     console.log("Id del video YouTube: " + url);
     youtubeClappr(url, poster);
   } else if (url && url.length === 11 && botonPRO == false) {
@@ -3089,8 +3486,14 @@ function youtubeInicio(url, poster) {
   }
 }
 
-function youtubeClapprEstandar(url, poster) {
+function youtubeClapprEstandar(url, poster, lista) {
   audioHimno.pause();
+
+  if (playerYouTube) {
+    playerYouTube.destroy();
+    playerYouTube = null;
+  }
+
   // Limpiar el contenedor de video antes de cargar uno nuevo
   videoPlayerContainer.innerHTML = "";
   videoPlayerContainer.appendChild(closePlayerButton);
@@ -3102,7 +3505,7 @@ function youtubeClapprEstandar(url, poster) {
     width: "100%",
     height: "100vh",
     preload: "auto",
-    autoPlay: false,
+    autoPlay: true,
     volume: 100,
     poster: poster,
     //hideMediaControl: true,
@@ -3121,7 +3524,35 @@ function youtubeClapprEstandar(url, poster) {
 
   // Escuchar cuando el video termine
   playerYouTube.on(Clappr.Events.PLAYER_ENDED, function () {
-    ocultarReproductor();
+    if (lista && lista.length > 0) {
+      const himnoAleatorio = lista[Math.floor(Math.random() * lista.length)];
+      let newUrl = himnoAleatorio.videoPath;
+      let newPoster = himnoAleatorio.imagePath;
+
+      // Validar si es YouTube ID
+      let isYouTubeNext = false;
+      let youtubeIdNext = newUrl;
+      if (newUrl) {
+        let regex =
+          /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+        let match = newUrl.match(regex);
+        if (match) {
+          youtubeIdNext = match[1];
+          isYouTubeNext = true;
+        } else if (newUrl.length === 11) {
+          isYouTubeNext = true;
+        }
+      }
+
+      if (isYouTubeNext) {
+        youtubeClapprEstandar(youtubeIdNext, newPoster, lista);
+      } else {
+        // Si no es YouTube, usar el cargador aleatorio que ya maneja locales
+        cargarReproductorAleatorio(lista);
+      }
+    } else {
+      ocultarReproductor();
+    }
   });
   playerYouTube.on(Clappr.Events.PLAYER_READY, () => {
     console.log("✅ Player listo, esperando 2 segundos...");
@@ -3176,7 +3607,7 @@ function expandirIframeYouTube() {
   intentarExpandir();
 }
 
-function youtubeClappr(auxUrlOnce, poster) {
+function youtubeClappr(auxUrlOnce, poster, lista) {
   audioHimno.pause();
   enviarDatos({
     videoPath: auxUrlOnce,
@@ -3184,7 +3615,7 @@ function youtubeClappr(auxUrlOnce, poster) {
     versiculo: null,
     libroAux: null,
     estilosAux: null,
-    lista: null,
+    lista: lista,
     fondoBody: null,
     imagen: null,
     waterMark: waterMark,
@@ -3574,7 +4005,7 @@ async function contadorDeVistas() {
     }`;
     stats.vistasUnicas = `${formatearNumero(
       datos[IDs.vistasUnicas]
-    )} vistas únicas por día`;
+    )} vistas por día`;
     stats.descargasUnicas = `${formatearNumero(
       datos[IDs.descargasUnicas]
     )} descarga${datos[IDs.descargasUnicas] === 1 ? "" : "s"}`;
@@ -3610,7 +4041,7 @@ function refrescarStatsUnicasCada5Min() {
     .then((res) => res.json())
     .then((data) => {
       if (data[IDs.vistasUnicas])
-        stats.vistasUnicas = `${data[IDs.vistasUnicas]} vistas únicas por día`;
+        stats.vistasUnicas = `${data[IDs.vistasUnicas]} vistas por día`;
 
       if (data[IDs.descargasUnicas])
         stats.descargasUnicas = `${data[IDs.descargasUnicas]} descarga${
@@ -3634,6 +4065,7 @@ setInterval(refrescarStatsUnicasCada5Min, 5 * 60 * 1000);
 //localStorage.removeItem("entradaRegistrada");
 
 //LÓGICA DE IMAGEN Y VIDEO PARA EL BOTÓN DETENCIÓN DE ARCHIVOS EXPLORADOR INTERNO PC CON ELECTRON
+//LÓGICA DE IMAGEN Y VIDEO PARA EL BOTÓN DETENCIÓN DE ARCHIVOS EXPLORADOR INTERNO PC CON ELECTRON
 const botonVideoImgLocal = document.getElementById("botonVideoImgLocal");
 botonVideoImgLocal.addEventListener("click", async () => {
   const rutaArchivo = await window.electronAPI.abrirDialogoMultimedia();
@@ -3652,7 +4084,9 @@ botonVideoImgLocal.addEventListener("click", async () => {
       const extension = rutaArchivo.split(".").pop();
       const dataUrl = `data:image/${extension};base64,${base64}`;
 
-      if (botonPRO) {
+      const monitorActivo = esMonitorActivo();
+
+      if (botonPRO || monitorActivo) {
         enviarDatos({
           videoPath: null,
           imagePath: null,
@@ -3687,7 +4121,8 @@ botonVideoImgLocal.addEventListener("click", async () => {
 
   // 🎥 Si es video
   else if (rutaArchivo.match(/\.(mp4|mkv|avi|mov|webm)$/i)) {
-    if (!botonPRO) {
+    const monitorActivo = esMonitorActivo();
+    if (!botonPRO && !monitorActivo) {
       videosLocalesEstandar(videoLocalUrl, null);
     } else {
       videosLocalesPro(videoLocalUrl, null);
@@ -3696,6 +4131,54 @@ botonVideoImgLocal.addEventListener("click", async () => {
     console.warn("❌ Archivo no soportado.");
   }
 });
+
+//FUNSIÓN PARA VIDEOS LOCALES ESTANDAR
+function videosLocalesEstandar(url, poster) {
+  audioHimno.pause();
+  // Limpiar el contenedor de video antes de cargar uno nuevo
+  videoPlayerContainer.innerHTML = "";
+  videoPlayerContainer.appendChild(closePlayerButton);
+  closePlayerButton.style.display = "flex";
+  // Crear el reproductor Clappr
+  player = new Clappr.Player({
+    source: url,
+    parentId: "#videoPlayerContainer",
+    width: "100%",
+    height: "100vh",
+    preload: "auto",
+    autoPlay: true,
+    volume: 100,
+    poster: poster,
+    //hideMediaControl: true,
+    disableVideoTagContextMenu: true,
+    playbackNotSupportedMessage: "No se puede reproducir el contenido",
+    watermark: waterMark,
+    position: "bottom-right",
+  });
+
+  // Mostrar el contenedor del reproductor
+  videoPlayerContainer.style.display = "flex";
+
+  // Escuchar cuando el video termine
+  player.on(Clappr.Events.PLAYER_ENDED, function () {
+    ocultarReproductor();
+  });
+}
+
+function videosLocalesPro(auxUrlOnce, poster) {
+  audioHimno.pause();
+  enviarDatos({
+    videoPath: auxUrlOnce,
+    imagePath: poster,
+    versiculo: null,
+    libroAux: null,
+    estilosAux: null,
+    lista: null,
+    fondoBody: null,
+    imagen: null,
+    waterMark: waterMark,
+  });
+}
 
 //FUNCIONES PARA PERSONALIZAR LOS HIMNOS CON LETRAS ACCESIBLES Y AUDIOS CANTADO Y PISTA, FUNCIÓN PRO
 
@@ -4078,6 +4561,15 @@ botonCargarImagen.addEventListener("click", async () => {
 
 //FUNCIÓN PARA COMUNICACIÓN AQUÍ CON EL PRELOAD Y EL MAIN
 function enviarDatos(data) {
+  // Agregar la categoría actual a los datos si no está presente
+  if (!data.categoria && categoriaActual) {
+    data.categoria = categoriaActual;
+  }
+
+  // Agregar el estado premium actual
+  const esPremium = localStorage.getItem("premium") === "true";
+  data.esPremium = esPremium;
+
   if (window.electronAPI) {
     window.electronAPI.enviarDatos(data);
   } else {
@@ -4157,6 +4649,7 @@ async function cargarMonitores() {
   // ✅ Cuando el usuario selecciona algo
   select.addEventListener("change", () => {
     const monitorId = parseInt(select.value, 10);
+    const esPremium = localStorage.getItem("premium") === "true";
 
     if (isNaN(monitorId) || monitorId === -1) {
       // 👉 Modo normal
@@ -4165,9 +4658,16 @@ async function cargarMonitores() {
       return;
     }
 
-    // 👉 Modo PRO (monitor válido)
+    // 👉 Abrir ventana secundaria en el monitor seleccionado
     window.electronAPI.abrirVentanaSecundaria(monitorId);
-    activarModoPro();
+
+    // Solo activar modo PRO si el usuario es premium
+    if (esPremium) {
+      activarModoPro();
+    } else {
+      // Usuario gratuito: mantener modo normal pero con monitor
+      activarModoNormal();
+    }
   });
 
   // 🔄 Resetear el select cuando la ventana secundaria se cierre manualmente
@@ -4183,8 +4683,16 @@ async function cargarMonitores() {
 function activarModoPro() {
   audioHimno.pause();
   botonPRO = true;
-  botonBiblia.style.display = "flex";
-  botonHimnosPro.style.display = "flex";
+  const esPremium = localStorage.getItem("premium") === "true";
+
+  // Solo mostrar botones PRO si el usuario es premium
+  if (esPremium) {
+    botonBiblia.style.display = "flex";
+    botonHimnosPro.style.display = "flex";
+  } else {
+    botonBiblia.style.display = "none";
+    botonHimnosPro.style.display = "none";
+  }
 
   enviarDatos({
     videoPath: null,
@@ -4202,7 +4710,9 @@ function activarModoPro() {
 function activarModoNormal() {
   audioHimno.pause();
   botonPRO = false;
-  cerrarVentanaReproductor();
+  // No cerrar la ventana secundaria aquí, para permitir proyección en modo gratuito
+  // cerrarVentanaReproductor();
+
   botonBiblia.style.display = "none";
   ventanaBiblia.style.display = "none";
   ventanaYouTube.style.display = "none";
@@ -4378,11 +4888,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2025-12-19",
+    titulo: "Mejora de diseño y funcionalidades",
+    mensaje: "En esta actualización se hicieron mejora en diseño por ejemplo: Botones ordenados y espacio asignado, más optimización en el inicio. Además, se integra un nuevo CHAT para todos los usuarios donde podrán compartir en tiempo real sus saludos, peticiones y agradecimientos durante el programa del culto de adoración. También, se incorporó dos sistemas de listas: Lista de rreproducción para videos favoritos, ahora puedes tener tus videos o cantos favoritos del software; también se incorpora una lista de reproducción personalizada para videos de YouTube, ahora puedes tener tu propia lista de reproducción de YouTube para que disfrutes de los mejores momentos de cada música o videos que te gustan. Además, ahora los usuarios pueden tener la reproducción de proyección en una segunda ventana, saldrá otra marca de agua para promocionar nuestro software en sus iglesias, esto para usuarios gratis que no pueden adquirir una licencia (El software fue pensado para iglesias que pueden adquirir una licencia, pero usuarios individuales también les agrada tener el software en sus equipos para consumo personal). Próximamente se estará trajando en un nueva funcionalidad para programación de eventos especiales gracias a un seguidor que nos proporcionó la idea. Dios te bendiga!",
+    version: "1.0.74",
+    tipo: "Mejora",
   },
   {
     fecha: "2025-12-09",
@@ -6393,3 +6903,15 @@ async function inicializarCarrusel(contenedorHijo) {
 
   console.log("[CARRUSEL] ✅ Carrusel inicializado");
 }
+
+/**
+ * NOTA: HACER UN CONTENEDOR DONDE HABLAR UNA TABLA PARA ORGANIZAR BIEN EL PROGRAMA DE LA IGLESIA,
+ * EN EL CUAL SE VA A ADJUNTAR DESDE EL MISMO CONTENEDOR EL HIMNO QUE SE QUIERE MOSTRAR Y SOLO SE LE DA A REPRODUCIR
+ * Y YA SE ENVÍA A PANTALLA, EN EL MISMO CONTENEDOR SE PONDRA LA INFORMACIÓN REQUERIDA COMO ESTÉTICA E INFORMACIÓN DE LA MISMA
+ * TAMBIÉN SE AGRAGARÁ UN RELOJ REAL PARA QUE EL USUARIO VAYA VIENDO LA HORA Y LOS MINUTOS QUE TRANSCURREN EN EL PROGRAMA
+ * TAMBIÉN SE PONDRÁ DE UN COLOR DIFERENTE LA FILA POR LA QUE VA EL PROGRAMA EN ESE MOMENTO, ESO SE HARÁ CONFIRME A LA HORA
+ * O LOS MINUTOS QUE VA TRANSITANDO, ES UNA IMPLEMENTACIÓN MUY BONITA, RECORDAR ESTO.
+ * HAY QUE IR TRABAJANDO EN CÓMO VAMOS IR IMPLEMENTANDO LA LISTA DE REPRODUCCIÓN QUE EL USUARIO PUEDA HACER,
+ * PERO YO PENSABA EN HACERLO VÍA PLAY, QUE EN EL MISMO REGISTRO DE LA TABLA, HALLA UNA COLUMNA ESPECIFICA DONDE
+ * VAYA EL BOTON A REPRODUCIR, HAY QUE PLANTEAR BIEN LA LÓGICA.
+ */
