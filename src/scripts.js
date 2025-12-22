@@ -830,15 +830,20 @@ botonPremium.addEventListener("click", function () {
     btnStripeMensual.style.fontWeight = "bold";
     btnStripeMensual.style.fontFamily =
       "Helvetica Neue, Helvetica, Arial, sans-serif";
-    btnStripeMensual.onclick = (e) => {
-      e.preventDefault();
-      // Abrir en navegador externo si es Electron
-      if (window.electronAPI && window.electronAPI.openExternal) {
-        window.electronAPI.openExternal("PONER_AQUI_URL_STRIPE_MENSUAL");
+
+    btnStripeMensual.onclick = async () => {
+      const res = await fetch(
+        `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=mensual&modo=${modoAux}`
+      );
+      const data = await res.json();
+
+      if (window.electronAPI) {
+        window.electronAPI.openExternal(data.checkoutUrl);
       } else {
-        window.open("PONER_AQUI_URL_STRIPE_MENSUAL", "_blank");
+        window.open(data.checkoutUrl, "_blank");
       }
     };
+
     contenedorStripe.appendChild(btnStripeMensual);
 
     // Botón Stripe Anual
@@ -858,14 +863,20 @@ botonPremium.addEventListener("click", function () {
     btnStripeAnual.style.fontWeight = "bold";
     btnStripeAnual.style.fontFamily =
       "Helvetica Neue, Helvetica, Arial, sans-serif";
-    btnStripeAnual.onclick = (e) => {
-      e.preventDefault();
-      if (window.electronAPI && window.electronAPI.openExternal) {
-        window.electronAPI.openExternal("PONER_AQUI_URL_STRIPE_ANUAL");
-      } else {
-        window.open("PONER_AQUI_URL_STRIPE_ANUAL", "_blank");
-      }
-    };
+    
+      btnStripeAnual.onclick = async () => {
+        const res = await fetch(
+          `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=anual&modo=${modoAux}`
+        );
+        const data = await res.json();
+  
+        if (window.electronAPI) {
+          window.electronAPI.openExternal(data.checkoutUrl);
+        } else {
+          window.open(data.checkoutUrl, "_blank");
+        }
+      };
+
     contenedorStripe.appendChild(btnStripeAnual);
 
     // Nota Stripe
@@ -1527,6 +1538,12 @@ function cargarReproductorAleatorio(lista) {
 
 // Función optimizada para cargar himnos en lotes
 async function cargarHimnosEnLotes(inicio, fin, tamanoLote = 50) {
+  // Verificar que srcAux esté definido
+  if (!srcAux) {
+    console.error("[ERROR] cargarHimnosEnLotes: srcAux no está definido");
+    return;
+  }
+  
   for (let i = inicio; i <= fin; i += tamanoLote) {
     const finLote = Math.min(i + tamanoLote - 1, fin);
 
@@ -2413,6 +2430,13 @@ let categoriaActual = ""; // Inicialmente vacío
 
 // Función para mostrar los himnos por categoría
 async function mostrarCategoria(categoria) {
+  // Verificar que srcAux esté definido antes de continuar
+  if (!srcAux) {
+    console.error("[ERROR] srcAux no está definido. No se pueden cargar himnos.");
+    himnarioContainer.innerHTML = "<div style='color: white; text-align: center; padding: 20px;'>⚠️ Error: No se pueden cargar los himnos.</div>";
+    return;
+  }
+  
   categoriaActual = categoria; // Almacenar la categoría actual
   todosLosHimnos = []; // Limpiar el array anterior
   himnarioContainer.innerHTML = ""; // Limpiar himnos anteriores
@@ -4586,21 +4610,26 @@ window.electronAPI.onMonitoresActualizados(async () => {
 
 const select = document.getElementById("selectMonitores");
 
-let srcAux;
+// Definir srcAux inmediatamente si window.paths.src está disponible
+// Si no está disponible, se definirá en DOMContentLoaded
+let srcAux = (window.paths && window.paths.src) ? window.paths.src + "/" : undefined;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMonitores();
 
-  // Asegúrate que window.paths.src existe antes de usarlo
-  if (!window.paths || !window.paths.src) {
-    console.error("window.paths.src no está definido todavía");
-    return;
+  // Si srcAux aún no está definido, intentar definirlo ahora
+  if (!srcAux) {
+    if (!window.paths || !window.paths.src) {
+      console.error("window.paths.src no está definido todavía");
+      return;
+    }
+    srcAux = window.paths.src + "/";
   }
 
-  srcAux = window.paths.src + "/";
-
-  // Forzar render
-  await mostrarCategoria("todos");
+  // Forzar render solo si srcAux está definido
+  if (srcAux) {
+    await mostrarCategoria("todos");
+  }
 
   // Pequeño retraso para dejar que el DOM pinte
   requestAnimationFrame(() => {
@@ -4610,6 +4639,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Solo agregar esta función al final para precarga de imágenes
 function precargarImagenes() {
+  // Verificar que srcAux esté definido antes de precargar
+  if (!srcAux) {
+    console.warn("[PRECARGA] srcAux no está definido, omitiendo precarga de imágenes");
+    return;
+  }
+  
   // Precargar las primeras 20 imágenes para mejor experiencia
   for (let i = 1; i <= 20; i++) {
     const numero = i.toString().padStart(3, "0");
@@ -4890,7 +4925,8 @@ const actualizaciones = [
   {
     fecha: "2025-12-19",
     titulo: "Mejora de diseño y funcionalidades",
-    mensaje: "En esta actualización se hicieron mejora en diseño por ejemplo: Botones ordenados y espacio asignado, más optimización en el inicio. Además, se integra un nuevo CHAT para todos los usuarios donde podrán compartir en tiempo real sus saludos, peticiones y agradecimientos durante el programa del culto de adoración. También, se incorporó dos sistemas de listas: Lista de rreproducción para videos favoritos, ahora puedes tener tus videos o cantos favoritos del software; también se incorpora una lista de reproducción personalizada para videos de YouTube, ahora puedes tener tu propia lista de reproducción de YouTube para que disfrutes de los mejores momentos de cada música o videos que te gustan. Además, ahora los usuarios pueden tener la reproducción de proyección en una segunda ventana, saldrá otra marca de agua para promocionar nuestro software en sus iglesias, esto para usuarios gratis que no pueden adquirir una licencia (El software fue pensado para iglesias que pueden adquirir una licencia, pero usuarios individuales también les agrada tener el software en sus equipos para consumo personal). Próximamente se estará trajando en un nueva funcionalidad para programación de eventos especiales gracias a un seguidor que nos proporcionó la idea. Dios te bendiga!",
+    mensaje:
+      "En esta actualización se hicieron mejora en diseño por ejemplo: Botones ordenados y espacio asignado, más optimización en el inicio. Además, se integra un nuevo CHAT para todos los usuarios donde podrán compartir en tiempo real sus saludos, peticiones y agradecimientos durante el programa del culto de adoración. También, se incorporó dos sistemas de listas: Lista de rreproducción para videos favoritos, ahora puedes tener tus videos o cantos favoritos del software; también se incorpora una lista de reproducción personalizada para videos de YouTube, ahora puedes tener tu propia lista de reproducción de YouTube para que disfrutes de los mejores momentos de cada música o videos que te gustan. Además, ahora los usuarios pueden tener la reproducción de proyección en una segunda ventana, saldrá otra marca de agua para promocionar nuestro software en sus iglesias, esto para usuarios gratis que no pueden adquirir una licencia (El software fue pensado para iglesias que pueden adquirir una licencia, pero usuarios individuales también les agrada tener el software en sus equipos para consumo personal). Próximamente se estará trajando en un nueva funcionalidad para programación de eventos especiales gracias a un seguidor que nos proporcionó la idea. Dios te bendiga!",
     version: "1.0.74",
     tipo: "Mejora",
   },
