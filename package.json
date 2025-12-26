@@ -147,6 +147,7 @@
     "fs-extra": "^11.3.2",
     "loudness": "^0.4.2",
     "node-fetch": "^3.3.2",
+    "pdf-poppler": "^0.2.3",
     "systeminformation": "^5.27.11"
   }
 }

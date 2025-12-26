@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            background: brown;
             min-height: 100vh;
             padding: 20px;
         }
@@ -30,7 +30,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            background: brown;
             color: white;
             padding: 30px 20px;
             text-align: center;
@@ -81,7 +81,7 @@
 
         input:focus {
             outline: none;
-            border-color: #8B4513;
+            border-color: brown;
         }
 
         button {
@@ -97,13 +97,13 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            background: brown;
             color: white;
         }
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(139, 69, 19, 0.4);
+            box-shadow: 0 5px 15px brown;
         }
 
         .btn-control {
@@ -144,7 +144,7 @@
         }
 
         .control-group h3 {
-            color: #8B4513;
+            color: brown;
             margin-bottom: 15px;
             font-size: 18px;
             padding-bottom: 10px;
@@ -160,7 +160,7 @@
         }
 
         .volume-control label {
-            color: #8B4513;
+            color: brown;
             margin-bottom: 10px;
             font-size: 14px;
         }
@@ -181,7 +181,7 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #8B4513;
+            background: brown;
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
@@ -190,7 +190,7 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #8B4513;
+            background: brown;
             cursor: pointer;
             border: none;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -231,7 +231,7 @@
             border-radius: 10px;
             margin-bottom: 20px;
             text-align: center;
-            color: #8B4513;
+            color: brown;
             border: 2px solid #D2B48C;
         }
 
@@ -241,7 +241,7 @@
             max-height: 320px;
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: #8B4513 #f0f0f0;
+            scrollbar-color: brown #f0f0f0;
         }
 
         .search-results::-webkit-scrollbar {
@@ -254,7 +254,7 @@
         }
 
         .search-results::-webkit-scrollbar-thumb {
-            background: #8B4513;
+            background: brown;
             border-radius: 4px;
         }
 
@@ -274,18 +274,18 @@
 
         .result-item:hover {
             background: #F5DEB3;
-            border-color: #8B4513;
+            border-color: brown;
         }
 
         .result-item.selected {
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            background: brown;
             color: white;
-            border-color: #8B4513;
+            border-color: brown;
         }
 
         .result-categoria {
             display: inline-block;
-            background: #8B4513;
+            background: brown;
             color: white;
             padding: 3px 10px;
             border-radius: 4px;
@@ -302,7 +302,7 @@
             font-weight: bold;
             font-size: 20px;
             margin-bottom: 5px;
-            color: #8B4513;
+            color: brown;
         }
 
         .result-item.selected .result-numero {
@@ -329,6 +329,92 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Estilos para pestañas y navegación */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.visible {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            width: 50%;
+        }
+
+        .nav-btn.active {
+            color: brown;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .ppt-controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 50px;
+        }
+
+        .btn-ppt {
+            width: 100%;
+            height: 150px;
+            font-size: 40px;
+            border-radius: 20px;
+            background: brown;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(139, 69, 19, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .btn-ppt:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Ajuste para que el contenido no quede tapado por la barra de navegación */
+        .content {
+            padding-bottom: 80px;
+        }
     </style>
 </head>
 
@@ -353,45 +439,112 @@
 
             <!-- Sección de Controles -->
             <div id="controlsSection" class="controls-section">
-                <div class="status">
-                    ✅ Conectado al Himnario
-                </div>
+                <!-- Pestaña INICIO (Himnos) -->
+                <div id="tab-inicio" class="tab-content">
+                    <div class="status">
+                        ✅ Conectado al Himnario
+                    </div>
 
-                <!-- Búsqueda de Himnos -->
-                <div class="control-group">
-                    <h3>🔍 Buscar Himno</h3>
+                    <!-- Búsqueda de Himnos -->
+                    <div class="control-group">
+                        <h3>🔍 Buscar Himno</h3>
 
-                    <!-- Resultados de búsqueda (arriba del campo) -->
-                    <div id="searchResults" class="search-results"></div>
+                        <!-- Resultados de búsqueda (arriba del campo) -->
+                        <div id="searchResults" class="search-results"></div>
 
-                    <div class="input-group">
-                        <input type="text" id="searchInput" placeholder="Buscar por número o título..."
-                            autocomplete="off">
+                        <div class="input-group">
+                            <input type="text" id="searchInput" placeholder="Buscar por número o título..."
+                                autocomplete="off">
+                        </div>
+                    </div>
+
+                    <!-- Controles de Reproducción -->
+                    <div class="control-group">
+                        <h3>▶️ Controles</h3>
+
+                        <!-- Control de Volumen -->
+                        <div class="volume-control">
+                            <label for="volumeSlider">
+                                <span id="volumeIcon">🔊</span> Volumen: <span id="volumeValue">100</span>%
+                            </label>
+                            <input type="range" id="volumeSlider" min="0" max="100" value="100" class="volume-slider">
+                        </div>
+
+                        <div class="btn-grid">
+                            <button class="btn-control" id="btnReproducir" onclick="reproducirSeleccionado()"
+                                disabled>▶️
+                                Reproducir</button>
+                            <button class="btn-danger" onclick="stopReproduccion()">⏹️ Stop</button>
+                        </div>
+                    </div>
+
+                    <!-- Desconectar -->
+                    <div class="control-group">
+                        <button class="btn-danger" onclick="desconectar()">🔓 Desconectar</button>
                     </div>
                 </div>
 
-                <!-- Controles de Reproducción -->
-                <div class="control-group">
-                    <h3>▶️ Controles</h3>
-
-                    <!-- Control de Volumen -->
-                    <div class="volume-control">
-                        <label for="volumeSlider">
-                            <span id="volumeIcon">🔊</span> Volumen: <span id="volumeValue">100</span>%
-                        </label>
-                        <input type="range" id="volumeSlider" min="0" max="100" value="100" class="volume-slider">
+                <!-- Pestaña POWERPOINT -->
+                <div id="tab-ppt" class="tab-content">
+                    <div class="status" id="ppt-status-text">
+                        🖥️ Control PowerPoint (Sin datos)
                     </div>
 
-                    <div class="btn-grid">
-                        <button class="btn-control" id="btnReproducir" onclick="reproducirSeleccionado()" disabled>▶️
-                            Reproducir</button>
-                        <button class="btn-danger" onclick="stopReproduccion()">⏹️ Stop</button>
+                    <!-- Botón para subir PPT desde el celular -->
+                    <div class="control-group"
+                        style="background: #FFF8DC; padding: 15px; border-radius: 10px; border: 2px solid #D2B48C; margin-bottom: 20px;">
+                        <h3 style="border-bottom: 1px solid #D2B48C; padding-bottom: 5px; margin-bottom: 10px;">📂 Subir
+                            PowerPoint</h3>
+                        <input type="file" id="ppt-file-input" accept=".pptx,.ppt" style="display: none;">
+                        <button class="btn-primary" onclick="document.getElementById('ppt-file-input').click()"
+                            style="margin-bottom: 5px;">
+                            📤 Seleccionar y Subir PPT
+                        </button>
+                        <div id="upload-status"
+                            style="font-size: 12px; color: brown; text-align: center; height: 15px;">
+                        </div>
+                    </div>
+
+                    <!-- Previsualización de Diapositivas -->
+                    <div class="ppt-previews" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <div style="flex: 1; display: none;">
+                            <p style="font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #8B4513;">ACTUAL
+                            </p>
+                            <img id="ppt-current-img" src=""
+                                style="width: 100%; border-radius: 8px; border: 2px solid #8B4513; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                        </div>
+                        <div style="flex: 1; display: none; opacity: 0.7;">
+                            <p style="font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">SIGUIENTE
+                            </p>
+                            <img id="ppt-next-img" src=""
+                                style="width: 100%; border-radius: 8px; border: 2px dashed #999;">
+                        </div>
+                    </div>
+
+                    <div class="ppt-controls">
+                        <button class="btn-ppt" onclick="pptPrev()">
+                            ⬅️<br><span style="font-size: 16px;">Anterior</span>
+                        </button>
+                        <button class="btn-ppt" onclick="pptNext()">
+                            ➡️<br><span style="font-size: 16px;">Siguiente</span>
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center; color: #666;">
+                        <p>Controle las diapositivas de la presentación actual.</p>
                     </div>
                 </div>
 
-                <!-- Desconectar -->
-                <div class="control-group">
-                    <button class="btn-danger" onclick="desconectar()">🔓 Desconectar</button>
+                <!-- Barra de Navegación Inferior -->
+                <div class="bottom-nav">
+                    <button id="nav-inicio" class="nav-btn" onclick="cambiarPestana('inicio')">
+                        <span class="nav-icon">📖</span>
+                        Inicio
+                    </button>
+                    <button id="nav-ppt" class="nav-btn" onclick="cambiarPestana('ppt')">
+                        <span class="nav-icon">🖥️</span>
+                        PowerPoint
+                    </button>
                 </div>
             </div>
         </div>
@@ -435,7 +588,12 @@
                     PIN_GUARDADO = pin;
                     document.getElementById('pinSection').classList.add('hidden');
                     document.getElementById('controlsSection').classList.add('visible');
+                    // Mostrar pestaña de inicio por defecto
+                    cambiarPestana('inicio');
                     mostrarAlerta('✅ Conectado exitosamente', 'success');
+
+                    // Iniciar escucha de eventos SSE
+                    iniciarEventosSSE();
                 } else {
                     mostrarAlerta('❌ PIN incorrecto', 'error');
                     pinInput.value = '';
@@ -443,6 +601,144 @@
             } catch (error) {
                 mostrarAlerta('❌ Error de conexión', 'error');
             }
+        }
+
+        // Manejo de subida de archivos PPT
+        document.getElementById('ppt-file-input').onchange = async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!PIN_GUARDADO) {
+                mostrarAlerta('Debe conectarse primero', 'error');
+                return;
+            }
+
+            const status = document.getElementById('upload-status');
+            status.textContent = '⏳ Subiendo: ' + file.name + '...';
+
+            try {
+                // Enviar como binario directo para no necesitar multer
+                const response = await fetch(`/upload-ppt?pin=${PIN_GUARDADO}&name=${encodeURIComponent(file.name)}`, {
+                    method: 'POST',
+                    body: file,
+                    headers: {
+                        'Content-Type': 'application/octet-stream'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    status.textContent = '✅ Subida completada';
+                    mostrarAlerta('✅ PowerPoint subido con éxito', 'success');
+                    // Limpiar input
+                    e.target.value = '';
+                    setTimeout(() => { status.textContent = ''; }, 3000);
+                } else {
+                    status.textContent = '❌ Error: ' + (data.error || 'Desconocido');
+                    mostrarAlerta('❌ Error al subir: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error en subida:', error);
+                status.textContent = '❌ Error de conexión';
+                mostrarAlerta('❌ Error de conexión al subir', 'error');
+            }
+        };
+
+        // Variable para la conexión SSE
+        let eventSource = null;
+
+        function iniciarEventosSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource('/events');
+
+            eventSource.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'connected') {
+                    console.log('🔗 Conectado a eventos en tiempo real');
+                } else if (data.type === 'ppt-status') {
+                    actualizarVistaPPT(data.data);
+                }
+            };
+
+            eventSource.onerror = function (err) {
+                console.warn('⚠️ Error en conexión de eventos, reintentando...');
+                eventSource.close();
+                // Reintentar conexión en 5 segundos
+                setTimeout(iniciarEventosSSE, 5000);
+            };
+        }
+
+        function actualizarVistaPPT(status) {
+            const currentImg = document.getElementById('ppt-current-img');
+            const nextImg = document.getElementById('ppt-next-img');
+            const statusText = document.getElementById('ppt-status-text');
+
+            if (!status) return;
+
+            // Actualizar texto de estado
+            if (statusText) {
+                statusText.textContent = `Diapositiva ${status.current} / ${status.total}`;
+            }
+
+            // Actualizar imagen actual (usamos la URL recibida, que ya debería ser accesible si estamos en la misma red)
+            // Nota: La URL es localhost en el servidor, pero para el móvil necesitamos reemplazar localhost por la IP del servidor
+            // O mejor aún, el servidor nos envía URLs relativas o corregidas.
+            // Como las URLs son http://localhost:3000/..., necesitamos cambiar el host por el windows.location.hostname
+
+            if (currentImg && status.slideUrl) {
+                const urlObj = new URL(status.slideUrl);
+                // Reemplazar host por el actual (desde donde se ve la página)
+                urlObj.hostname = window.location.hostname;
+                urlObj.port = window.location.port || '3000'; // Asumimos puerto 3000 para assets si es diferente
+                // IMPORTANTE: Los assets están en el puerto 3000 (Express del main.js), la app remoto está en 3555
+                // Asi que siempre forzamos puerto 3000 para las imagenes
+                urlObj.port = '3000';
+
+                currentImg.src = urlObj.href;
+                currentImg.parentElement.style.display = 'block';
+            } else if (currentImg) {
+                currentImg.src = '';
+                currentImg.parentElement.style.display = 'none';
+            }
+
+            // Actualizar siguiente imagen
+            if (nextImg && status.nextSlideUrl) {
+                const urlObj = new URL(status.nextSlideUrl);
+                urlObj.hostname = window.location.hostname;
+                urlObj.port = '3000';
+
+                nextImg.src = urlObj.href;
+                nextImg.parentElement.style.display = 'block';
+            } else if (nextImg) {
+                nextImg.parentElement.style.display = 'none';
+            }
+        }
+
+        function cambiarPestana(pestana) {
+            // Ocultar todas las secciones de contenido
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('visible'));
+
+            // Quitar clase active de todos los botones de navegación
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+            // Mostrar la sección seleccionada
+            document.getElementById(`tab-${pestana}`).classList.add('visible');
+
+            // Activar el botón correspondiente
+            document.getElementById(`nav-${pestana}`).classList.add('active');
+        }
+
+        async function pptPrev() {
+            await enviarComando('ppt-prev');
+        }
+
+        async function pptNext() {
+            await enviarComando('ppt-next');
         }
 
         async function enviarComando(comando, datos = {}) {

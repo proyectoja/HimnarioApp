@@ -18,7 +18,7 @@
     <div class="contenedor-principal">
         <div id="chatbro"></div>
 
-        <div class="contenedor-intro" id="contenedor-intro">
+        <div style="display: flex;" class="contenedor-intro" id="contenedor-intro">
             <img class="image1" src="imagenes/logo-iglesia-adventista.png">
             <img class="image2" src="imagenes/ministerios.png">
         </div>
@@ -69,6 +69,37 @@
             </div>
         </div>
         <div class="contenedor-columnas">
+            <!-- ESCENARIO POWER POINT -->
+            <div id="contenedor-power-point" class="contenedor-power-point">
+                <div id="lista-presentacion" class="lista-presentacion">
+                    <h2>Lista diapositivas:</h2>
+                </div>
+                <div id="contenedor-columnas-powerpoint" class="contenedor-columnas-powerpoint">
+                    <div id="contenedor-ppt-actual" class="contenedor-ppt-actual">
+                        <img src="imagenes/powerpoint-proyectoja.jpg" id="ppt-slide-actual" draggable="false" />
+                        <div id="marcadeagua-powerpoint" class="marcadeagua-powerpoint">
+                            <img src="imagenes/logo-proyectoja.png" alt="Marca de agua" />
+                        </div>
+                    </div>
+                    <div id="ppt-progress" style="display:none">
+                        <p id="ppt-progress-text">Convirtiendo presentación…</p>
+                    </div>
+                    <div class="contenedor-botones-powerpoint-filas">
+                        <button onclick="openPowerPoint()"><img id="subir-archivo" src="iconos/subir-archivo.png"
+                                alt="">
+                            <h1>Subir PowerPoint</h1>
+                        </button>
+                        <button id="ppt-fullscreen-btn"><img src="iconos/pantalla-completa.png"
+                                class="pantalla-completa"></button>
+                        <button id="ppt-prev-btn" onclick="pptPrev()">
+                            <h1>Anterior</h1>
+                        </button>
+                        <button id="ppt-next-btn" onclick="pptNext()">
+                            <h1>Siguiente</h1>
+                        </button>
+                    </div>
+                </div>
+            </div>
             <div id="contenedor-biblia" class="contenedor-biblia">
                 <!-- LA BIBLIA PARA PROYECTAR, VERSIÓN REINA VALERA 1960-->
                 <div id="menu">
@@ -392,8 +423,9 @@
         <div class="contenedor-buscador">
             <button id="botonVideoImgLocal" class="botonVideoImgLocal"><img src="iconos/videolocal.png"></button>
             <button id="botonYoutube" class="botonYouTube"><img src="iconos/youtube.png"></button>
-            <button id="botonContador" class="botonContador"><img src="iconos/contador.png"></button>
             <button id="botonHimnosPro" class="botonHimnosPro"><img src="iconos/himnospro.png"></button>
+            <button id="botonPowerPoint" class="botonPowerPoint"><img src="iconos/powerpoint.png"></button>
+            <button id="botonContador" class="botonContador"><img src="iconos/contador.png"></button>
 
             <input type="text" id="searchInput" placeholder="Buscar himno..." />
             <img src="iconos/iconoBuscar.png">
@@ -413,6 +445,12 @@
                             kendall.torres.17@gmail.com</p>
                         <h3>De: Costa Rica</h3>
                         <h5>❤️ ¡Dios te bendiga! Oramos por ti y tu iglesia. 🙏🏼</h5><br />
+                        <h3>Información del Usuario:</h3>
+                        <p id="info-estado-licencia">Estado: Licencia Gratis</p>
+                        <p id="info-url-remoto">Control remoto corriendo en: ...</p>
+                        <p id="info-pin-remoto">Pin del control remoto: ...</p>
+                        <p>Código premium: </p>
+                        <p id="info-codigo-premium">Sin código</p><br />
 
 
                         <h4>Sección de: Acerca de</h4>

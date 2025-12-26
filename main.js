@@ -11,6 +11,8 @@ const {
 const { autoUpdater } = require("electron-updater");
 const si = require("systeminformation");
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
 const {
   setMainWindow,
   flushBuffer,
@@ -34,6 +36,11 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 const server = express();
 server.use(express.static(path.join(__dirname, "src")));
 server.use(express.static(path.join(app.getPath("userData"), "src")));
+
+// Servir archivos temporales de PowerPoint
+console.log("[EXPRESS] Sirviendo archivos temporales desde:", os.tmpdir());
+server.use("/ppt-temp", express.static(os.tmpdir()));
+
 server.listen(3000, () => {
   console.log("Servidor corriendo en http://localhost:3000");
 });
@@ -194,6 +201,21 @@ ipcMain.on("set-premium-status", (event, esPremium) => {
 // 🔐 IPC para verificar estado premium desde el renderer
 ipcMain.handle("get-premium-status", () => {
   return esPremiumGlobal;
+});
+
+// 📊 IPC para verificar qué aplicaciones están disponibles
+ipcMain.handle("check-ppt-apps-available", async () => {
+  try {
+    const apps = checkAvailableApps();
+    console.log("[PPT] Aplicaciones disponibles:", apps);
+    return apps;
+  } catch (err) {
+    console.log("[PPT] Error verificando aplicaciones:", err.message);
+    return {
+      powerpoint: { available: false, error: err.message },
+      libreoffice: { available: false, error: err.message },
+    };
+  }
 });
 
 // Ocultar la barra de menú
@@ -427,8 +449,14 @@ ipcMain.handle("cambiar-volumen", async (event, volumen) => {
   }
 });
 
+// ✅ Canal para actualizar el estado del control remoto (desde renderer)
+ipcMain.on("ppt:update-remote", (event, data) => {
+  if (global.enviarEventoControlRemoto) {
+    global.enviarEventoControlRemoto("ppt-status", data);
+  }
+});
+
 //ACTUALIZACIONES DE LA APP - SISTEMA MEJORADO
-const fs = require("fs");
 const updateStatusPath = path.join(
   app.getPath("userData"),
   "update-status.json"
@@ -650,6 +678,1031 @@ app.on("window-all-closed", () => {
   detenerControlRemoto(); // Detener el servidor de control remoto
   app.quit();
 });
+
+//Abrir archivo real de power point
+const { execFile } = require("child_process");
+const pdf = require("pdf-poppler");
+
+/* -------------------------------------------------
+   DETECTAR SI POWERPOINT ESTÁ INSTALADO
+------------------------------------------------- */
+function getPowerPointPath() {
+  console.log("[PPT] Buscando Microsoft PowerPoint...");
+
+  // Lista de posibles rutas donde podría estar PowerPoint
+  const possiblePaths = [];
+
+  // 1. Office 365 / Office 2019/2021 (64-bit)
+  possiblePaths.push(
+    path.join(
+      "C:",
+      "Program Files",
+      "Microsoft Office",
+      "root",
+      "Office16",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files",
+      "Microsoft Office",
+      "Office16",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files",
+      "Microsoft Office 15",
+      "root",
+      "office15",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files",
+      "Microsoft Office",
+      "Office15",
+      "POWERPNT.EXE"
+    )
+  );
+
+  // 2. Office 2013/2016 (32-bit)
+  possiblePaths.push(
+    path.join(
+      "C:",
+      "Program Files (x86)",
+      "Microsoft Office",
+      "root",
+      "Office16",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files (x86)",
+      "Microsoft Office",
+      "Office16",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files (x86)",
+      "Microsoft Office",
+      "root",
+      "Office15",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files (x86)",
+      "Microsoft Office",
+      "Office15",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files (x86)",
+      "Microsoft Office",
+      "Office14",
+      "POWERPNT.EXE"
+    ),
+    path.join(
+      "C:",
+      "Program Files (x86)",
+      "Microsoft Office",
+      "Office12",
+      "POWERPNT.EXE"
+    )
+  );
+
+  // 3. Buscar en PATH del sistema
+  const systemPath = process.env.PATH || "";
+  const pathDirs = systemPath.split(path.delimiter);
+  for (const dir of pathDirs) {
+    if (dir.toLowerCase().includes("office")) {
+      possiblePaths.push(path.join(dir, "POWERPNT.EXE"));
+    }
+  }
+
+  // 4. Buscar en AppData (instalaciones Click-to-Run)
+  const localAppData = process.env.LOCALAPPDATA || "";
+  if (localAppData) {
+    possiblePaths.push(
+      path.join(localAppData, "Microsoft", "Office", "POWERPNT.EXE")
+    );
+  }
+
+  console.log(
+    "[PPT] Buscando PowerPoint en",
+    possiblePaths.length,
+    "posibles rutas..."
+  );
+
+  for (const possiblePath of possiblePaths) {
+    try {
+      if (fs.existsSync(possiblePath)) {
+        console.log("[PPT] PowerPoint encontrado en:", possiblePath);
+        const stats = fs.statSync(possiblePath);
+        if (stats.isFile() && stats.size > 1000000) {
+          // Al menos 1MB
+          console.log("[PPT] PowerPoint encontrado y parece válido");
+          return possiblePath;
+        }
+      }
+    } catch (err) {
+      // Ignorar errores de acceso
+    }
+  }
+
+  console.log("[PPT] PowerPoint no encontrado");
+  return null;
+}
+
+/* -------------------------------------------------
+   DETECTAR SI LIBREOFFICE ESTÁ INSTALADO
+------------------------------------------------- */
+function getSofficePath() {
+  console.log("[PPT] Buscando LibreOffice...");
+
+  // Lista de posibles rutas donde podría estar LibreOffice
+  const possiblePaths = [];
+
+  // 1. Rutas comunes de instalación
+  possiblePaths.push(
+    path.join("C:", "Program Files", "LibreOffice", "program", "soffice.exe"),
+    path.join(
+      "C:",
+      "Program Files (x86)",
+      "LibreOffice",
+      "program",
+      "soffice.exe"
+    ),
+    path.join(
+      process.env.PROGRAMFILES || "C:\\Program Files",
+      "LibreOffice",
+      "program",
+      "soffice.exe"
+    ),
+    path.join(
+      process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)",
+      "LibreOffice",
+      "program",
+      "soffice.exe"
+    )
+  );
+
+  // 2. Buscar en PATH del sistema
+  const systemPath = process.env.PATH || "";
+  const pathDirs = systemPath.split(path.delimiter);
+  for (const dir of pathDirs) {
+    if (dir.toLowerCase().includes("libreoffice")) {
+      possiblePaths.push(path.join(dir, "soffice.exe"));
+    }
+  }
+
+  // 3. Buscar en AppData/Local (instalaciones portables)
+  const localAppData = process.env.LOCALAPPDATA || "";
+  if (localAppData) {
+    possiblePaths.push(
+      path.join(
+        localAppData,
+        "Programs",
+        "LibreOffice",
+        "program",
+        "soffice.exe"
+      )
+    );
+  }
+
+  // 4. Buscar en todas las unidades
+  for (let drive = 67; drive <= 90; drive++) {
+    // C: a Z:
+    const driveLetter = String.fromCharCode(drive);
+    possiblePaths.push(
+      path.join(driveLetter + ":", "LibreOffice", "program", "soffice.exe")
+    );
+  }
+
+  // 5. Desarrollo y embebido (última opción)
+  possiblePaths.push(
+    path.join(__dirname, "assets", "libreoffice", "program", "soffice.exe"),
+    path.join(process.resourcesPath, "libreoffice", "program", "soffice.exe")
+  );
+
+  console.log("[PPT] Buscando en", possiblePaths.length, "posibles rutas...");
+
+  for (const possiblePath of possiblePaths) {
+    try {
+      if (fs.existsSync(possiblePath)) {
+        console.log("[PPT] LibreOffice encontrado en:", possiblePath);
+
+        // Verificar que realmente sea ejecutable
+        const stats = fs.statSync(possiblePath);
+        if (stats.isFile() && stats.size > 100000) {
+          // Al menos 100KB
+          console.log("[PPT] LibreOffice encontrado y parece válido");
+          return possiblePath;
+        } else {
+          console.log(
+            "[PPT] Archivo encontrado pero no parece válido (tamaño:",
+            stats.size,
+            "bytes)"
+          );
+        }
+      }
+    } catch (err) {
+      // Ignorar errores de acceso
+    }
+  }
+
+  console.log("[PPT] LibreOffice no encontrado");
+  return null;
+}
+
+/* -------------------------------------------------
+   VERIFICAR DISPONIBILIDAD DE APLICACIONES
+------------------------------------------------- */
+function checkAvailableApps() {
+  const powerpointPath = getPowerPointPath();
+  const libreofficePath = getSofficePath();
+
+  return {
+    powerpoint: powerpointPath
+      ? { available: true, path: powerpointPath }
+      : { available: false, error: "PowerPoint no encontrado" },
+    libreoffice: libreofficePath
+      ? { available: true, path: libreofficePath }
+      : { available: false, error: "LibreOffice no encontrado" },
+  };
+}
+
+/* -------------------------------------------------
+   CONVERTIR PPT A IMÁGENES USANDO MICROSOFT POWERPOINT
+   Método: PowerPoint → Exportar cada diapositiva como PNG
+------------------------------------------------- */
+async function convertPPTWithPowerPoint(pptPath, imagesDir) {
+  return new Promise((resolve, reject) => {
+    const powerpointPath = getPowerPointPath();
+    if (!powerpointPath) {
+      return reject(new Error("PowerPoint no está disponible"));
+    }
+
+    console.log("[PPT] Usando Microsoft PowerPoint en:", powerpointPath);
+    console.log("[PPT] Archivo PPT:", pptPath);
+    console.log("[PPT] Directorio salida imágenes:", imagesDir);
+
+    // Asegurar que el directorio de salida existe
+    fs.mkdirSync(imagesDir, { recursive: true });
+
+    // Crear un script VBS para automatizar PowerPoint
+    // Usar un nombre de archivo temporal sin caracteres especiales
+    const tempPptDir = path.join(os.tmpdir(), "ppt_temp");
+    fs.mkdirSync(tempPptDir, { recursive: true });
+
+    // Crear una copia del archivo con nombre seguro (sin caracteres especiales)
+    const safeFileName = `ppt_${Date.now()}${path.extname(pptPath)}`;
+    const safePptPath = path.join(tempPptDir, safeFileName);
+    fs.copyFileSync(pptPath, safePptPath);
+
+    console.log("[PPT] Archivo original:", pptPath);
+    console.log("[PPT] Archivo seguro (copia):", safePptPath);
+
+    const vbsScript = `
+Option Explicit
+
+Dim objPPT, objPresentation, objSlides, objSlide
+Dim i, exportPath, baseName, fso
+
+' Crear objeto FileSystemObject para manejo de archivos
+Set fso = CreateObject("Scripting.FileSystemObject")
+
+' Iniciar PowerPoint
+Set objPPT = CreateObject("PowerPoint.Application")
+objPPT.Visible = True  ' Debe ser visible, no se puede ocultar
+objPPT.DisplayAlerts = False  ' Desactivar alertas
+
+On Error Resume Next
+
+' Abrir la presentación
+Dim pptFullPath
+pptFullPath = "${safePptPath.replace(/\\/g, "\\\\")}"
+
+Set objPresentation = objPPT.Presentations.Open(pptFullPath, True, False, False)
+
+If Err.Number <> 0 Then
+    WScript.Echo "ERROR_OPEN:" & Err.Description
+    objPPT.Quit
+    Set objPPT = Nothing
+    Set fso = Nothing
+    WScript.Quit 1
+End If
+
+On Error GoTo 0
+
+' Obtener información básica
+WScript.Echo "TOTAL_SLIDES:" & objPresentation.Slides.Count
+
+' Exportar cada diapositiva como PNG
+exportPath = "${imagesDir.replace(/\\/g, "\\\\")}"
+
+For i = 1 To objPresentation.Slides.Count
+    Set objSlide = objPresentation.Slides(i)
+    
+    ' Nombre del archivo: slide_XX.png (sin el nombre original para evitar problemas)
+    Dim fileName
+    fileName = exportPath & "\\slide_" & Right("00" & i, 3) & ".png"
+    
+    ' Exportar la diapositiva como PNG
+    objSlide.Export fileName, "PNG", 1920, 1080  ' Resolución Full HD
+    
+    WScript.Echo "SLIDE_EXPORTED:" & i & ":" & fileName
+Next
+
+' Cerrar todo
+objPresentation.Saved = True  ' Marcar como guardado para evitar preguntas
+objPresentation.Close
+objPPT.Quit
+
+' Limpiar archivo temporal
+On Error Resume Next
+If fso.FileExists(pptFullPath) Then
+    fso.DeleteFile pptFullPath, True
+End If
+If fso.FolderExists("${tempPptDir.replace(/\\/g, "\\\\")}") Then
+    fso.DeleteFolder "${tempPptDir.replace(/\\/g, "\\\\")}", True
+End If
+On Error GoTo 0
+
+Set objPresentation = Nothing
+Set objPPT = Nothing
+Set fso = Nothing
+
+WScript.Echo "SUCCESS"
+`;
+
+    // Guardar el script VBS temporal
+    const vbsPath = path.join(os.tmpdir(), `ppt_export_${Date.now()}.vbs`);
+    fs.writeFileSync(vbsPath, vbsScript, "utf8");
+
+    console.log("[PPT] Script VBS creado en:", vbsPath);
+    console.log("[PPT] Ejecutando PowerPoint en modo automático...");
+
+    // Ejecutar el script VBS
+    execFile(
+      "cscript.exe",
+      ["//Nologo", vbsPath],
+      { timeout: 120000 }, // 2 minutos de timeout
+      (error, stdout, stderr) => {
+        // Limpiar el script temporal
+        try {
+          fs.unlinkSync(vbsPath);
+        } catch (e) {
+          // Ignorar errores de limpieza
+        }
+
+        console.log("[PPT] PowerPoint terminó");
+        console.log("[PPT] Salida:", stdout);
+        console.log("[PPT] Error:", stderr);
+
+        if (error) {
+          console.error("[PPT] Error ejecutando PowerPoint:", error.message);
+          return reject(
+            new Error(`Error ejecutando PowerPoint: ${error.message}`)
+          );
+        }
+
+        // Procesar la salida
+        const lines = stdout.split("\n");
+        let totalSlides = 0;
+        const exportedSlides = [];
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (line.startsWith("TOTAL_SLIDES:")) {
+            totalSlides = parseInt(line.split(":")[1]);
+          } else if (line.startsWith("SLIDE_EXPORTED:")) {
+            const parts = line.split(":");
+            const slideNum = parseInt(parts[1]);
+            const filePath = parts.slice(2).join(":");
+            exportedSlides.push({ slide: slideNum, path: filePath });
+          } else if (line.includes("ERROR_OPEN:")) {
+            const errorMsg = line.split("ERROR_OPEN:")[1];
+            return reject(
+              new Error(`PowerPoint no pudo abrir el archivo: ${errorMsg}`)
+            );
+          }
+        }
+
+        if (exportedSlides.length === 0) {
+          return reject(new Error("PowerPoint no exportó ninguna diapositiva"));
+        }
+
+        console.log(
+          `[PPT] PowerPoint exportó ${exportedSlides.length} de ${totalSlides} diapositivas`
+        );
+
+        // Ordenar las diapositivas por número
+        exportedSlides.sort((a, b) => a.slide - b.slide);
+
+        // Obtener solo los nombres de archivo
+        const pngFiles = exportedSlides.map((slide) => {
+          return path.basename(slide.path);
+        });
+
+        console.log("[PPT] Archivos PNG generados por PowerPoint:", pngFiles);
+        resolve(pngFiles);
+      }
+    );
+  });
+}
+
+/* -------------------------------------------------
+   CONVERTIR PPTX → PDF (Función mejorada)
+------------------------------------------------- */
+function pptToPdf(pptPath, outDir) {
+  return new Promise((resolve, reject) => {
+    const soffice = getSofficePath();
+    console.log("[PPT] Usando LibreOffice en:", soffice);
+    console.log("[PPT] Archivo PPT:", pptPath);
+    console.log("[PPT] Directorio salida:", outDir);
+
+    // Verificar que el archivo PPT existe
+    if (!fs.existsSync(pptPath)) {
+      return reject(new Error(`El archivo PPT no existe: ${pptPath}`));
+    }
+
+    // Asegurar que el directorio de salida existe
+    fs.mkdirSync(outDir, { recursive: true });
+
+    const cwd = path.dirname(soffice);
+
+    // Configurar variables de entorno
+    const env = {
+      ...process.env,
+      PATH: cwd + path.delimiter + process.env.PATH,
+    };
+
+    // Usar el mejor conjunto de argumentos para conversión a PDF
+    const args = [
+      "--headless",
+      "--nologo",
+      "--convert-to",
+      "pdf:impress_pdf_Export",
+      pptPath,
+      "--outdir",
+      outDir,
+    ];
+
+    console.log("[PPT] Ejecutando LibreOffice con argumentos:", args);
+
+    execFile(
+      soffice,
+      args,
+      { cwd: cwd, env: env, timeout: 60000 },
+      (error, stdout, stderr) => {
+        console.log("[PPT] Conversión terminada");
+        console.log("[PPT] Error:", error ? error.message : "null");
+
+        // Esperar un momento y verificar si se generó el PDF
+        setTimeout(() => {
+          try {
+            const files = fs.readdirSync(outDir);
+            console.log("[PPT] Archivos en directorio:", files);
+
+            // Buscar cualquier archivo PDF
+            const pdfFiles = files.filter((f) =>
+              f.toLowerCase().endsWith(".pdf")
+            );
+
+            if (pdfFiles.length > 0) {
+              console.log("[PPT] ¡Éxito! PDF generado:", pdfFiles[0]);
+              resolve(pdfFiles[0]); // Devolver el nombre del archivo PDF
+            } else {
+              reject(
+                new Error(
+                  "No se generó el archivo PDF. LibreOffice no produjo ningún archivo."
+                )
+              );
+            }
+          } catch (err) {
+            reject(
+              new Error(`Error al verificar archivos PDF: ${err.message}`)
+            );
+          }
+        }, 2000);
+      }
+    );
+  });
+}
+
+/* -------------------------------------------------
+   CONVERTIR PDF → IMÁGENES (una por página)
+   Usando pdf-poppler para extraer cada página como imagen separada
+------------------------------------------------- */
+async function pdfToImages(pdfPath, outDir) {
+  console.log("[PPT] Usando pdf-poppler para PDF→PNG");
+  console.log("[PPT] Archivo PDF:", pdfPath);
+  console.log("[PPT] Directorio salida imágenes:", outDir);
+
+  // Verificar que el archivo PDF existe
+  if (!fs.existsSync(pdfPath)) {
+    throw new Error(`El archivo PDF no existe: ${pdfPath}`);
+  }
+
+  // Asegurar que el directorio de salida existe
+  fs.mkdirSync(outDir, { recursive: true });
+
+  try {
+    // Configurar opciones para pdf-poppler
+    const options = {
+      format: "png", // Formato de salida
+      out_dir: outDir, // Directorio de salida
+      out_prefix: path.basename(pdfPath, ".pdf"), // Prefijo para nombres de archivo
+      page: null, // Convertir todas las páginas (null = todas)
+      scale: 1600, // Resolución más alta para mejor calidad
+    };
+
+    console.log("[PPT] Convirtiendo PDF a imágenes con pdf-poppler...");
+
+    // Convertir PDF a imágenes
+    await pdf.convert(pdfPath, options);
+
+    // Listar archivos generados
+    const files = fs.readdirSync(outDir);
+    const pngFiles = files
+      .filter((f) => f.toLowerCase().endsWith(".png"))
+      .sort((a, b) => {
+        // Extraer número de página del nombre del archivo
+        const numA = parseInt(a.match(/\d+/)?.[0] || 0);
+        const numB = parseInt(b.match(/\d+/)?.[0] || 0);
+        return numA - numB;
+      });
+
+    console.log("[PPT] Archivos PNG generados:", pngFiles);
+
+    if (pngFiles.length === 0) {
+      throw new Error("No se generaron imágenes PNG del PDF.");
+    }
+
+    return pngFiles;
+  } catch (err) {
+    console.error("[PPT] Error al convertir PDF a imágenes:", err);
+
+    // Fallback: intentar con LibreOffice si pdf-poppler falla
+    console.log("[PPT] Intentando fallback con LibreOffice...");
+    return await pdfToImagesLibreOfficeFallback(pdfPath, outDir);
+  }
+}
+
+/* -------------------------------------------------
+   FALLBACK: CONVERTIR PDF → IMÁGENES CON LIBREOFFICE
+------------------------------------------------- */
+async function pdfToImagesLibreOfficeFallback(pdfPath, outDir) {
+  return new Promise((resolve, reject) => {
+    const soffice = getSofficePath();
+    console.log("[PPT] Fallback: Usando LibreOffice para PDF→PNG");
+
+    const cwd = path.dirname(soffice);
+    const env = {
+      ...process.env,
+      PATH: cwd + path.delimiter + process.env.PATH,
+    };
+
+    // Intentar con argumentos específicos para extraer páginas
+    const args = [
+      "--headless",
+      "--nologo",
+      "--convert-to",
+      "png",
+      pdfPath,
+      "--outdir",
+      outDir,
+    ];
+
+    console.log("[PPT] Ejecutando LibreOffice con argumentos:", args);
+
+    execFile(
+      soffice,
+      args,
+      { cwd: cwd, env: env, timeout: 60000 },
+      (error, stdout, stderr) => {
+        console.log("[PPT] Conversión PDF→PNG terminada");
+        console.log("[PPT] Error:", error ? error.message : "null");
+
+        // Esperar un momento para que se generen todas las imágenes
+        setTimeout(() => {
+          try {
+            const files = fs.readdirSync(outDir);
+            const pngFiles = files
+              .filter((f) => f.toLowerCase().endsWith(".png"))
+              .sort((a, b) => {
+                const numA = parseInt(a.match(/\d+/)?.[0] || 0);
+                const numB = parseInt(b.match(/\d+/)?.[0] || 0);
+                return numA - numB;
+              });
+
+            console.log("[PPT] Archivos PNG generados (fallback):", pngFiles);
+
+            if (pngFiles.length === 0) {
+              return reject(new Error("No se generaron imágenes PNG del PDF."));
+            }
+
+            resolve(pngFiles);
+          } catch (err) {
+            reject(new Error(`Error al procesar imágenes: ${err.message}`));
+          }
+        }, 3000);
+      }
+    );
+  });
+}
+
+/* -------------------------------------------------
+   CONVERTIR PPTX → IMÁGENES CON VISUALIZACIÓN PROGRESIVA
+   Jerarquía: 1. PowerPoint → 2. LibreOffice → 3. pdf-poppler fallback
+------------------------------------------------- */
+async function convertPPTToImages(pptPath) {
+  // Limpiar caché anterior de PowerPoint
+  const pptCacheRoot = path.join(os.tmpdir(), "ppt-cache");
+  if (fs.existsSync(pptCacheRoot)) {
+    try {
+      fs.rmSync(pptCacheRoot, { recursive: true, force: true });
+      console.log("[PPT] Caché anterior eliminada");
+    } catch (err) {
+      console.error("[PPT] Error al eliminar caché anterior:", err.message);
+    }
+  }
+
+  const id = Date.now().toString();
+  const tempDir = path.join(os.tmpdir(), "ppt-cache", id);
+  const imagesDir = path.join(tempDir, "images");
+
+  fs.mkdirSync(tempDir, { recursive: true });
+  fs.mkdirSync(imagesDir, { recursive: true });
+
+  sendProgress("Iniciando conversión de PowerPoint a imágenes…");
+
+  console.log("[PPT] Archivo PPT:", pptPath);
+  console.log("[PPT] Directorio temporal:", tempDir);
+
+  // Verificar que el archivo PPT existe
+  if (!fs.existsSync(pptPath)) {
+    throw new Error(`El archivo PPT no existe: ${pptPath}`);
+  }
+
+  // Iniciar monitoreo de archivos
+  const foundSlides = [];
+  let monitorInterval;
+
+  const startMonitoring = () => {
+    monitorInterval = setInterval(() => {
+      try {
+        if (!fs.existsSync(imagesDir)) return;
+
+        const files = fs.readdirSync(imagesDir);
+        const pngFiles = files
+          .filter((f) => f.toLowerCase().endsWith(".png"))
+          .sort((a, b) => {
+            // Ordenar por número de diapositiva (slide_001.png, slide_002.png, etc.)
+            const numA = parseInt(
+              a.match(/slide_(\d+)/)?.[1] || a.match(/(\d+)/)?.[1] || 0
+            );
+            const numB = parseInt(
+              b.match(/slide_(\d+)/)?.[1] || b.match(/(\d+)/)?.[1] || 0
+            );
+            return numA - numB;
+          });
+
+        // Enviar nuevas slides
+        pngFiles.forEach((file, index) => {
+          if (!foundSlides.includes(file)) {
+            foundSlides.push(file);
+            const slidePath = path.join(imagesDir, file);
+            const normalizedPath = slidePath.replace(/\\\\/g, "/");
+            const fileUrl = `file:///${normalizedPath}`;
+
+            // Enviar slide al renderer
+            const win = BrowserWindow.getAllWindows()[0];
+            if (win && !win.isDestroyed()) {
+              win.webContents.send("ppt:slide-ready", {
+                url: fileUrl,
+                index: index,
+                total: pngFiles.length,
+              });
+            }
+
+            console.log(`[PPT] Nueva diapositiva encontrada: ${fileUrl}`);
+            sendProgress("Generando diapositivas…", index + 1, pngFiles.length);
+          }
+        });
+      } catch (err) {
+        console.error("[PPT] Error en monitoreo:", err);
+      }
+    }, 1000); // Verificar cada segundo
+  };
+
+  try {
+    // INTENTO 1: Usar Microsoft PowerPoint (si está disponible)
+    const powerpointAvailable = getPowerPointPath();
+    if (powerpointAvailable) {
+      console.log("[PPT] Intentando con Microsoft PowerPoint...");
+      sendProgress("Usando Microsoft PowerPoint para conversión…");
+
+      // Iniciar monitoreo
+      startMonitoring();
+
+      try {
+        const pngFiles = await convertPPTWithPowerPoint(pptPath, imagesDir);
+
+        // Detener monitoreo
+        if (monitorInterval) {
+          clearInterval(monitorInterval);
+        }
+
+        console.log("[PPT] PowerPoint generó archivos:", pngFiles);
+
+        if (pngFiles.length === 0) {
+          throw new Error("PowerPoint no generó imágenes");
+        }
+
+        // Ordenar los archivos por número (slide_001.png, slide_002.png, etc.)
+        const sortedPngFiles = pngFiles.sort((a, b) => {
+          const numA = parseInt(
+            a.match(/slide_(\d+)/)?.[1] || a.match(/(\d+)/)?.[1] || 0
+          );
+          const numB = parseInt(
+            b.match(/slide_(\d+)/)?.[1] || b.match(/(\d+)/)?.[1] || 0
+          );
+          return numA - numB;
+        });
+
+        // Convertir a URLs file://
+        const slides = sortedPngFiles.map((file, index) => {
+          const slidePath = path.join(imagesDir, file);
+          const normalizedPath = slidePath.replace(/\\\\/g, "/");
+          return `file:///${normalizedPath}`;
+        });
+
+        sendProgress(
+          "Conversión completada con PowerPoint",
+          pngFiles.length,
+          pngFiles.length,
+          true
+        );
+        console.log("[PPT] URLs finales (PowerPoint):", slides);
+        return slides;
+      } catch (powerpointError) {
+        console.log("[PPT] PowerPoint falló:", powerpointError.message);
+        // Limpiar directorio de imágenes para intentar con LibreOffice
+        const files = fs.readdirSync(imagesDir);
+        files.forEach((file) => {
+          try {
+            fs.unlinkSync(path.join(imagesDir, file));
+          } catch (e) {
+            // Ignorar errores de limpieza
+          }
+        });
+
+        // Detener monitoreo anterior
+        if (monitorInterval) {
+          clearInterval(monitorInterval);
+          monitorInterval = null;
+        }
+
+        // Continuar con LibreOffice
+        console.log("[PPT] Continuando con LibreOffice...");
+      }
+    }
+
+    // INTENTO 2: Usar LibreOffice
+    const libreofficePath = getSofficePath();
+    if (!libreofficePath) {
+      throw new Error("Ni PowerPoint ni LibreOffice están disponibles");
+    }
+
+    console.log("[PPT] Intentando con LibreOffice...");
+    sendProgress("Usando LibreOffice para conversión…");
+
+    // Crear directorio para PDF intermedio
+    const pdfDir = path.join(tempDir, "pdf");
+    fs.mkdirSync(pdfDir, { recursive: true });
+
+    // Paso 1: Convertir PPT a PDF
+    sendProgress("Convirtiendo PowerPoint a PDF…");
+    console.log("[PPT] Paso 1: Convirtiendo PPT a PDF con LibreOffice…");
+
+    const pdfFileName = await pptToPdf(pptPath, pdfDir);
+    const pdfPath = path.join(pdfDir, pdfFileName);
+    console.log("[PPT] PDF generado exitosamente:", pdfPath);
+
+    // Paso 2: Convertir PDF a imágenes (una por página)
+    sendProgress("Extrayendo diapositivas del PDF…");
+    console.log("[PPT] Paso 2: Convirtiendo PDF a imágenes…");
+
+    // Iniciar monitoreo (si no se inició antes)
+    if (!monitorInterval) {
+      startMonitoring();
+    }
+
+    // Ejecutar conversión PDF a imágenes
+    const pngFiles = await pdfToImages(pdfPath, imagesDir);
+
+    // Detener monitoreo
+    if (monitorInterval) {
+      clearInterval(monitorInterval);
+    }
+
+    console.log("[PPT] Archivos PNG finales (LibreOffice):", pngFiles);
+
+    if (pngFiles.length === 0) {
+      throw new Error("No se generaron imágenes PNG del PDF.");
+    }
+
+    // Ordenar los archivos por número
+    const sortedPngFiles = pngFiles.sort((a, b) => {
+      const numA = parseInt(a.match(/(\d+)/)?.[1] || 0);
+      const numB = parseInt(b.match(/(\d+)/)?.[1] || 0);
+      return numA - numB;
+    });
+
+    // Convertir a URLs file://
+    const slides = sortedPngFiles.map((file, index) => {
+      const slidePath = path.join(imagesDir, file);
+      const normalizedPath = slidePath.replace(/\\\\/g, "/");
+      return `file:///${normalizedPath}`;
+    });
+
+    sendProgress(
+      "Conversión completada con LibreOffice",
+      pngFiles.length,
+      pngFiles.length,
+      true
+    );
+    console.log("[PPT] URLs finales:", slides);
+    return slides;
+  } catch (err) {
+    // Detener monitoreo en caso de error
+    if (monitorInterval) {
+      clearInterval(monitorInterval);
+    }
+
+    console.error("[PPT] Error en la conversión:", err);
+    throw err;
+  }
+}
+
+/* -------------------------------------------------
+   IPC PRINCIPAL - CONVERSIÓN CON JERARQUÍA
+------------------------------------------------- */
+ipcMain.handle("ppt:open", async () => {
+  const result = await dialog.showOpenDialog({
+    title: "Seleccionar PowerPoint",
+    filters: [{ name: "PowerPoint", extensions: ["pptx", "ppt"] }],
+    properties: ["openFile"],
+  });
+
+  if (result.canceled) return [];
+
+  const pptPath = result.filePaths[0];
+
+  try {
+    // Convertir usando la jerarquía: PowerPoint → LibreOffice
+    const slides = await convertPPTToImages(pptPath);
+    return slides;
+  } catch (err) {
+    console.error("Error convirtiendo PPT:", err);
+
+    // Mostrar mensaje de error con opciones de instalación
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      let detailMessage = "";
+      let showInstallButtons = false;
+
+      if (
+        err.message.includes("Ni PowerPoint ni LibreOffice están disponibles")
+      ) {
+        detailMessage = `No se encontró Microsoft PowerPoint ni LibreOffice en su sistema.
+
+Para usar presentaciones PowerPoint, necesita instalar:
+1. Microsoft PowerPoint (recomendado, mejor calidad)
+2. O LibreOffice (gratis, alternativa)
+`;
+        showInstallButtons = true;
+      } else if (err.message.includes("PowerPoint no encontrado")) {
+        detailMessage = `Microsoft PowerPoint no está instalado en su sistema.
+
+Para la mejor calidad, se recomienda instalar PowerPoint.
+Como alternativa, puede instalar LibreOffice (gratis).
+`;
+        showInstallButtons = true;
+      } else if (err.message.includes("LibreOffice no encontrado")) {
+        detailMessage = `LibreOffice no está instalado en su sistema.
+
+Para usar presentaciones PowerPoint, necesita instalar LibreOffice (gratis).
+`;
+        showInstallButtons = true;
+      } else {
+        detailMessage = `Error: ${err.message}
+
+Posibles causas:
+• El archivo PowerPoint está corrupto
+• La aplicación de conversión no está instalada correctamente
+• Faltan componentes necesarios
+`;
+      }
+
+      const buttons = showInstallButtons
+        ? ["Instalar PowerPoint", "Instalar LibreOffice", "Cancelar"]
+        : ["OK"];
+
+      const response = await dialog.showMessageBox(win, {
+        type: "error",
+        title: "Error al convertir PowerPoint",
+        message: "No se pudo convertir el archivo PowerPoint",
+        detail: detailMessage,
+        buttons: buttons,
+        defaultId: 0,
+        cancelId: showInstallButtons ? 2 : 0,
+      });
+
+      // Si el usuario hace clic en "Instalar PowerPoint"
+      if (showInstallButtons && response.response === 0) {
+        shell.openExternal(
+          "https://www.microsoft.com/microsoft-365/powerpoint"
+        );
+        console.log("[PPT] Abriendo enlace de Microsoft Office...");
+      }
+      // Si el usuario hace clic en "Instalar LibreOffice"
+      else if (showInstallButtons && response.response === 1) {
+        shell.openExternal("https://www.libreoffice.org/download/download/");
+        console.log("[PPT] Abriendo enlace de descarga de LibreOffice...");
+      }
+    }
+
+    return [];
+  }
+});
+
+// Manejador para convertir un PowerPoint específico (usado por control remoto)
+ipcMain.handle("ppt:convert-remote", async (event, pptPath) => {
+  try {
+    const slides = await convertPPTToImages(pptPath);
+    return slides;
+  } catch (err) {
+    console.error("Error convirtiendo PPT remoto:", err);
+    return [];
+  }
+});
+
+/* -------------------------------------------------
+   IPC PARA OBTENER ESTADO DE CONVERSIÓN
+------------------------------------------------- */
+ipcMain.handle("ppt:get-conversion-status", async () => {
+  return {
+    inProgress: global.pptConversionInProgress || false,
+    current: global.pptConversionCurrent || 0,
+    total: global.pptConversionTotal || 0,
+    slides: global.pptConversionSlides || [],
+  };
+});
+
+/* -------------------------------------------------
+   IPC PARA OBTENER SLIDE ESPECÍFICO
+------------------------------------------------- */
+ipcMain.handle("ppt:get-slide", async (event, slideIndex) => {
+  if (!global.pptConversionSlides || !global.pptConversionSlides[slideIndex]) {
+    return null;
+  }
+
+  const tempDir = path.join(
+    os.tmpdir(),
+    "ppt-cache",
+    Object.keys(global.pptConversionSlides)[0] || ""
+  );
+  const slideFile = global.pptConversionSlides[slideIndex];
+  const slidePath = path.join(tempDir, slideFile);
+
+  if (fs.existsSync(slidePath)) {
+    const normalizedPath = slidePath.replace(/\\\\/g, "/");
+    return `file:///${normalizedPath}`;
+  }
+
+  return null;
+});
+
+/* -------------------------------------------------
+   ENVIAR PROGRESO
+------------------------------------------------- */
+function sendProgress(message, current = null, total = null, done = false) {
+  const win = BrowserWindow.getAllWindows()[0];
+  if (!win) return;
+
+  win.webContents.send("ppt:progress", {
+    message,
+    current,
+    total,
+    done,
+  });
+}
 
 //npm run release -> comando importante para actualizaciones.
 

@@ -106,6 +106,9 @@ async function inicializarAplicacion() {
     console.log("[INIT] ✓ Validando premium...");
     await validarPremium();
 
+    // 📌 Actualizar marca de agua de PowerPoint según estado premium
+    actualizarMarcaAguaPowerPoint();
+
     // 2️⃣ Cargar himnos personalizados (si la función existe)
     console.log("[INIT] ✓ Cargando himnos...");
     if (typeof cargarHimnos === "function") {
@@ -294,21 +297,21 @@ if (window.electronAPI) {
       true
     );
     progressBar.style.width = "0%";
-    progressText.textContent = "0% - Preparando descarga...";
+    pptProgressText.textContent = "0% - Preparando descarga...";
   });
 
   // Progreso de descarga
   window.electronAPI.onUpdateDownloadProgress((data) => {
     console.log(`[UPDATE] Progreso: ${data.percent}%`);
     progressBar.style.width = `${data.percent}%`;
-    progressText.textContent = `${data.percent}% - ${data.transferred}MB de ${data.total}MB (${data.speed}MB/s)`;
+    pptProgressText.textContent = `${data.percent}% - ${data.transferred}MB de ${data.total}MB (${data.speed}MB/s)`;
   });
 
   // Cuando la descarga se completa
   window.electronAPI.onUpdateDownloaded(() => {
     console.log("[UPDATE] Descarga completada");
     progressBar.style.width = "100%";
-    progressText.textContent = "100% - ¡Descarga completada!";
+    pptProgressText.textContent = "100% - ¡Descarga completada!";
 
     setTimeout(() => {
       mostrarNotificacionUpdate(
@@ -450,6 +453,9 @@ function aplicarEstadoPremium(esPremiumAux) {
       el.style.display = "flex";
     });
     if (contenedorMonitor) contenedorMonitor.style.display = "flex";
+
+    // 📌 OCULTAR MARCA DE AGUA DE POWERPOINT (usuario premium)
+    actualizarMarcaAguaPowerPoint();
   } else {
     waterMark = "imagenes/logo-proyectoja.png";
     if (botonPremium) botonPremium.style.display = "flex";
@@ -457,6 +463,49 @@ function aplicarEstadoPremium(esPremiumAux) {
       el.style.display = "none";
     });
     if (contenedorMonitor) contenedorMonitor.style.display = "flex";
+
+    // 📌 MOSTRAR MARCA DE AGUA DE POWERPOINT (usuario gratis)
+    actualizarMarcaAguaPowerPoint();
+  }
+
+  // 📌 Actualizar información en el menú de usuario
+  actualizarInformacionUsuarioMenu();
+}
+
+/**
+ * Actualiza los campos de información de usuario en el menú de configuración
+ * @param {Object} datosExtra Opcional: { url, pin } del control remoto
+ */
+function actualizarInformacionUsuarioMenu(datosExtra = {}) {
+  const infoEstado = document.getElementById("info-estado-licencia");
+  const infoUrl = document.getElementById("info-url-remoto");
+  const infoPin = document.getElementById("info-pin-remoto");
+  const infoCodigo = document.getElementById("info-codigo-premium");
+
+  if (!infoEstado) return;
+
+  const esPremiumGlobal = localStorage.getItem("premium") === "true";
+  const paypalId = localStorage.getItem("paypalSubscriptionId");
+  const stripeId = localStorage.getItem("stripeSubscriptionId");
+
+  // Actualizar estado
+  infoEstado.innerHTML = `Estado: <span style="color: ${
+    esPremiumGlobal ? "#4CAF50" : "#ffeb3b"
+  }">${esPremiumGlobal ? "Licencia Premium" : "Licencia Gratis"}</span>`;
+
+  // Actualizar código premium
+  if (esPremiumGlobal) {
+    infoCodigo.textContent = `${paypalId || stripeId || "Activo"}`;
+  } else {
+    infoCodigo.textContent = "Sin código";
+  }
+
+  // Actualizar URL y PIN del control remoto
+  if (datosExtra.url) {
+    infoUrl.textContent = `Control remoto corriendo en: ${datosExtra.url}`;
+  }
+  if (datosExtra.pin) {
+    infoPin.textContent = `Pin del control remoto: ${datosExtra.pin}`;
   }
 }
 
@@ -636,6 +685,9 @@ botonPremium.addEventListener("click", function () {
         <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> Proyección estándar
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> Presentación Power Point 
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
         <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Biblia y versiones
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
@@ -690,6 +742,9 @@ botonPremium.addEventListener("click", function () {
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
         <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Proyección profesional
+      </li>
+      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
+        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Presentación Power Point
       </li>
       <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
         <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Biblia y versiones
@@ -863,19 +918,19 @@ botonPremium.addEventListener("click", function () {
     btnStripeAnual.style.fontWeight = "bold";
     btnStripeAnual.style.fontFamily =
       "Helvetica Neue, Helvetica, Arial, sans-serif";
-    
-      btnStripeAnual.onclick = async () => {
-        const res = await fetch(
-          `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=anual&modo=${modoAux}`
-        );
-        const data = await res.json();
-  
-        if (window.electronAPI) {
-          window.electronAPI.openExternal(data.checkoutUrl);
-        } else {
-          window.open(data.checkoutUrl, "_blank");
-        }
-      };
+
+    btnStripeAnual.onclick = async () => {
+      const res = await fetch(
+        `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=anual&modo=${modoAux}`
+      );
+      const data = await res.json();
+
+      if (window.electronAPI) {
+        window.electronAPI.openExternal(data.checkoutUrl);
+      } else {
+        window.open(data.checkoutUrl, "_blank");
+      }
+    };
 
     contenedorStripe.appendChild(btnStripeAnual);
 
@@ -1543,7 +1598,7 @@ async function cargarHimnosEnLotes(inicio, fin, tamanoLote = 50) {
     console.error("[ERROR] cargarHimnosEnLotes: srcAux no está definido");
     return;
   }
-  
+
   for (let i = inicio; i <= fin; i += tamanoLote) {
     const finLote = Math.min(i + tamanoLote - 1, fin);
 
@@ -2273,6 +2328,8 @@ const botonHimnosPro = document.getElementById("botonHimnosPro");
 const ventanaHimnosPro = document.getElementById(
   "contenedor-himnos-personalizados"
 );
+const botonPowerPoint = document.getElementById("botonPowerPoint");
+const ventanaPowerPoint = document.getElementById("contenedor-power-point");
 
 /*toggleContainer.addEventListener("click", () => {
   toggleContainer.classList.toggle("active");
@@ -2308,6 +2365,25 @@ const ventanaHimnosPro = document.getElementById(
 });
 */
 
+botonPowerPoint.addEventListener("click", function () {
+  const displayActual = getComputedStyle(ventanaPowerPoint).display;
+
+  if (displayActual === "none") {
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "flex";
+    document.getElementById("contenedor-contador").style.display = "none";
+  } else {
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
+    himnarioContainer.style.display = "grid";
+  }
+});
+
 botonBiblia.addEventListener("click", function () {
   const displayActual = getComputedStyle(ventanaBiblia).display;
 
@@ -2316,11 +2392,13 @@ botonBiblia.addEventListener("click", function () {
     ventanaBiblia.style.display = "flex";
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2333,11 +2411,13 @@ botonHimnosPro.addEventListener("click", function () {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2350,11 +2430,13 @@ botonYoutube.addEventListener("click", function () {
     ventanaYouTube.style.display = "flex";
     ventanaBiblia.style.display = "none";
     himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaBiblia.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2372,6 +2454,7 @@ function cerrarVentanaReproductor() {
   botonBiblia.style.display = "none";
   ventanaBiblia.style.display = "none";
   ventanaYouTube.style.display = "none";
+  ventanaPowerPoint.style.display = "none";
   himnarioContainer.style.display = "grid";
 }
 
@@ -2432,11 +2515,14 @@ let categoriaActual = ""; // Inicialmente vacío
 async function mostrarCategoria(categoria) {
   // Verificar que srcAux esté definido antes de continuar
   if (!srcAux) {
-    console.error("[ERROR] srcAux no está definido. No se pueden cargar himnos.");
-    himnarioContainer.innerHTML = "<div style='color: white; text-align: center; padding: 20px;'>⚠️ Error: No se pueden cargar los himnos.</div>";
+    console.error(
+      "[ERROR] srcAux no está definido. No se pueden cargar himnos."
+    );
+    himnarioContainer.innerHTML =
+      "<div style='color: white; text-align: center; padding: 20px;'>⚠️ Error: No se pueden cargar los himnos.</div>";
     return;
   }
-  
+
   categoriaActual = categoria; // Almacenar la categoría actual
   todosLosHimnos = []; // Limpiar el array anterior
   himnarioContainer.innerHTML = ""; // Limpiar himnos anteriores
@@ -2451,6 +2537,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2463,6 +2550,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2474,6 +2562,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2485,6 +2574,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2496,6 +2586,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2507,6 +2598,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2518,6 +2610,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2527,6 +2620,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
@@ -2548,6 +2642,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
@@ -2566,6 +2661,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos4.length; i++) {
       const numero = titulos4[i].match(/\d{3}/)[0];
@@ -2584,6 +2680,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos5.length; i++) {
       const numero = titulos5[i].match(/\d{3}/)[0];
@@ -2602,6 +2699,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
@@ -2620,6 +2718,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
@@ -2638,6 +2737,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
@@ -2656,6 +2756,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
@@ -2960,6 +3061,7 @@ async function mostrarCategoria(categoria) {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -4612,7 +4714,8 @@ const select = document.getElementById("selectMonitores");
 
 // Definir srcAux inmediatamente si window.paths.src está disponible
 // Si no está disponible, se definirá en DOMContentLoaded
-let srcAux = (window.paths && window.paths.src) ? window.paths.src + "/" : undefined;
+let srcAux =
+  window.paths && window.paths.src ? window.paths.src + "/" : undefined;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMonitores();
@@ -4641,10 +4744,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 function precargarImagenes() {
   // Verificar que srcAux esté definido antes de precargar
   if (!srcAux) {
-    console.warn("[PRECARGA] srcAux no está definido, omitiendo precarga de imágenes");
+    console.warn(
+      "[PRECARGA] srcAux no está definido, omitiendo precarga de imágenes"
+    );
     return;
   }
-  
+
   // Precargar las primeras 20 imágenes para mejor experiencia
   for (let i = 1; i <= 20; i++) {
     const numero = i.toString().padStart(3, "0");
@@ -4753,6 +4858,7 @@ function activarModoNormal() {
   ventanaYouTube.style.display = "none";
   botonHimnosPro.style.display = "none";
   ventanaHimnosPro.style.display = "none";
+  ventanaPowerPoint.style.display = "none";
   himnarioContainer.style.display = "grid";
 }
 
@@ -4916,11 +5022,12 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2025-12-26",
+    titulo: "Nueva funcionalidad: Proyección de Power Point",
+    mensaje:
+      "En esta nueva actualicación se agregó una nueva opción profesional para todos. Se agregó la opción para presentar presentaciones en Power Point en el mismo himnario, ahora podrás subir tus presentaciones desde el mismo software. Para usar esta opción hay dos opciones única: Tener instalado Power Point nativo y la calidad de conversión de la presentación será nitida en full resolución y rápida o la segunda opción que tendrías que descarga el software LibreOffice, esto para que funcione la opción de presentar power point desde el himnario, libre de errores y sin falla alguna; tienes dos botones para manejar las diapositivas o bien con las teclas del tecla de derecha e izquierda; además, se agregó poderosamente la presentación a control remoto celular, ahora puedes desde tu celular si eres usuario premium poder manejar las diapositivas y poder previsualizar la diapositiva actual y la siguiente, además, se agregó en el mismo control remoto la capcidad de que pueda subir tus propias presentaciones que tienes alojadas en tu almacenamiento local de tu celular o tablet o computadora donde deseas. Es control remoto celular es una opción muy importantísima para los que están en plataforma en el culto divio, charlas, seminarios o capacitaciones o líderes que lo requieran, ahora ya no tiene que comprar aparatos para controlar la presentación, ahora pueden controlarlo desde su propio celular y si no anda USB portable, desde el celular puede subir su presentación. Solo recuerda contectar a la misma red wifi de tu computadora y listo. Espero esta nueva funcionalidad sea de gran bendición!",
+    version: "1.0.81",
+    tipo: "Funcion nueva",
   },
   {
     fecha: "2025-12-19",
@@ -4952,7 +5059,7 @@ const actualizaciones = [
     mensaje:
       "Ahora el control remoto se integra con el himnario!😱 Es decir, se puede controlar el himnario, también se puede controlar desde el teléfono, tablet y cualquier otro sistema operativo Android o Apple y computadora; Recuerda solo ingresar con la URL y el PIN de acceso, tanto la computadora como el dispositivo móvil tienen que estar conectados a la misma red Wifi, esta funcionalidad sirve mucho cuando la directora/o de cantos pasa adelante y quiere controlar el equipo por si el técnico no está, o por ejemplo, no sé escucha que dijeron en la plataforma y el técnico de equipo no escucho bien que himno se dijo, el/la que está presentando puede reproducir el himno que quiera por cualquier situación, disponible para las personas que apoyan el ministerio siendo premium. Como hoy es mi cumpleaños, se ha lanzado con mucho cariño está funcionalidad para todas aquellas personas que apoyan mi ministerio personal PROYECTO JA, Jesús bendiga sus corazones y nos motive a seguir trabajando para su obra!🥰",
     version: "v1.0.69",
-    tipo: "Función Nueva",
+    tipo: "Funcion nueva",
   },
   {
     fecha: "2025-11-22",
@@ -4960,7 +5067,7 @@ const actualizaciones = [
     mensaje:
       "Ahora la Biblia y sus versiones pasan los versículos ya sea presionando sobre el mismo, con botón o con las teclas izquierda o derecha del teclado de la computadora; además, automáticamente se pasan los versículos y capítulos al siguiente capítulo con su versículo, incluso se pasa al siguiente libro. También se actualizan cada estilo personalizado en tiempo real(letras,colores,espacios,tamaños,imágenes...). Espero sea de gran bendición. Esta funcionalidad fue idea de un seguidor, gracias a -Albeiro Navarro-",
     version: "v1.0.54",
-    tipo: "Función nueva",
+    tipo: "Funcion nueva",
   },
   {
     fecha: "2025-11-21",
@@ -4976,7 +5083,7 @@ const actualizaciones = [
     mensaje:
       "Se reparó el acceso directo y de inicio de los iconos principales del programa. Esto ayuda a encontrar más fácilmente el programa.",
     version: "v1.0.32",
-    tipo: "Correción",
+    tipo: "Correcion",
   },
   {
     fecha: "2025-11-21",
@@ -5009,7 +5116,7 @@ const actualizaciones = [
     mensaje:
       "Las versiones antiguas dejaran de funcionar, es necesaria actualizar a la reciente y mantenerse actualizado a nuevas funciones del software.",
     version: "v1.0.29",
-    tipo: "Corrección",
+    tipo: "Correccion",
   },
   {
     fecha: "2025-11-18",
@@ -5017,7 +5124,7 @@ const actualizaciones = [
     mensaje:
       "Se reparó el fallo que daba en la proyección con el monitor para reproducir automáticamente video de YouTube, ¡ya lista para usar!",
     version: "v1.0.28",
-    tipo: "Corrección",
+    tipo: "Correccion",
   },
   {
     fecha: "2025-11-17",
@@ -5033,7 +5140,7 @@ const actualizaciones = [
     mensaje:
       "Se corrigió un pequeño fallo de optimización en la iniciación del software. Algunas personas presentaron problemas cuando abrian el programa: 1-Cargaba muy lento, 2-Se quedaba en negra parte de la pantalla y no cargaban los himnos. Se optimizó el programa y ahora carga en 0.500 milisegundos en computadora de 4/8gigas de Ram con Disco SSD con dos nucleos mínimo y procesador 2300 herts balanceado.",
     version: "v1.0.25",
-    tipo: "Corrección",
+    tipo: "Correccion",
   },
   {
     fecha: "2025-11-17",
@@ -5059,7 +5166,7 @@ const actualizaciones = [
     mensaje:
       "Se agregó y automatizó el software corriendo en su servidor propio. Nuevo botón para personalizar el himnario con ajustes de letra y versiones como cantado, instrumental, solo letra e inglés(se sigue modificando cada estrofa a su idioma con traductores voluntarios), además, en la misma sección, se puede cargar una imagen a proyección en el himno. Además se agregó la funcionalidad potente de auto-actualización de este software para futuras actualizaciones: ya no tendrás que descargar el mismo archivo zip todo el tiempo, este software desde esta versión se actualiza automáticamente.",
     version: "v1.0.19",
-    tipo: "Función nueva",
+    tipo: "Funcion nueva",
   },
   {
     fecha: "2025-08-30",
@@ -5067,7 +5174,7 @@ const actualizaciones = [
     mensaje:
       "Se transladó la opción PRO al lado superior de la pantalla, allí mismo se implenta un apartado de estadísticas nerd, además, se agregó funcionalidad de búsqueda de monitores disponibles en tu computador. Se repara la búsqueda en YouTube(nuevas políticas de navegadores web), Se agrega un reloj contador para predicadores. Se agregó también un botón para búsqueda de archivos en el explorador de archivos del disco.",
     version: "v1.0.18",
-    tipo: "Función nueva",
+    tipo: "Funcion nueva",
   },
   {
     fecha: "2025-07-30",
@@ -5075,7 +5182,7 @@ const actualizaciones = [
     mensaje:
       "Se agregaron nuevas versiones de himnario tanto orquestado, antiguo, cantado, instrumental, infantil, piano y listas de reproducción actualizadas. Además, nueva función potente, búsquedas de YouTube sin anuncios para reproducir en tu iglesia, tanto en modo local o activando el modo profesional.",
     version: "v1.0.2",
-    tipo: "Función nueva",
+    tipo: "Funcion nueva",
   },
   {
     fecha: "2025-01-27",
@@ -5091,7 +5198,7 @@ const actualizaciones = [
     mensaje:
       "Creación del software del himnario con funcionalidad de proyección y búsqueda avanzada, himnario solo cantado. Funciones modo reproducción local y profesional.",
     version: "v1.0.0",
-    tipo: "Función nueva",
+    tipo: "Funcion nueva",
   },
   /**
    * Función Nueva
@@ -6940,8 +7047,602 @@ async function inicializarCarrusel(contenedorHijo) {
   console.log("[CARRUSEL] ✅ Carrusel inicializado");
 }
 
+/*************************************************
+ * ESTADO GLOBAL POWER POINT
+ *************************************************/
+window.powerPointState = {
+  slides: [], // rutas a imágenes
+  current: 0, // índice actual
+  total: 0, // total de slides
+  loaded: false, // hay presentación cargada
+  aspect: "16:9", // relación de aspecto
+  id: null, // id de la presentación
+};
+
+/*************************************************
+ * REFERENCIAS DOM
+ *************************************************/
+const pptContainer = document.getElementById("contenedor-power-point");
+const pptImage = document.getElementById("ppt-slide-actual");
+const pptListContainer = document.getElementById("lista-presentacion");
+const pptProgress = document.getElementById("ppt-progress");
+
+// Inicializar con imagen por defecto
+pptImage.src = "imagenes/powerpoint-proyectoja.jpg";
+
+/*************************************************
+ * RENDER DEL SLIDE ACTUAL
+ *************************************************/
+function renderPPTSlide() {
+  if (!window.powerPointState.loaded) return;
+
+  const index = window.powerPointState.current;
+  const slide = window.powerPointState.slides[index];
+
+  if (!slide) return;
+
+  console.log("[PPT] Cargando imagen:", slide);
+
+  // Crear una nueva imagen para probar la carga primero
+  const testImage = new Image();
+
+  testImage.onerror = function () {
+    console.error("[PPT] Error al cargar la imagen:", slide);
+    // En caso de error, mantener la imagen por defecto
+    pptImage.src = "imagenes/powerpoint-proyectoja.jpg";
+  };
+
+  testImage.onload = function () {
+    console.log(
+      "[PPT] Imagen cargada correctamente:",
+      slide,
+      this.naturalWidth,
+      "x",
+      this.naturalHeight
+    );
+    // Solo actualizar la imagen principal si se carga correctamente
+    pptImage.src = slide;
+
+    // 📌 ACTUALIZAR VISIBILIDAD DE MARCA DE AGUA SEGÚN ESTADO PREMIUM
+    actualizarMarcaAguaPowerPoint();
+  };
+
+  // Iniciar la carga de la imagen de prueba
+  testImage.src = slide;
+}
+
+/*************************************************
+ * ACTUALIZAR MARCA DE AGUA POWERPOINT
+ *************************************************/
+function actualizarMarcaAguaPowerPoint() {
+  const marcaAguaPPT = document.getElementById("marcadeagua-powerpoint");
+  if (!marcaAguaPPT) return;
+
+  // Verificar estado premium desde localStorage
+  const esPremium = localStorage.getItem("premium") === "true";
+
+  if (esPremium) {
+    // Usuario premium: ocultar marca de agua
+    marcaAguaPPT.classList.add("oculta");
+    marcaAguaPPT.classList.remove("visible");
+  } else {
+    // Usuario gratis: mostrar marca de agua
+    marcaAguaPPT.classList.remove("oculta");
+    marcaAguaPPT.classList.add("visible");
+  }
+}
+
+/*************************************************
+ * NAVEGACIÓN
+ *************************************************/
+function pptNext() {
+  if (!window.powerPointState.loaded) return;
+
+  if (window.powerPointState.current < window.powerPointState.total - 1) {
+    window.powerPointState.current++;
+    renderPPTSlide();
+    fillPPTList(); // Actualizar la lista para resaltar la diapositiva actual
+
+    // Sincronizar siempre (para monitor secundario Y control remoto)
+    syncSecondaryWindow();
+  }
+}
+
+function pptPrev() {
+  if (!window.powerPointState.loaded) return;
+
+  if (window.powerPointState.current > 0) {
+    window.powerPointState.current--;
+    renderPPTSlide();
+    fillPPTList(); // Actualizar la lista para resaltar la diapositiva actual
+
+    // Sincronizar siempre (para monitor secundario Y control remoto)
+    syncSecondaryWindow();
+  }
+}
+
+/*************************************************
+ * CARGAR PRESENTACIÓN (IMÁGENES)
+ *************************************************/
+function loadPowerPoint(slidesArray, presentationId = null) {
+  if (!Array.isArray(slidesArray) || slidesArray.length === 0) {
+    console.warn("PowerPoint: array de slides inválido");
+    return;
+  }
+
+  // Verificar que al menos la primera slide sea válida antes de marcar como cargada
+  const testFirstSlide = new Image();
+  testFirstSlide.onerror = function () {
+    console.error("[PPT] La primera diapositiva no es válida:", slidesArray[0]);
+    // Mantener imagen por defecto
+    pptImage.src = "imagenes/powerpoint-proyectoja.jpg";
+  };
+
+  testFirstSlide.onload = function () {
+    console.log("[PPT] Primera diapositiva válida, cargando presentación");
+
+    // 📌 Agregar imagen de fin de presentación al final del array
+    const slidesConFinal = [
+      ...slidesArray,
+      "imagenes/powerpoint-proyectoja.jpg",
+    ];
+    console.log(
+      `[PPT] Total de diapositivas (con fin): ${slidesConFinal.length}`
+    );
+
+    window.powerPointState = {
+      slides: slidesConFinal,
+      current: 0,
+      total: slidesConFinal.length,
+      loaded: true,
+      aspect: "16:9",
+      id: presentationId,
+    };
+
+    pptContainer.classList.remove("vacio");
+    renderPPTSlide();
+    fillPPTList(); // Llenar la lista de diapositivas
+    syncSecondaryWindow();
+  };
+
+  // Probar la primera imagen
+  testFirstSlide.src = slidesArray[0];
+}
+
+/*************************************************
+ * LIMPIAR PRESENTACIÓN
+ *************************************************/
+function clearPowerPoint() {
+  window.powerPointState.loaded = false;
+  window.powerPointState.slides = [];
+  window.powerPointState.current = 0;
+  window.powerPointState.total = 0;
+  window.powerPointState.id = null;
+
+  // Restaurar imagen por defecto
+  pptImage.src = "imagenes/powerpoint-proyectoja.jpg";
+  pptContainer.classList.add("vacio");
+
+  syncSecondaryWindow();
+}
+
+/*************************************************
+ * TECLADO (CONTROL RÁPIDO)
+ *************************************************/
+document.addEventListener("keydown", (e) => {
+  if (!window.powerPointState.loaded) return;
+
+  switch (e.key) {
+    case "ArrowRight":
+    case "PageDown":
+      pptNext();
+      break;
+
+    case "ArrowLeft":
+    case "PageUp":
+      pptPrev();
+      break;
+
+    case "Home":
+      window.powerPointState.current = 0;
+      renderPPTSlide();
+      fillPPTList(); // Actualizar la lista para resaltar la diapositiva actual
+      syncSecondaryWindow();
+      break;
+
+    case "End":
+      window.powerPointState.current = window.powerPointState.total - 1;
+      renderPPTSlide();
+      fillPPTList(); // Actualizar la lista para resaltar la diapositiva actual
+      syncSecondaryWindow();
+      break;
+  }
+});
+
+/*************************************************
+ * SINCRONIZACIÓN CON PANTALLA SECUNDARIA
+ *************************************************/
+function syncSecondaryWindow() {
+  if (!window.powerPointState.loaded) {
+    // Si no hay presentación cargada, enviar señal para limpiar PowerPoint en ventana secundaria
+    if (window.electronAPI && window.electronAPI.sendToSecondary) {
+      window.electronAPI.sendToSecondary({
+        clearPowerPoint: true,
+      });
+    }
+    return;
+  }
+
+  const index = window.powerPointState.current;
+  const slide = window.powerPointState.slides[index];
+
+  if (!slide) return;
+
+  // Función para convertir URL file:// a URL HTTP para la ventana secundaria
+  function convertirUrlParaVentanaSecundaria(url) {
+    if (!url) return url;
+
+    console.log("[PPT] Convirtiendo URL para ventana secundaria:", url);
+
+    // Si ya es una URL HTTP, dejarla como está
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      console.log("[PPT] Ya es URL HTTP");
+      return url;
+    }
+
+    // Para URLs file://
+    if (url.startsWith("file:///")) {
+      // Extraer solo el nombre del archivo (slide_001.png)
+      const fileNameMatch = null; // DISABLED to use correct logic below
+
+      if (fileNameMatch) {
+        const fileName = fileNameMatch[0];
+        // Construir URL simple: http://localhost:3000/ppt-temp/ppt-cache/slide_001.png
+        const simpleUrl = `http://localhost:3000/ppt-temp/ppt-cache/${fileName}`;
+        console.log("[PPT] URL simplificada:", simpleUrl);
+        return simpleUrl;
+      }
+
+      // Si no encontramos el patrón, intentar extraer ruta completa
+      try {
+        const filePath = url.substring(8); // Eliminar 'file:///'
+
+        // Buscar ppt-cache en la ruta
+        const pptCacheIndex = filePath.toLowerCase().indexOf("ppt-cache");
+
+        if (pptCacheIndex !== -1) {
+          const relativePath = filePath.substring(pptCacheIndex);
+          const normalizedPath = relativePath
+            .replace(/\\\\/g, "/")
+            .replace(/\\/g, "/");
+          const httpUrl = `http://localhost:3000/ppt-temp/${normalizedPath}`;
+          console.log("[PPT] URL construida:", httpUrl);
+          return httpUrl;
+        }
+      } catch (err) {
+        console.error("[PPT] Error procesando URL:", err);
+      }
+    }
+
+    // Si llegamos aquí, devolver la URL original
+    console.warn("[PPT] No se pudo convertir la URL, usando original");
+    return url;
+  }
+
+  // Convertir la URL para la ventana secundaria
+  const slideUrlParaVS = convertirUrlParaVentanaSecundaria(slide);
+
+  // Enviar datos de PowerPoint a la ventana secundaria
+  if (window.electronAPI && window.electronAPI.sendToSecondary) {
+    const datos = {
+      powerpoint: {
+        slideUrl: slideUrlParaVS,
+        current: index + 1,
+        total: window.powerPointState.total,
+        loaded: true,
+      },
+      esPremium: localStorage.getItem("premium") === "true",
+    };
+
+    console.log("[PPT] Datos enviados a ventana secundaria:", datos);
+    console.log("[PPT] URL original:", slide);
+    console.log("[PPT] URL para ventana secundaria:", slideUrlParaVS);
+
+    window.electronAPI.sendToSecondary(datos);
+  }
+
+  // ENVIAR DATOS AL CONTROL REMOTO
+  if (window.electronAPI && window.electronAPI.updateRemote) {
+    const nextIndex = index + 1;
+    let nextSlideUrl = null;
+
+    // Si hay siguiente diapositiva, preparar su URL
+    if (nextIndex < window.powerPointState.total) {
+      const rawNextUrl = window.powerPointState.slides[nextIndex];
+      const convertedNext = convertirUrlParaVentanaSecundaria(rawNextUrl);
+      if (convertedNext) nextSlideUrl = convertedNext.trim();
+    }
+
+    const pptStatus = {
+      current: index + 1,
+      total: window.powerPointState.total,
+      slideUrl: slideUrlParaVS ? slideUrlParaVS.trim() : null,
+      nextSlideUrl: nextSlideUrl,
+      hasNext: nextIndex < window.powerPointState.total,
+      hasPrev: index > 0,
+    };
+
+    window.electronAPI.updateRemote(pptStatus);
+  }
+}
+
+/*************************************************
+ * UTILIDAD (OPCIONAL)
+ *************************************************/
+function getPowerPointInfo() {
+  return {
+    current: window.powerPointState.current + 1,
+    total: window.powerPointState.total,
+    loaded: window.powerPointState.loaded,
+    id: window.powerPointState.id,
+  };
+}
+
+//Cargar el archivo power point con visualización progresiva
+async function openPowerPoint() {
+  try {
+    // Mostrar progreso
+    pptProgressText.textContent = "Iniciando conversión de PowerPoint…";
+    progressBox.style.display = "block";
+
+    // Estado para manejar slides progresivas
+    window.pptProgressiveSlides = {
+      urls: [],
+      loaded: false,
+      currentIndex: 0,
+    };
+
+    // Configurar listener para nuevas slides
+    window.electronAPI.onPPTSlideReady((data) => {
+      console.log("[PPT] Nueva diapositiva recibida:", data);
+
+      if (!window.pptProgressiveSlides.loaded && data.url) {
+        // Primera slide - cargar presentación
+        window.pptProgressiveSlides.urls = [data.url];
+        window.pptProgressiveSlides.loaded = true;
+        loadPowerPoint([data.url]);
+        pptProgressText.textContent = `Diapositiva 1 de ? lista. Convirtiendo…`;
+      } else if (window.pptProgressiveSlides.loaded && data.url) {
+        // Agregar slide adicional
+        window.pptProgressiveSlides.urls.push(data.url);
+
+        // 📌 Actualizar slides asegurando que la imagen de fin esté al final
+        const slidesConFinal = [
+          ...window.pptProgressiveSlides.urls,
+          "imagenes/powerpoint-proyectoja.jpg",
+        ];
+        window.powerPointState.slides = slidesConFinal;
+        window.powerPointState.total = slidesConFinal.length;
+
+        // Actualizar progreso
+        if (data.total) {
+          pptProgressText.textContent = `Diapositiva ${data.index + 1} de ${
+            data.total
+          } lista. Convirtiendo…`;
+        } else {
+          pptProgressText.textContent = `Diapositiva ${window.pptProgressiveSlides.urls.length} lista. Convirtiendo…`;
+        }
+      }
+    });
+
+    // Convertir PowerPoint a imágenes (esto iniciará el proceso)
+    const slides = await window.electronAPI.openPowerPoint();
+
+    if (!slides || slides.length === 0) {
+      pptProgressText.textContent = "No se generaron las diapositivas...";
+      setTimeout(() => {
+        progressBox.style.display = "none";
+      }, 2000);
+      return;
+    }
+
+    // Si llegamos aquí, la conversión terminó y tenemos todas las slides
+    // Cargar todas las imágenes
+    loadPowerPoint(slides);
+
+    // Ocultar progreso
+    pptProgressText.textContent = "Conversión completada";
+    setTimeout(() => {
+      progressBox.style.display = "none";
+    }, 2000);
+  } catch (err) {
+    console.error("Error al abrir PowerPoint:", err);
+    pptProgressText.textContent = "Error: " + err.message;
+    setTimeout(() => {
+      progressBox.style.display = "none";
+    }, 3000);
+  }
+}
+
+/*************************************************
+ * LLENAR LISTA DE DIAPOSITIVAS
+ *************************************************/
+function fillPPTList() {
+  if (!window.powerPointState.loaded) return;
+
+  const listContainer = document.getElementById("lista-presentacion");
+  if (!listContainer) return;
+
+  // Limpiar contenido anterior
+  listContainer.innerHTML = "";
+
+  // Crear título con número total de diapositivas
+  const title = document.createElement("h2");
+  title.textContent = `Lista diapositivas: ${window.powerPointState.total}`;
+  listContainer.appendChild(title);
+
+  // Crear contenedor para miniaturas
+  const thumbnailsContainer = document.createElement("div");
+  thumbnailsContainer.className = "ppt-thumbnails-container";
+
+  // Crear miniaturas para cada diapositiva
+  window.powerPointState.slides.forEach((slideUrl, index) => {
+    const thumbnailContainer = document.createElement("div");
+    thumbnailContainer.className = "ppt-thumbnail-container";
+    if (index === window.powerPointState.current) {
+      thumbnailContainer.classList.add("active");
+    }
+
+    const thumbnail = document.createElement("img");
+    thumbnail.src = slideUrl;
+    thumbnail.alt = `Diapositiva ${index + 1}`;
+
+    const numberLabel = document.createElement("div");
+    numberLabel.className = "ppt-thumbnail-number";
+
+    // 📌 Mostrar "Fin" en la última diapositiva
+    const isLastSlide = index === window.powerPointState.total - 1;
+    numberLabel.textContent = isLastSlide ? "Fin" : index + 1;
+
+    // Evento click para cambiar a esta diapositiva
+    thumbnailContainer.onclick = () => {
+      window.powerPointState.current = index;
+      renderPPTSlide();
+      fillPPTList(); // Actualizar la lista para resaltar la diapositiva actual
+      syncSecondaryWindow();
+    };
+
+    thumbnailContainer.appendChild(thumbnail);
+    thumbnailContainer.appendChild(numberLabel);
+    thumbnailsContainer.appendChild(thumbnailContainer);
+  });
+
+  listContainer.appendChild(thumbnailsContainer);
+}
+
+async function convertPPTToImages(pptPath) {
+  // 1. Crear carpeta temporal
+  // 2. Convertir pptx → imágenes
+  // 3. Retornar array ordenado de rutas
+
+  return ["/ppt-cache/abc/slide_001.png", "/ppt-cache/abc/slide_002.png"];
+}
+
+//Mostrar progroso de imaganes que se están convirtiendo de power point a imagenes
+const progressBox = document.getElementById("ppt-progress");
+const pptProgressText = document.getElementById("ppt-progress-text");
+
+window.electronAPI.onPptProgress((data) => {
+  progressBox.style.display = "block";
+
+  if (data.total) {
+    pptProgressText.textContent = `Convirtiendo PowerPoint: ${data.current} de ${data.total} diapositivas…`;
+  } else {
+    pptProgressText.textContent = data.message;
+  }
+
+  if (data.done) {
+    progressBox.style.display = "none";
+  }
+});
+
+/*************************************************
+ * FUNCIONALIDAD PARA BOTONES DE POWERPOINT
+ *************************************************/
+// Variable para controlar modo monitor
+let modoMonitorActivo = false;
+
+// Función para verificar si está en modo monitor
+function verificarModoMonitor() {
+  // Usar la función existente esMonitorActivo() que verifica si hay monitor seleccionado
+  modoMonitorActivo = esMonitorActivo();
+
+  console.log("[PPT] Modo monitor activo:", modoMonitorActivo);
+  return modoMonitorActivo;
+}
+
+// Función para actualizar visibilidad de botones según modo
+function actualizarVisibilidadBotonesPowerPoint() {
+  const fullscreenBtn = document.getElementById("ppt-fullscreen-btn");
+  if (!fullscreenBtn) return;
+
+  if (modoMonitorActivo) {
+    // Modo monitor: ocultar botón de pantalla completa
+    fullscreenBtn.style.display = "none";
+    console.log("[PPT] Modo monitor activo - Botón pantalla completa oculto");
+  } else {
+    // Modo estándar: mostrar botón de pantalla completa
+    fullscreenBtn.style.display = "flex";
+    console.log("[PPT] Modo estándar - Botón pantalla completa visible");
+  }
+}
+
+// Función para sincronizar con ventana secundaria (si está en modo monitor)
+function sincronizarConMonitor() {
+  if (modoMonitorActivo && window.powerPointState.loaded) {
+    syncSecondaryWindow();
+  }
+}
+
+// Modificar funciones de navegación para sincronizar automáticamente
+function pptNextConSincronizacion() {
+  pptNext();
+}
+
+function pptPrevConSincronizacion() {
+  pptPrev();
+}
+
+// Inicializar botones cuando el DOM esté listo
+document.addEventListener("DOMContentLoaded", function () {
+  // Botón de pantalla completa
+  const fullscreenBtn = document.getElementById("ppt-fullscreen-btn");
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", function () {
+      const pptImage = document.getElementById("contenedor-ppt-actual");
+      if (!pptImage) return;
+
+      if (!document.fullscreenElement) {
+        // Entrar en pantalla completa
+        if (pptImage.requestFullscreen) {
+          pptImage.requestFullscreen();
+        } else if (pptImage.webkitRequestFullscreen) {
+          /* Safari */
+          pptImage.webkitRequestFullscreen();
+        } else if (pptImage.msRequestFullscreen) {
+          /* IE11 */
+          pptImage.msRequestFullscreen();
+        }
+      } else {
+        // Salir de pantalla completa
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          /* Safari */
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          /* IE11 */
+          document.msExitFullscreen();
+        }
+      }
+    });
+  }
+
+  // Verificar modo monitor al cargar
+  setTimeout(() => {
+    verificarModoMonitor();
+    actualizarVisibilidadBotonesPowerPoint();
+  }, 1000);
+
+  // Actualizar botones periódicamente (por si cambia el estado)
+  setInterval(() => {
+    verificarModoMonitor();
+    actualizarVisibilidadBotonesPowerPoint();
+  }, 5000);
+});
+
 /**
- * NOTA: HACER UN CONTENEDOR DONDE HABLAR UNA TABLA PARA ORGANIZAR BIEN EL PROGRAMA DE LA IGLESIA,
+ * NOTA: HACER UN CONTENEDOR DONDE HAYA UNA TABLA PARA ORGANIZAR BIEN EL PROGRAMA DE LA IGLESIA,
  * EN EL CUAL SE VA A ADJUNTAR DESDE EL MISMO CONTENEDOR EL HIMNO QUE SE QUIERE MOSTRAR Y SOLO SE LE DA A REPRODUCIR
  * Y YA SE ENVÍA A PANTALLA, EN EL MISMO CONTENEDOR SE PONDRA LA INFORMACIÓN REQUERIDA COMO ESTÉTICA E INFORMACIÓN DE LA MISMA
  * TAMBIÉN SE AGRAGARÁ UN RELOJ REAL PARA QUE EL USUARIO VAYA VIENDO LA HORA Y LOS MINUTOS QUE TRANSCURREN EN EL PROGRAMA

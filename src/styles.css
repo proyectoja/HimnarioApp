@@ -976,6 +976,11 @@ h5 {
 .contenedor-buscador .botonYouTube {
   margin-right: 15px;
 }
+
+.contenedor-buscador .botonPowerPoint {
+  margin-right: 15px;
+  margin-left: 0px;
+}
 .contenedor-version-y-enviar {
   display: flex;
   flex-direction: row;
@@ -1517,7 +1522,7 @@ h5 {
   align-items: center;
   text-align: center;
   flex-direction: column;
-  z-index: 10;
+  z-index: 9999;
 }
 
 #paypal-button-container::-webkit-scrollbar {
@@ -2560,4 +2565,241 @@ audio {
 .boton-eliminar-favoritos:hover {
   background-color: rgba(255, 0, 0, 0.9);
   transform: scale(1.1);
+}
+
+/*ESTILOS PARA EL POWER POINT*/
+.contenedor-power-point {
+  display: none;
+  flex-direction: row;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 60px);
+  background-color: brown; /* fondo negro */
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: 0.75rem; /* opcional */
+  color: white;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.lista-presentacion {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  overflow-y: auto;
+  background-color: rgb(80, 10, 10);
+  width: 30%;
+  height: calc(100% - 10px);
+  margin-left: 5px;
+  border-top-left-radius: 1rem;
+  border-bottom-left-radius: 1rem;
+  align-items: center;
+}
+
+.contenedor-columnas-powerpoint {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: calc(100% - 10px);
+  justify-content: center;
+  align-items: center;
+  margin-right: 5px;
+  margin-left: 5px;
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  background-color: rgb(80, 10, 10);
+}
+
+.contenedor-power-point button {
+  display: flex;
+  flex-direction: row;
+  border: none;
+  border-radius: 1rem;
+  padding: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin: 0;
+  margin-left: 5px;
+  margin-right: 5px;
+  overflow: hidden;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.contenedor-power-point button:hover {
+  background-color: #ccc;
+}
+
+.contenedor-power-point h1 {
+  font-size: 20px;
+  color: black;
+  padding: 0;
+  margin: 0;
+}
+
+#subir-archivo {
+  padding: 0;
+  margin: 0;
+  margin-right: 10px;
+  width: 30px;
+  height: 30px;
+}
+
+.pantalla-completa {
+  padding: 0;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.contenedor-ppt-actual {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  width: auto;
+  height: 100%;
+  margin-bottom: 35px;
+  justify-content: center;
+  border-bottom: 1px solid white;
+  border-left: 1px solid white;
+  border-right: 1px solid white;
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  box-shadow: 0 0 50px black;
+}
+
+.contenedor-botones-powerpoint-filas {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  overflow: hidden;
+  overflow-y: auto;
+  padding-bottom: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  width: 100%;
+  height: auto;
+  justify-content: center;
+}
+
+/* SLIDE */
+#ppt-slide-actual {
+  display: flex;
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* mantiene proporción */
+  user-select: none;
+  pointer-events: none;
+}
+.contenedor-power-point.cargando::after {
+  content: "Cargando presentación...";
+  color: white;
+  position: absolute;
+  font-size: 1.2rem;
+  opacity: 0.7;
+}
+
+.contenedor-power-point.vacio::after {
+  content: "No hay presentación cargada";
+  color: white;
+}
+
+/* ESTILOS PARA MINIATURAS DE DIAPOSITIVAS */
+.ppt-thumbnails-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+  padding: 5px;
+  width: 100%;
+  height: 100%;
+}
+
+.ppt-thumbnails-container::-webkit-scrollbar {
+  background-color: transparent;
+  width: 25px;
+}
+.ppt-thumbnails-container::-webkit-scrollbar-track {
+  background-color: transparent;
+  border-radius: 1rem;
+}
+.ppt-thumbnails-container::-webkit-scrollbar-thumb {
+  background-color: rgb(255, 255, 255, 0.8);
+  border-radius: 30px;
+  border: 5px solid transparent;
+  height: auto;
+  min-height: 10%;
+}
+
+.ppt-thumbnail-container {
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 3px;
+  background-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.ppt-thumbnail-container:hover {
+  border-color: #4caf50;
+  background-color: rgba(76, 175, 80, 0.05);
+  transform: scale(1.02);
+}
+
+.ppt-thumbnail-container.active {
+  border: 3px solid #4caf50;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.ppt-thumbnail-container img {
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.ppt-thumbnail-number {
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 5px;
+  color: white;
+}
+
+.ppt-thumbnail-container.active .ppt-thumbnail-number {
+  color: #4caf50;
+}
+
+/* ESTILOS PARA MARCA DE AGUA DE POWERPOINT */
+.marcadeagua-powerpoint {
+  display: flex;
+  position: absolute;
+  overflow: hidden;
+  width: 40%;
+  height: auto;
+  z-index: 11;
+  bottom: 10px;
+  right: 10px;
+}
+.marcadeagua-powerpoint img {
+  width: 100%;
+  height: 100%;
+}
+
+.marcadeagua-powerpoint.oculta {
+  display: none;
+}
+
+.marcadeagua-powerpoint.visible {
+  display: block;
 }
