@@ -447,6 +447,14 @@
     window.electronAPI.onActualizarDatos((event, data) => {
       console.log("DEBUG [VS]: Datos recibidos completos:", data);
 
+      // 📌 MANEJAR COMANDO STOP
+      if (data.stop) {
+        console.log("DEBUG [VS]: Comando STOP recibido");
+        ocultarReproductor();
+        limpiarPowerPointVS();
+        return;
+      }
+
       // 📌 PROCESAR ESTADO PREMIUM Y CATEGORÍA PRIMERO (antes de cualquier return)
       const { categoria, esPremium } = data;
 

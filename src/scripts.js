@@ -2479,6 +2479,11 @@ function ocultarReproductor() {
     playerYouTube.destroy();
     playerYouTube = null;
   }
+
+  // Sincronizar con ventana secundaria
+  if (typeof enviarDatos === "function") {
+    enviarDatos({ stop: true });
+  }
 }
 
 // Evento de clic para el botón de cerrar

@@ -422,14 +422,23 @@ function procesarComandoRemoto(comando, datos) {
 
     case "stop-reproduccion":
       // Stop (cerrar el reproductor)
-      const closeBtn = document.getElementById("closePlayer");
-      if (closeBtn) {
-        closeBtn.click();
-      } else if (typeof player !== "undefined" && player) {
-        player.pause();
-        player.currentTime = 0;
-      } else if (typeof playerYouTube !== "undefined" && playerYouTube) {
-        playerYouTube.stopVideo();
+      if (typeof ocultarReproductor === "function") {
+        ocultarReproductor();
+      } else {
+        const closeBtn = document.getElementById("closePlayer");
+        if (closeBtn) {
+          closeBtn.click();
+        } else if (typeof player !== "undefined" && player) {
+          player.pause();
+          player.currentTime = 0;
+        } else if (typeof playerYouTube !== "undefined" && playerYouTube) {
+          playerYouTube.stopVideo();
+        }
+
+        // Sincronizar con ventana secundaria si ocultarReproductor no lo hizo
+        if (typeof enviarDatos === "function") {
+          enviarDatos({ stop: true });
+        }
       }
       break;
 
@@ -492,11 +501,20 @@ function procesarComandoRemoto(comando, datos) {
 
     case "detener":
       // Detener reproducción
-      if (typeof player !== "undefined" && player) {
-        player.pause();
-        player.currentTime = 0;
-      } else if (typeof playerYouTube !== "undefined" && playerYouTube) {
-        playerYouTube.stopVideo();
+      if (typeof ocultarReproductor === "function") {
+        ocultarReproductor();
+      } else {
+        if (typeof player !== "undefined" && player) {
+          player.pause();
+          player.currentTime = 0;
+        } else if (typeof playerYouTube !== "undefined" && playerYouTube) {
+          playerYouTube.stopVideo();
+        }
+
+        // Sincronizar con ventana secundaria
+        if (typeof enviarDatos === "function") {
+          enviarDatos({ stop: true });
+        }
       }
       break;
 
