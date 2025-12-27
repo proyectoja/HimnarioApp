@@ -404,12 +404,18 @@ function crearBotonesNavegacion() {
 
 // Listener de teclado para navegación
 document.addEventListener('keydown', (e) => {
-  // Si no estamos en la sección de Biblia, no hacer nada
-  const contenedorBiblia = document.getElementById('contenedor-biblia');
-  if (!contenedorBiblia || contenedorBiblia.style.display === 'none') return;
-  
   // Si estamos escribiendo en un input, no navegar
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  
+  // Verificar si el contenedor de Biblia está activo (visible)
+  const contenedorBiblia = document.getElementById('contenedor-biblia');
+  if (!contenedorBiblia) return;
+  
+  const estiloBiblia = getComputedStyle(contenedorBiblia);
+  const bibliaActiva = estiloBiblia.display === 'flex';
+  
+  // Solo procesar teclas si la Biblia está activa
+  if (!bibliaActiva) return;
   
   // Navegar con flechas
   if (e.key === 'ArrowLeft') {

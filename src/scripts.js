@@ -5020,11 +5020,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2025-12-27",
+    titulo: "Las teclas de flecha no chocan entre PowerPoint y Biblia",
+    mensaje: "Se corrigió el error de confusión entre las diapositivas de Power Point y los versículos de la Biblia cuando se desplazaban las teclas entre si.",
+    version: "1.0.83",
+    tipo: "Correción",
   },
   {
     fecha: "2025-12-26",
@@ -5032,7 +5032,7 @@ const actualizaciones = [
     mensaje:
       "En esta nueva actualicación se agregó una nueva opción profesional para todos. Se agregó la opción para presentar presentaciones en Power Point en el mismo himnario, ahora podrás subir tus presentaciones desde el mismo software. Para usar esta opción hay dos opciones única: Tener instalado Power Point nativo y la calidad de conversión de la presentación será nitida en full resolución y rápida o la segunda opción que tendrías que descarga el software LibreOffice, esto para que funcione la opción de presentar power point desde el himnario, libre de errores y sin falla alguna; tienes dos botones para manejar las diapositivas o bien con las teclas del tecla de derecha e izquierda; además, se agregó poderosamente la presentación a control remoto celular, ahora puedes desde tu celular si eres usuario premium poder manejar las diapositivas y poder previsualizar la diapositiva actual y la siguiente, además, se agregó en el mismo control remoto la capcidad de que pueda subir tus propias presentaciones que tienes alojadas en tu almacenamiento local de tu celular o tablet o computadora donde deseas. Es control remoto celular es una opción muy importantísima para los que están en plataforma en el culto divio, charlas, seminarios o capacitaciones o líderes que lo requieran, ahora ya no tiene que comprar aparatos para controlar la presentación, ahora pueden controlarlo desde su propio celular y si no anda USB portable, desde el celular puede subir su presentación. Solo recuerda contectar a la misma red wifi de tu computadora y listo. Espero esta nueva funcionalidad sea de gran bendición!",
     version: "1.0.81",
-    tipo: "Funcion nueva",
+    tipo: "Función nueva",
   },
   {
     fecha: "2025-12-19",
@@ -7143,6 +7143,24 @@ function actualizarMarcaAguaPowerPoint() {
 function pptNext() {
   if (!window.powerPointState.loaded) return;
 
+  // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
+  const ventanaPowerPoint = document.getElementById("contenedor-power-point");
+  if (ventanaPowerPoint && getComputedStyle(ventanaPowerPoint).display !== "flex") {
+    // Activar el contenedor de PowerPoint automáticamente
+    const ventanaBiblia = document.getElementById("contenedor-biblia");
+    const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+    const ventanaYouTube = document.getElementById("contenedor-youtube");
+    const himnarioContainer = document.getElementById("himnario");
+    
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "flex";
+    document.getElementById("contenedor-contador").style.display = "none";
+    console.log("[PPT] Contenedor activado automáticamente para navegación siguiente");
+  }
+
   if (window.powerPointState.current < window.powerPointState.total - 1) {
     window.powerPointState.current++;
     renderPPTSlide();
@@ -7155,6 +7173,24 @@ function pptNext() {
 
 function pptPrev() {
   if (!window.powerPointState.loaded) return;
+
+  // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
+  const ventanaPowerPoint = document.getElementById("contenedor-power-point");
+  if (ventanaPowerPoint && getComputedStyle(ventanaPowerPoint).display !== "flex") {
+    // Activar el contenedor de PowerPoint automáticamente
+    const ventanaBiblia = document.getElementById("contenedor-biblia");
+    const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+    const ventanaYouTube = document.getElementById("contenedor-youtube");
+    const himnarioContainer = document.getElementById("himnario");
+    
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "flex";
+    document.getElementById("contenedor-contador").style.display = "none";
+    console.log("[PPT] Contenedor activado automáticamente para navegación anterior");
+  }
 
   if (window.powerPointState.current > 0) {
     window.powerPointState.current--;
@@ -7195,7 +7231,7 @@ function loadPowerPoint(slidesArray, presentationId = null) {
       `[PPT] Total de diapositivas (con fin): ${slidesConFinal.length}`
     );
 
-    window.powerPointState = {
+        window.powerPointState = {
       slides: slidesConFinal,
       current: 0,
       total: slidesConFinal.length,
@@ -7205,6 +7241,24 @@ function loadPowerPoint(slidesArray, presentationId = null) {
     };
 
     pptContainer.classList.remove("vacio");
+    
+    // Activar automáticamente el contenedor de PowerPoint cuando se carga una presentación
+    const ventanaPowerPoint = document.getElementById("contenedor-power-point");
+    const ventanaBiblia = document.getElementById("contenedor-biblia");
+    const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+    const ventanaYouTube = document.getElementById("contenedor-youtube");
+    const himnarioContainer = document.getElementById("himnario");
+    
+    if (ventanaPowerPoint) {
+      ventanaHimnosPro.style.display = "none";
+      ventanaBiblia.style.display = "none";
+      ventanaYouTube.style.display = "none";
+      himnarioContainer.style.display = "none";
+      ventanaPowerPoint.style.display = "flex";
+      document.getElementById("contenedor-contador").style.display = "none";
+      console.log("[PPT] Contenedor de PowerPoint activado automáticamente");
+    }
+    
     renderPPTSlide();
     fillPPTList(); // Llenar la lista de diapositivas
     syncSecondaryWindow();
@@ -7232,36 +7286,65 @@ function clearPowerPoint() {
 }
 
 /*************************************************
+ * FUNCIÓN PARA VERIFICAR CONTENEDOR ACTIVO
+ *************************************************/
+function esContenedorPowerPointActivo() {
+  const ventanaPowerPoint = document.getElementById("contenedor-power-point");
+  if (!ventanaPowerPoint) return false;
+  return getComputedStyle(ventanaPowerPoint).display === "flex";
+}
+
+function esContenedorBibliaActivo() {
+  const ventanaBiblia = document.getElementById("contenedor-biblia");
+  if (!ventanaBiblia) return false;
+  return getComputedStyle(ventanaBiblia).display === "flex";
+}
+
+/*************************************************
  * TECLADO (CONTROL RÁPIDO)
  *************************************************/
 document.addEventListener("keydown", (e) => {
-  if (!window.powerPointState.loaded) return;
+  // Verificar si estamos en un input, textarea o select
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
-  switch (e.key) {
-    case "ArrowRight":
-    case "PageDown":
-      pptNext();
-      break;
+  // Verificar qué contenedor está activo
+  const pptActivo = esContenedorPowerPointActivo();
+  const bibliaActiva = esContenedorBibliaActivo();
 
-    case "ArrowLeft":
-    case "PageUp":
-      pptPrev();
-      break;
+  // Si PowerPoint está activo y cargado
+  if (pptActivo && window.powerPointState.loaded) {
+    switch (e.key) {
+      case "ArrowRight":
+      case "PageDown":
+        e.preventDefault();
+        pptNext();
+        break;
 
-    case "Home":
-      window.powerPointState.current = 0;
-      renderPPTSlide();
-      fillPPTList(); // Actualizar la lista para resaltar la diapositiva actual
-      syncSecondaryWindow();
-      break;
+      case "ArrowLeft":
+      case "PageUp":
+        e.preventDefault();
+        pptPrev();
+        break;
 
-    case "End":
-      window.powerPointState.current = window.powerPointState.total - 1;
-      renderPPTSlide();
-      fillPPTList(); // Actualizar la lista para resaltar la diapositiva actual
-      syncSecondaryWindow();
-      break;
+      case "Home":
+        e.preventDefault();
+        window.powerPointState.current = 0;
+        renderPPTSlide();
+        fillPPTList();
+        syncSecondaryWindow();
+        break;
+
+      case "End":
+        e.preventDefault();
+        window.powerPointState.current = window.powerPointState.total - 1;
+        renderPPTSlide();
+        fillPPTList();
+        syncSecondaryWindow();
+        break;
+    }
   }
+  // Si la Biblia está activa, dejar que biblia.js maneje las teclas
+  // (el listener en biblia.js ya tiene su propia verificación)
 });
 
 /*************************************************
