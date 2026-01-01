@@ -362,23 +362,75 @@ async function validarCodigo(codigoAux) {
 }
 
 //Validación premium
+// Función auxiliar para obtener ID único de máquina (Hardware)
+async function getMachineId() {
+  if (window.electronAPI && window.electronAPI.getMachineId) {
+    try {
+      const id = await window.electronAPI.getMachineId();
+      // Codificar en Base64 para mantener consistencia con lo anterior
+      return btoa(id);
+    } catch (e) {
+      console.error("Error obteniendo Machine ID:", e);
+    }
+  }
+
+  // Fallback a localStorage si falla electronAPI (no debería pasar en la app de escritorio)
+  let id = localStorage.getItem("machineId");
+  if (!id) {
+    id = crypto.randomUUID();
+    id = btoa(id);
+    localStorage.setItem("machineId", id);
+  }
+  return id;
+}
+
+//Validación premium
 async function validarPremium() {
+  const promoCode = localStorage.getItem("promoCode");
   const paypalId = localStorage.getItem("paypalSubscriptionId");
   const stripeId = localStorage.getItem("stripeSubscriptionId");
+  const machineId = await getMachineId();
 
-  console.log("IDs de suscripción:", { paypalId, stripeId });
+  console.log("Validando Premium...", {
+    promoCode,
+    paypalId,
+    stripeId,
+    machineId,
+  });
 
-  if (!paypalId && !stripeId) {
+  if (!promoCode && !paypalId && !stripeId) {
     localStorage.setItem("premium", "false");
     aplicarEstadoPremium(false);
     return;
   }
 
-  // Intentar validar PayPal primero si existe
-  if (paypalId) {
+  const API_URL = "https://verificador-paypal.vercel.app/api/verificaPremium";
+
+  // 1. Validar PROMO
+  if (promoCode) {
     try {
       const res = await fetch(
-        `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal`
+        `${API_URL}?promoCode=${promoCode}&machineId=${machineId}`
+      );
+      const data = await res.json();
+
+      if (data.premium === true) {
+        localStorage.setItem("premium", "true");
+        localStorage.setItem("lastValidationDate", Date.now().toString());
+        aplicarEstadoPremium(true);
+        return;
+      }
+    } catch (err) {
+      console.error("❌ Error al verificar Promo:", err);
+    }
+  }
+
+  // 2. Validar PayPal
+  if (paypalId) {
+    // Intentar validar PayPal primero si existe
+    try {
+      const res = await fetch(
+        `${API_URL}?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal&machineId=${machineId}`
       );
       const data = await res.json();
 
@@ -395,10 +447,11 @@ async function validarPremium() {
 
   // Intentar validar Stripe si existe (y PayPal falló o no existe)
 
+  // 3. Validar Stripe
   if (stripeId) {
     try {
       const res = await fetch(
-        `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe`
+        `${API_URL}?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe&machineId=${machineId}`
       );
       const data = await res.json();
 
@@ -416,7 +469,7 @@ async function validarPremium() {
   // Si llegamos aquí, ninguna validación funcionó
   // Verificar periodo de gracia (7 días)
   const lastValidation = localStorage.getItem("lastValidationDate");
-  if (lastValidation && (paypalId || stripeId)) {
+  if (lastValidation && (promoCode || paypalId || stripeId)) {
     const daysDiff =
       (Date.now() - parseInt(lastValidation)) / (1000 * 60 * 60 * 24);
     if (daysDiff < 7) {
@@ -485,6 +538,7 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
   if (!infoEstado) return;
 
   const esPremiumGlobal = localStorage.getItem("premium") === "true";
+  const promoCode = localStorage.getItem("promoCode");
   const paypalId = localStorage.getItem("paypalSubscriptionId");
   const stripeId = localStorage.getItem("stripeSubscriptionId");
 
@@ -495,7 +549,7 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
 
   // Actualizar código premium
   if (esPremiumGlobal) {
-    infoCodigo.textContent = `${paypalId || stripeId || "Activo"}`;
+    infoCodigo.textContent = `${promoCode || paypalId || stripeId || "Activo"}`;
   } else {
     infoCodigo.textContent = "Sin código";
   }
@@ -510,6 +564,7 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
 }
 
 //Variables para pruebas unitarias
+//localStorage.setItem("promoCode", "");
 //localStorage.setItem("paypalSubscriptionId", "");
 //localStorage.setItem("stripeSubscriptionId", "");
 
@@ -517,14 +572,19 @@ const botonPremium = document.getElementById("botonPremium");
 const contenedorPremium = document.getElementById("paypal-button-container");
 async function validarCodigos() {
   const codigoIngresado = document.getElementById("codigoUnico").value.trim();
+  const promoStored = localStorage.getItem("promoCode");
   const paypalIdAlmacenado = localStorage.getItem("paypalSubscriptionId");
   const stripeIdAlmacenado = localStorage.getItem("stripeSubscriptionId");
+
+  const machineId = await getMachineId();
+  const API_URL = "https://verificador-paypal.vercel.app/api/verificaPremium";
 
   let codigoAValidar = codigoIngresado;
 
   // Si no ingresó nada, intentar usar lo almacenado
   if (!codigoIngresado) {
-    if (paypalIdAlmacenado) codigoAValidar = paypalIdAlmacenado;
+    if (promoStored) codigoAValidar = promoStored;
+    else if (paypalIdAlmacenado) codigoAValidar = paypalIdAlmacenado;
     else if (stripeIdAlmacenado) codigoAValidar = stripeIdAlmacenado;
   }
 
@@ -533,27 +593,48 @@ async function validarCodigos() {
     return;
   }
 
-  // Función auxiliar para validar
-  const validarConProveedor = async (id, proveedor) => {
-    let url = `https://verificador-paypal.vercel.app/api/verificaPremium?subscriptionId=${id}&proveedor=${proveedor}`;
-    if (proveedor === "paypal") url += `&modo=${modo}`;
-    if (proveedor === "stripe") url += `&modo=${modoAux}`;
-
+  // Función auxiliar genérica
+  const validarConApi = async (url) => {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Error servidor");
     return await res.json();
   };
 
   try {
-    // 1. Intentar validar como PayPal
+    // 1. Intentar como PROMO CODE
+    console.log("Intentando validar como Promo Code...");
+    try {
+      const dataPromo = await validarConApi(
+        `${API_URL}?promoCode=${codigoAValidar}&machineId=${machineId}`
+      );
+      if (dataPromo.premium === true) {
+        alert("✅ Código Promocional válido, acceso premium activado");
+        if (codigoIngresado) {
+          localStorage.setItem("promoCode", codigoIngresado);
+          localStorage.removeItem("paypalSubscriptionId");
+          localStorage.removeItem("stripeSubscriptionId");
+        }
+        localStorage.setItem("premium", "true");
+        localStorage.setItem("lastValidationDate", Date.now().toString());
+        aplicarEstadoPremium(true);
+        return;
+      }
+    } catch (e) {
+      console.log("Fallo Promo:", e);
+    }
+
+    // 2. Intentar validar como PayPal
     console.log("Intentando validar como PayPal...");
     try {
-      const dataPaypal = await validarConProveedor(codigoAValidar, "paypal");
+      const dataPaypal = await validarConApi(
+        `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=paypal&modo=${modo}&machineId=${machineId}`
+      );
       if (dataPaypal.premium === true) {
         alert("✅ Código PayPal válido, acceso premium activado");
         if (codigoIngresado) {
           localStorage.setItem("paypalSubscriptionId", codigoIngresado);
-          localStorage.removeItem("stripeSubscriptionId"); // Limpiar el otro para evitar conflictos
+          localStorage.removeItem("stripeSubscriptionId");
+          localStorage.removeItem("promoCode");
         }
         localStorage.setItem("premium", "true");
         localStorage.setItem("lastValidationDate", Date.now().toString());
@@ -564,14 +645,17 @@ async function validarCodigos() {
       console.log("Fallo validación PayPal, intentando Stripe...");
     }
 
-    // 2. Intentar validar como Stripe
+    // 3. Intentar validar como Stripe
     console.log("Intentando validar como Stripe...");
-    const dataStripe = await validarConProveedor(codigoAValidar, "stripe");
+    const dataStripe = await validarConApi(
+      `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=stripe&modo=${modoAux}&machineId=${machineId}`
+    );
     if (dataStripe.premium === true) {
       alert("✅ Código Stripe válido, acceso premium activado");
       if (codigoIngresado) {
         localStorage.setItem("stripeSubscriptionId", codigoIngresado);
-        localStorage.removeItem("paypalSubscriptionId"); // Limpiar el otro
+        localStorage.removeItem("paypalSubscriptionId");
+        localStorage.removeItem("promoCode");
       }
       localStorage.setItem("premium", "true");
       localStorage.setItem("lastValidationDate", Date.now().toString());
@@ -579,8 +663,8 @@ async function validarCodigos() {
       return;
     }
 
-    // Si llegamos aquí, fallaron ambos
-    alert("❌ Código inválido o expirado en ambos proveedores.");
+    // Si llegamos aquí, fallaron todos
+    alert("❌ Código inválido, expirado o ya usado en otra máquina.");
     localStorage.setItem("premium", "false");
     aplicarEstadoPremium(false);
   } catch (err) {
@@ -599,15 +683,27 @@ botonPremium.addEventListener("click", function () {
 
     // Aplicar estilos mejorados al contenedor principal
     // Aplicar estilos mejorados al contenedor principal
+    // Aplicar estilos mejorados al contenedor principal (Glassmorphism + Modern)
     contenedorPremium.style.display = "flex";
     contenedorPremium.style.flexDirection = "column";
-    contenedorPremium.style.padding = "15px";
+    contenedorPremium.style.padding = "25px";
     contenedorPremium.style.overflowY = "auto";
     contenedorPremium.style.overflowX = "hidden";
-    contenedorPremium.style.maxHeight = "70%";
+    contenedorPremium.style.maxHeight = "80vh";
     contenedorPremium.style.width = "auto";
-    contenedorPremium.style.minWidth = "400px";
-    contenedorPremium.style.maxWidth = "90vw";
+    contenedorPremium.style.minWidth = "450px";
+    contenedorPremium.style.maxWidth = "95vw";
+
+    // Modern Gradient Background (Blue/Teal theme from web design request)
+    contenedorPremium.style.background =
+      "linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)";
+    contenedorPremium.style.borderRadius = "20px";
+    contenedorPremium.style.boxShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.37)";
+    contenedorPremium.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+    contenedorPremium.style.backdropFilter = "blur(10px)";
+    contenedorPremium.style.color = "#FFF8DC";
+    contenedorPremium.style.fontFamily =
+      "'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; // Modern font stack
 
     // Contenedor interno para mejor control
     const contenedorInterno = document.createElement("div");
@@ -640,24 +736,35 @@ botonPremium.addEventListener("click", function () {
     const columnaGratis = document.createElement("div");
     columnaGratis.style.flex = "1";
     columnaGratis.style.minWidth = "180px";
-    columnaGratis.style.background =
-      "linear-gradient(135deg, #F5F5DC 0%, #DEB887 100%)";
-    columnaGratis.style.padding = "12px";
-    columnaGratis.style.borderRadius = "8px";
+    // Glass card style
+    columnaGratis.style.background = "rgba(255, 255, 255, 0.05)";
+    columnaGratis.style.padding = "15px";
+    columnaGratis.style.borderRadius = "12px";
     columnaGratis.style.textAlign = "center";
-    columnaGratis.style.boxShadow = "0 4px 8px rgba(139, 69, 19, 0.2)";
-    columnaGratis.style.border = "2px solid #D2B48C";
+    columnaGratis.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+    columnaGratis.style.border = "1px solid rgba(255,255,255,0.1)";
+    columnaGratis.style.transition = "transform 0.2s";
+
+    // Hover effect via JS since it's inline
+    columnaGratis.onmouseenter = () => {
+      columnaGratis.style.transform = "translateY(-5px)";
+    };
+    columnaGratis.onmouseleave = () => {
+      columnaGratis.style.transform = "translateY(0)";
+    };
 
     const tituloGratis = document.createElement("h3");
     tituloGratis.textContent = "🎵 Gratis";
-    tituloGratis.style.color = "#8B4513";
-    tituloGratis.style.margin = "0 0 10px 0";
+    tituloGratis.style.color = "#FFF8DC"; // Light text for dark bg
+    tituloGratis.style.margin = "0 0 15px 0";
     tituloGratis.style.fontSize = "18px";
     tituloGratis.style.fontWeight = "bold";
+    tituloGratis.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
+    tituloGratis.style.paddingBottom = "10px";
 
     const listaGratis = document.createElement("ul");
     listaGratis.style.textAlign = "left";
-    listaGratis.style.color = "#654321";
+    listaGratis.style.color = "rgba(255,255,255,0.85)";
     listaGratis.style.listStyle = "none";
     listaGratis.style.padding = "0";
     listaGratis.style.margin = "0";
@@ -703,60 +810,74 @@ botonPremium.addEventListener("click", function () {
     const columnaPremium = document.createElement("div");
     columnaPremium.style.flex = "1";
     columnaPremium.style.minWidth = "180px";
-    columnaPremium.style.background =
-      "linear-gradient(135deg, #D2691E 0%, #CD853F 100%)";
-    columnaPremium.style.padding = "12px";
-    columnaPremium.style.borderRadius = "8px";
+    // Slightly more prominent glass/gradient for active item
+    columnaPremium.style.background = "rgba(255, 255, 255, 0.15)";
+    columnaPremium.style.padding = "15px";
+    columnaPremium.style.borderRadius = "12px";
     columnaPremium.style.textAlign = "center";
-    columnaPremium.style.boxShadow = "0 4px 8px rgba(210, 105, 30, 0.4)";
-    columnaPremium.style.border = "2px solid #F4A460";
+    columnaPremium.style.boxShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.2)"; // Deeper shadow
+    columnaPremium.style.border = "1px solid rgba(255,255,255,0.3)";
     columnaPremium.style.position = "relative";
+    columnaPremium.style.transition = "transform 0.2s";
+
+    columnaPremium.onmouseenter = () => {
+      columnaPremium.style.transform = "translateY(-5px)";
+    };
+    columnaPremium.onmouseleave = () => {
+      columnaPremium.style.transform = "translateY(0)";
+    };
 
     const tituloPremium = document.createElement("h3");
     tituloPremium.textContent = "⭐ Premium";
-    tituloPremium.style.color = "#FFF8DC";
-    tituloPremium.style.margin = "0 0 10px 0";
+    tituloPremium.style.color = "#FFD700"; // Gold color for title
+    tituloPremium.style.margin = "0 0 15px 0";
     tituloPremium.style.fontSize = "18px";
     tituloPremium.style.fontWeight = "bold";
-    tituloPremium.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
+    tituloPremium.style.textShadow = "0 0 10px rgba(255,215,0,0.5)";
+    tituloPremium.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
+    tituloPremium.style.paddingBottom = "10px";
 
     const listaPremium = document.createElement("ul");
     listaPremium.style.textAlign = "left";
-    listaPremium.style.color = "#FFF8DC";
+    listaPremium.style.color = "#FFF";
     listaPremium.style.listStyle = "none";
     listaPremium.style.padding = "0";
     listaPremium.style.margin = "0";
     listaPremium.style.fontSize = "14px";
+
+    // Updated checkmark colors for better visibility on dark bg
+    const checkColor = "#4cd137"; // Vibrant green
+
     listaPremium.innerHTML = `
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Todo lo gratis y:
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Todo lo gratis y:
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> <strong>Sin marca de agua</strong>
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> <strong>Sin marca de agua</strong>
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> YouTube ilimitado
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> YouTube ilimitado
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Máxima velocidad
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Máxima velocidad
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Proyección profesional
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Proyección profesional
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Presentación Power Point
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Presentación Power Point
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Biblia y versiones
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Biblia y versiones
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Himnos personalizables
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Himnos personalizables
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Control Remoto Celular
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Control Remoto Celular
       </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #FFD700; position: absolute; left: 0;">✅</span> Soporte prioritario y actualizaciones.
+      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Soporte prioritario y actualizaciones.
       </li>
     `;
 
@@ -768,11 +889,12 @@ botonPremium.addEventListener("click", function () {
     // Mensaje motivacional
     const mensajeMotivacional = document.createElement("div");
     mensajeMotivacional.style.textAlign = "center";
-    mensajeMotivacional.style.marginBottom = "15px";
-    mensajeMotivacional.style.padding = "10px";
-    mensajeMotivacional.style.background = "rgba(210, 105, 30, 0.2)";
-    mensajeMotivacional.style.borderRadius = "8px";
-    mensajeMotivacional.style.border = "1px solid rgba(210, 105, 30, 0.3)";
+    mensajeMotivacional.style.marginBottom = "20px";
+    mensajeMotivacional.style.marginTop = "20px";
+    mensajeMotivacional.style.padding = "15px";
+    mensajeMotivacional.style.background = "rgba(0, 0, 0, 0.3)";
+    mensajeMotivacional.style.borderRadius = "10px";
+    mensajeMotivacional.style.border = "1px solid rgba(255, 255, 255, 0.1)";
 
     const textoMotivacional = document.createElement("p");
     textoMotivacional.innerHTML =
@@ -790,20 +912,29 @@ botonPremium.addEventListener("click", function () {
     const separador = document.createElement("div");
     separador.style.width = "100%";
     separador.style.textAlign = "center";
-    separador.style.margin = "10px 0";
+    separador.style.margin = "20px 0";
     separador.style.position = "relative";
+
+    // Line before
+    const hr = document.createElement("div");
+    hr.style.position = "absolute";
+    hr.style.top = "50%";
+    hr.style.width = "100%";
+    hr.style.height = "1px";
+    hr.style.background = "rgba(255,255,255,0.2)";
+    separador.appendChild(hr);
 
     const textoSeparador = document.createElement("span");
     textoSeparador.textContent = "Compra tu licencia por $1,99 por mes";
-    textoSeparador.style.background =
-      "linear-gradient(135deg, #8B4513 0%, #A0522D 100%)";
+    textoSeparador.style.background = "#2c3e50"; // Match aprox background color to hide line behind
     textoSeparador.style.color = "#FFF8DC";
-    textoSeparador.style.padding = "6px 15px";
-    textoSeparador.style.borderRadius = "15px";
-    textoSeparador.style.fontSize = "14px";
+    textoSeparador.style.padding = "8px 20px";
+    textoSeparador.style.borderRadius = "20px";
+    textoSeparador.style.fontSize = "15px";
     textoSeparador.style.fontWeight = "bold";
-    textoSeparador.style.fontFamily = "Verdana";
-    textoSeparador.style.border = "1px solid #D2691E";
+    textoSeparador.style.position = "relative";
+    textoSeparador.style.zIndex = "1";
+    textoSeparador.style.border = "1px solid rgba(255,255,255,0.2)";
 
     separador.appendChild(textoSeparador);
     contenedorInterno.appendChild(separador);
@@ -851,6 +982,52 @@ botonPremium.addEventListener("click", function () {
     paypalContainerAnual.style.alignItems = "center";
     paypalContainerAnual.style.marginBottom = "10px";
     contenedorInterno.appendChild(paypalContainerAnual);
+
+    // NUEVO: Enlace alternativo si falla - BOTÓN VISIBLE
+    const alternativoLinkContainer = document.createElement("div");
+    alternativoLinkContainer.style.textAlign = "center";
+    alternativoLinkContainer.style.margin = "20px 0 10px 0";
+
+    const alternativoLink = document.createElement("button");
+    alternativoLink.innerHTML = "🔗 ¿Problemas con el pago? Clic Aquí";
+
+    // Estilos modernos para el botón
+    alternativoLink.style.background =
+      "linear-gradient(90deg, #eb3349 0%, #f45c43 100%)"; // Red/Orange gradient for high visibility
+    alternativoLink.style.color = "white";
+    alternativoLink.style.border = "none";
+    alternativoLink.style.padding = "12px 25px";
+    alternativoLink.style.borderRadius = "50px";
+    alternativoLink.style.fontSize = "14px";
+    alternativoLink.style.fontWeight = "bold";
+    alternativoLink.style.cursor = "pointer";
+    alternativoLink.style.boxShadow = "0 4px 15px rgba(235, 51, 73, 0.4)";
+    alternativoLink.style.transition = "all 0.3s ease";
+    alternativoLink.style.textTransform = "uppercase";
+    alternativoLink.style.letterSpacing = "0.5px";
+    alternativoLink.style.maxWidth = "80%";
+
+    // Efectos Hover
+    alternativoLink.onmouseenter = () => {
+      alternativoLink.style.transform = "translateY(-2px) scale(1.02)";
+      alternativoLink.style.boxShadow = "0 6px 20px rgba(235, 51, 73, 0.6)";
+    };
+    alternativoLink.onmouseleave = () => {
+      alternativoLink.style.transform = "translateY(0) scale(1)";
+      alternativoLink.style.boxShadow = "0 4px 15px rgba(235, 51, 73, 0.4)";
+    };
+
+    alternativoLink.onclick = (e) => {
+      e.preventDefault();
+      // Abrir en navegador externo
+      window.open(
+        "https://proyectoja.github.io/suscribirHimnario.html",
+        "_blank"
+      );
+    };
+
+    alternativoLinkContainer.appendChild(alternativoLink);
+    contenedorInterno.appendChild(alternativoLinkContainer);
 
     // --- SECCIÓN STRIPE ---
     const separadorStripe = document.createElement("div");
@@ -949,27 +1126,28 @@ botonPremium.addEventListener("click", function () {
     // Agregar contenedor interno al principal
     contenedorPremium.appendChild(contenedorInterno);
 
-    // Sección de código de suscripción
+    // Sección de código de suscripción (Modern Input)
     const seccionCodigo = document.createElement("div");
     seccionCodigo.style.width = "100%";
-    seccionCodigo.style.background = "rgba(245, 222, 179, 0.95)";
-    seccionCodigo.style.padding = "15px";
-    seccionCodigo.style.borderRadius = "8px";
+    seccionCodigo.style.background = "rgba(255, 255, 255, 0.1)";
+    seccionCodigo.style.padding = "20px";
+    seccionCodigo.style.borderRadius = "15px";
     seccionCodigo.style.marginBottom = "0";
     seccionCodigo.style.textAlign = "center";
-    seccionCodigo.style.border = "1px solid #D2B48C";
+    seccionCodigo.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+    seccionCodigo.style.backdropFilter = "blur(5px)";
 
     const tituloCodigo = document.createElement("h4");
     tituloCodigo.textContent = "🔑 ¿Ya tienes un código?";
-    tituloCodigo.style.color = "#8B4513";
-    tituloCodigo.style.margin = "0 0 12px 0";
-    tituloCodigo.style.fontSize = "16px";
+    tituloCodigo.style.color = "#FFF";
+    tituloCodigo.style.margin = "0 0 15px 0";
+    tituloCodigo.style.fontSize = "17px";
     tituloCodigo.style.fontWeight = "bold";
 
     const contenedorInput = document.createElement("div");
     contenedorInput.style.display = "flex";
     contenedorInput.style.flexDirection = "column";
-    contenedorInput.style.gap = "10px";
+    contenedorInput.style.gap = "12px";
     contenedorInput.style.alignItems = "center";
 
     const codigoUnico = document.createElement("input");
@@ -979,39 +1157,44 @@ botonPremium.addEventListener("click", function () {
       ? subscriptionIdDos
       : "Ingresa tu código premium...";
     codigoUnico.style.width = "100%";
-    codigoUnico.style.maxWidth = "250px";
-    codigoUnico.style.padding = "10px 12px";
-    codigoUnico.style.border = "2px solid #D2B48C";
-    codigoUnico.style.borderRadius = "20px";
-    codigoUnico.style.fontSize = "14px";
+    codigoUnico.style.maxWidth = "300px";
+    codigoUnico.style.padding = "12px 15px";
+    codigoUnico.style.border = "1px solid rgba(255,255,255,0.3)";
+    codigoUnico.style.borderRadius = "8px";
+    codigoUnico.style.fontSize = "15px";
     codigoUnico.style.outline = "none";
-    codigoUnico.style.background = "#FFF8DC";
-    codigoUnico.style.color = "#8B4513";
+    codigoUnico.style.background = "rgba(0,0,0,0.2)";
+    codigoUnico.style.color = "#FFF";
+    codigoUnico.style.textAlign = "center";
     codigoUnico.style.transition = "all 0.3s ease";
 
     codigoUnico.addEventListener("focus", function () {
-      this.style.borderColor = "#8B4513";
-      this.style.boxShadow = "0 0 8px rgba(139, 69, 19, 0.3)";
+      this.style.borderColor = "#4ca1af";
+      this.style.boxShadow = "0 0 10px rgba(76, 161, 175, 0.5)";
+      this.style.background = "rgba(0,0,0,0.4)";
     });
 
     codigoUnico.addEventListener("blur", function () {
-      this.style.borderColor = "#D2B48C";
+      this.style.borderColor = "rgba(255,255,255,0.3)";
       this.style.boxShadow = "none";
+      this.style.background = "rgba(0,0,0,0.2)";
     });
 
     const botonValidar = document.createElement("button");
     botonValidar.textContent = "🔓 Activar Premium";
-    botonValidar.style.padding = "10px 20px";
-    botonValidar.style.background = "linear-gradient(135deg, #8B4513, #A0522D)";
-    botonValidar.style.color = "#FFF8DC";
+    botonValidar.style.padding = "12px 30px";
+    botonValidar.style.background =
+      "linear-gradient(90deg, #11998e 0%, #38ef7d 100%)";
+    botonValidar.style.color = "#FFF";
     botonValidar.style.border = "none";
-    botonValidar.style.borderRadius = "20px";
-    botonValidar.style.fontSize = "14px";
+    botonValidar.style.borderRadius = "50px";
+    botonValidar.style.fontSize = "15px";
     botonValidar.style.fontWeight = "bold";
     botonValidar.style.cursor = "pointer";
     botonValidar.style.transition = "all 0.3s ease";
-    botonValidar.style.boxShadow = "0 3px 10px rgba(139, 69, 19, 0.3)";
-    botonValidar.style.minWidth = "150px";
+    botonValidar.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+    botonValidar.style.minWidth = "180px";
+    botonValidar.style.letterSpacing = "0.5px";
 
     botonValidar.addEventListener("mouseover", function () {
       this.style.transform = "translateY(-1px)";
@@ -4083,7 +4266,12 @@ function anioMinisterio() {
   return `© 2013-${anio} PROYECTO JA`;
 }
 
+let contadorYaEjecutado = false;
+
 async function contadorDeVistas() {
+  if (contadorYaEjecutado) return;
+  contadorYaEjecutado = true;
+
   const hoy = new Date().toISOString().split("T")[0];
   const ultimaVista = localStorage.getItem("ultimaVistaDiaria");
   const entradaRegistrada = localStorage.getItem("entradaRegistrada");
@@ -4190,8 +4378,10 @@ function formatearNumero(num) {
   return new Intl.NumberFormat().format(num); // sin parámetros
 }
 
-contadorDeVistas();
-setInterval(refrescarStatsUnicasCada5Min, 5 * 60 * 1000);
+window.addEventListener("load", () => {
+  contadorDeVistas();
+  setInterval(refrescarStatsUnicasCada5Min, 5 * 60 * 1000);
+});
 //localStorage.removeItem("ultimaVistaDiaria");
 //localStorage.removeItem("entradaRegistrada");
 
@@ -5013,16 +5203,18 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-01-01",
+    titulo: "Correciones de la zona premium | promoción de código",
+    mensaje:
+      "¡Feliz año nuevo! ❤🙏 Gratificante comenzar año con el mejor software. En esta nueva actualización se hizo correción del servidor respecto a la zona premium (código por máquina), ahora también si no puedes desde el software obtener la licencia, aparecerá un botón auxiliar que te enviará a tu navegador favorito para obtener el código de licencia. También, estén atentos a nuestras redes sociales, estaremos con una promoción de códigos para que uses en tu iglesia por un año, solo debes de participar y llegar a la meta, atentos a nuestra página oficial de PROYECTO JA y al canal de WhatsApp, bendiciones de lo alto!",
+    version: "1.0.84",
+    tipo: "Mejora",
   },
   {
     fecha: "2025-12-27",
     titulo: "Las teclas de flecha no chocan entre PowerPoint y Biblia",
-    mensaje: "Se corrigió el error de confusión entre las diapositivas de Power Point y los versículos de la Biblia cuando se desplazaban las teclas entre si.",
+    mensaje:
+      "Se corrigió el error de confusión entre las diapositivas de Power Point y los versículos de la Biblia cuando se desplazaban las teclas entre si.",
     version: "1.0.83",
     tipo: "Correción",
   },
@@ -7145,20 +7337,27 @@ function pptNext() {
 
   // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
   const ventanaPowerPoint = document.getElementById("contenedor-power-point");
-  if (ventanaPowerPoint && getComputedStyle(ventanaPowerPoint).display !== "flex") {
+  if (
+    ventanaPowerPoint &&
+    getComputedStyle(ventanaPowerPoint).display !== "flex"
+  ) {
     // Activar el contenedor de PowerPoint automáticamente
     const ventanaBiblia = document.getElementById("contenedor-biblia");
-    const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+    const ventanaHimnosPro = document.getElementById(
+      "contenedor-himnos-personalizados"
+    );
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
-    
+
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
-    console.log("[PPT] Contenedor activado automáticamente para navegación siguiente");
+    console.log(
+      "[PPT] Contenedor activado automáticamente para navegación siguiente"
+    );
   }
 
   if (window.powerPointState.current < window.powerPointState.total - 1) {
@@ -7176,20 +7375,27 @@ function pptPrev() {
 
   // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
   const ventanaPowerPoint = document.getElementById("contenedor-power-point");
-  if (ventanaPowerPoint && getComputedStyle(ventanaPowerPoint).display !== "flex") {
+  if (
+    ventanaPowerPoint &&
+    getComputedStyle(ventanaPowerPoint).display !== "flex"
+  ) {
     // Activar el contenedor de PowerPoint automáticamente
     const ventanaBiblia = document.getElementById("contenedor-biblia");
-    const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+    const ventanaHimnosPro = document.getElementById(
+      "contenedor-himnos-personalizados"
+    );
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
-    
+
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
-    console.log("[PPT] Contenedor activado automáticamente para navegación anterior");
+    console.log(
+      "[PPT] Contenedor activado automáticamente para navegación anterior"
+    );
   }
 
   if (window.powerPointState.current > 0) {
@@ -7231,7 +7437,7 @@ function loadPowerPoint(slidesArray, presentationId = null) {
       `[PPT] Total de diapositivas (con fin): ${slidesConFinal.length}`
     );
 
-        window.powerPointState = {
+    window.powerPointState = {
       slides: slidesConFinal,
       current: 0,
       total: slidesConFinal.length,
@@ -7241,14 +7447,16 @@ function loadPowerPoint(slidesArray, presentationId = null) {
     };
 
     pptContainer.classList.remove("vacio");
-    
+
     // Activar automáticamente el contenedor de PowerPoint cuando se carga una presentación
     const ventanaPowerPoint = document.getElementById("contenedor-power-point");
     const ventanaBiblia = document.getElementById("contenedor-biblia");
-    const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+    const ventanaHimnosPro = document.getElementById(
+      "contenedor-himnos-personalizados"
+    );
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
-    
+
     if (ventanaPowerPoint) {
       ventanaHimnosPro.style.display = "none";
       ventanaBiblia.style.display = "none";
@@ -7258,7 +7466,7 @@ function loadPowerPoint(slidesArray, presentationId = null) {
       document.getElementById("contenedor-contador").style.display = "none";
       console.log("[PPT] Contenedor de PowerPoint activado automáticamente");
     }
-    
+
     renderPPTSlide();
     fillPPTList(); // Llenar la lista de diapositivas
     syncSecondaryWindow();
@@ -7305,7 +7513,12 @@ function esContenedorBibliaActivo() {
  *************************************************/
 document.addEventListener("keydown", (e) => {
   // Verificar si estamos en un input, textarea o select
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (
+    e.target.tagName === "INPUT" ||
+    e.target.tagName === "TEXTAREA" ||
+    e.target.tagName === "SELECT"
+  )
+    return;
 
   // Verificar qué contenedor está activo
   const pptActivo = esContenedorPowerPointActivo();

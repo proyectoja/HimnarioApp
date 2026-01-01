@@ -111,6 +111,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("ppt:slide-ready", (_, data) => callback(data)),
   convertRemotePPT: (filePath) =>
     ipcRenderer.invoke("ppt:convert-remote", filePath),
+
+  // Identificador de Hardware
+  getMachineId: () => ipcRenderer.invoke("get-machine-id"),
 });
 
 // Obtener paths síncronamente

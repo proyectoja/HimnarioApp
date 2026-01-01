@@ -204,6 +204,7 @@ ipcMain.handle("get-premium-status", () => {
 });
 
 // 📊 IPC para verificar qué aplicaciones están disponibles
+// 📊 IPC para verificar qué aplicaciones están disponibles
 ipcMain.handle("check-ppt-apps-available", async () => {
   try {
     const apps = checkAvailableApps();
@@ -215,6 +216,21 @@ ipcMain.handle("check-ppt-apps-available", async () => {
       powerpoint: { available: false, error: err.message },
       libreoffice: { available: false, error: err.message },
     };
+  }
+});
+
+// 🖥️ IPC para obtener ID único de Hardware (Machine ID)
+ipcMain.handle("get-machine-id", async () => {
+  try {
+    const uuid = await si.uuid();
+    // Usamos el serial del sistema o el UUID del OS como identificador único
+    // Preferimos 'os' si está disponible, sino 'hardware'
+    const id = uuid.os || uuid.hardware || "unknown-machine-id";
+    console.log("[MACHINE-ID] Identificador de hardware:", id);
+    return id; // Retornamos el ID puro (el frontend lo puede codificar si lo desea)
+  } catch (err) {
+    console.error("[MACHINE-ID] Error obteniendo ID:", err);
+    return "error-generating-id";
   }
 });
 
