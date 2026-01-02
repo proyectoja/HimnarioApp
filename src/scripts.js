@@ -7953,3 +7953,264 @@ document.addEventListener("DOMContentLoaded", function () {
  * PERO YO PENSABA EN HACERLO VÍA PLAY, QUE EN EL MISMO REGISTRO DE LA TABLA, HALLA UNA COLUMNA ESPECIFICA DONDE
  * VAYA EL BOTON A REPRODUCIR, HAY QUE PLANTEAR BIEN LA LÓGICA.
  */
+
+/**
+ * <!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Programa de Culto de Adoración</title>
+
+<style>
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+    }
+
+    .programa {
+        width: 100%;
+        max-width: 1100px;
+        margin: auto;
+        border-collapse: collapse;
+        background: white;
+        font-size: 13px;
+    }
+
+    .programa th,
+    .programa td {
+        border: 1px solid #999;
+        padding: 6px 8px;
+        vertical-align: middle;
+    }
+
+    .titulo {
+        background: #4f6f2f;
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    .subtitulo {
+        background: #4f6f2f;
+        color: white;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .fecha {
+        background: #e9f0e3;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .encabezado {
+        background: #d9ead3;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .numero {
+        text-align: center;
+        width: 40px;
+    }
+
+    .hora {
+        text-align: center;
+        width: 70px;
+    }
+
+    .detalle {
+        font-size: 12px;
+        color: #333;
+    }
+
+    .tema-central {
+        background: #e6f0dc;
+        font-weight: bold;
+    }
+
+    .derecha {
+        text-align: right;
+    }
+
+    .centro {
+        text-align: center;
+    }
+</style>
+</head>
+
+<body>
+
+<table class="programa">
+    <tr>
+        <th colspan="5" class="titulo">PROGRAMA DE SÁBADO | 2025</th>
+    </tr>
+    <tr>
+        <th colspan="3" class="fecha">01 DE ENERO</th>
+        <th colspan="2" class="fecha">IASD CENTRAL</th>
+    </tr>
+    <tr class="encabezado">
+        <th>N°</th>
+        <th>Hora</th>
+        <th>Descripción</th>
+        <th>Detalle</th>
+        <th>Presentación</th>
+    </tr>
+
+    <tr>
+        <td class="numero">1</td>
+        <td class="hora">09:00 AM</td>
+        <td>Servicio de Canto</td>
+        <td class="detalle">
+            Himno 001<br>
+            Nuevo Himnario Adventista
+        </td>
+        <td>Hna María</td>
+    </tr>
+
+    <tr>
+        <td class="numero">2</td>
+        <td class="hora">09:03 AM</td>
+        <td>Bienvenida</td>
+        <td></td>
+        <td>Hna Rolando Mayhuire</td>
+    </tr>
+
+    <tr>
+        <td class="numero">3</td>
+        <td class="hora">09:05 AM</td>
+        <td>Momento Musical<br>Tema Central</td>
+        <td class="detalle">
+            Himno 577<br>
+            Nuevo Himnario Adventista
+        </td>
+        <td>"Yo quiero trabajar por el Señor"</td>
+    </tr>
+    <tr>
+        <th colspan="5" class="subtitulo">CULTO DE ADORACIÓN</th>
+    </tr>
+
+    <tr class="encabezado">
+        <th>N°</th>
+        <th>Hora</th>
+        <th>Descripción</th>
+        <th>Detalle</th>
+        <th>Presentación</th>
+    </tr>
+
+    <tr>
+        <td class="numero">4</td>
+        <td class="hora">11:00 AM</td>
+        <td>,Momento Musical<br>Bienvenida</td>
+        <td class="detalle">
+            Himno 001<br>
+            Nuevo Himnario Adventista
+        </td>
+        <td>"Cantad alegres al Señor"</td>
+    </tr>
+
+    <tr>
+        <td class="numero">5</td>
+        <td class="hora">11:03 AM</td>
+        <td>Bienvenida</td>
+        <td></td>
+        <td>Hna Rolando Mayhuire</td>
+    </tr>
+
+    <tr>
+        <td class="numero">6</td>
+        <td class="hora">11:05 AM</td>
+        <td>Momento Musical<br>Tema Central</td>
+        <td class="detalle">
+            Himno 577<br>
+            Nuevo Himnario Adventista
+        </td>
+        <td>"Yo quiero trabajar por el Señor"</td>
+    </tr>
+
+    <tr>
+        <td class="numero">7</td>
+        <td class="hora">11:06 AM</td>
+        <td>Oración</td>
+        <td></td>
+        <td>Invitar a un hno</td>
+    </tr>
+
+    <tr>
+        <td class="numero">8</td>
+        <td class="hora">11:09 AM</td>
+        <td>Provad y Ved</td>
+        <td>Video</td>
+        <td>"El precio de la vida"</td>
+    </tr>
+
+    <tr>
+        <td class="numero">9</td>
+        <td class="hora">11:14 AM</td>
+        <td>Indicaciones para Diezmar</td>
+        <td class="detalle">
+            Plataforma 7me<br>
+            Clas. de IASD Sta Beatriz<br>
+            Tesoraría
+        </td>
+        <td>Hna Rolando Mayhuire</td>
+    </tr>
+
+    <tr>
+        <td class="numero">10</td>
+        <td class="hora">11:16 AM</td>
+        <td>Adoración Infantil</td>
+        <td>A cargo de: Mensajes y Mensajeros</td>
+        <td>"Mensajes y Mensajero"</td>
+    </tr>
+
+    <tr>
+        <td class="numero">11</td>
+        <td class="hora">11:22 AM</td>
+        <td>Especial (Melodías de Fe)</td>
+        <td>Video</td>
+        <td>Comprado Con Sangre Por Cristo</td>
+    </tr>
+
+    <tr class="tema-central">
+        <td class="numero">12</td>
+        <td class="hora">11:27 AM</td>
+        <td>Tema Central</td>
+        <td>O</td>
+        <td>Pr Elias Torres</td>
+    </tr>
+
+    <tr>
+        <td class="numero">13</td>
+        <td class="hora">12:10 PM</td>
+        <td>Momento Musical<br>Despedida</td>
+        <td class="detalle">
+            Himno 553<br>
+            Nuevo Himnario Adventista
+        </td>
+        <td>"Os pusisteis a arar"</td>
+    </tr>
+
+    <tr>
+        <td class="numero">14</td>
+        <td class="hora">12:12 PM</td>
+        <td>Oración</td>
+        <td></td>
+        <td>Invitar a un hno</td>
+    </tr>
+
+    <tr>
+        <td class="numero">15</td>
+        <td class="hora">12:15 PM</td>
+        <td>Despedida</td>
+        <td></td>
+        <td>Hna Rolando Mayhuire</td>
+    </tr>
+</table>
+
+</body>
+</html>
+
+ */

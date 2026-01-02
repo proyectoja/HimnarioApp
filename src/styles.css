@@ -79,7 +79,8 @@ html {
   }
 }
 .contenedor-intro .image1 {
-  width: 400px;
+  width: 100%;
+  max-width: 50%;
   height: 100%;
   object-fit: contain;
   animation: fadeOut1 10s forwards;
@@ -89,12 +90,11 @@ html {
   position: absolute;
   margin-left: 40px;
   width: 100%;
-  max-width: 80%;
+  max-width: 50%;
   height: 100%;
   object-fit: contain;
   animation: fadeOut2 10s forwards;
   mix-blend-mode: luminosity;
-  filter: contrast(0) saturate(0) brightness(10);
   opacity: 0;
 }
 
