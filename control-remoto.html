@@ -3,259 +3,229 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Remoto - Himnario Adventista Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control Remoto Pro</title>
+    <!-- Modern Font & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
     <style>
+        :root {
+            --primary: #f59e0b;
+            /* Amber Gold */
+            --primary-glow: rgba(245, 158, 11, 0.4);
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #10b981;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: brown;
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             min-height: 100vh;
-            padding: 20px;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Logic */
+        .glass-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            width: 100%;
+            max-width: 500px;
             margin: 0 auto;
-            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-bottom: 90px;
+            /* Space for bottom nav */
         }
 
         .header {
-            background: brown;
-            color: white;
-            padding: 30px 20px;
+            padding: 30px 24px 10px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .header p {
+            color: var(--text-muted);
             font-size: 14px;
-            opacity: 0.9;
+            font-weight: 300;
         }
 
-        .content {
-            padding: 30px 20px;
-        }
-
+        /* PIN Section */
         .pin-section {
-            margin-bottom: 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px;
+            gap: 20px;
         }
 
         .pin-section.hidden {
-            display: none;
+            display: none !important;
         }
 
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        label {
+        .input-group label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        input[type="text"],
-        input[type="password"] {
+        .modern-input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid var(--glass-border);
+            color: white;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            font-family: 'Outfit', sans-serif;
         }
 
-        input:focus {
+        .modern-input:focus {
             outline: none;
-            border-color: brown;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
         }
 
-        button {
+        .btn-modern {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             border: none;
-            border-radius: 10px;
+            border-radius: 16px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Outfit', sans-serif;
         }
 
         .btn-primary {
-            background: brown;
+            background: linear-gradient(135deg, var(--primary) 0%, #d97706 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
         }
 
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px brown;
-        }
-
-        .btn-control {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .btn-control:hover:not(:disabled) {
-            background: #45a049;
-            transform: translateY(-2px);
-        }
-
-        .btn-control:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            opacity: 0.6;
+        .btn-primary:active {
+            transform: scale(0.98);
         }
 
         .btn-danger {
-            background: #f44336;
-            color: white;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
-        .btn-danger:hover {
-            background: #da190b;
+        .btn-outlined {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
         }
 
-        .controls-section {
+        /* Tabs Logic */
+        .tab-content {
             display: none;
+        }
+
+        .tab-content.visible {
+            display: block;
+            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Controls Section */
+        .controls-section {
+            padding: 20px;
+            display: none;
+            animation: fadeIn 0.4s ease;
         }
 
         .controls-section.visible {
             display: block;
         }
 
-        .control-group {
-            margin-bottom: 25px;
+        .status-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
-        .control-group h3 {
-            color: brown;
-            margin-bottom: 15px;
-            font-size: 18px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #D2B48C;
-        }
-
-        .volume-control {
-            background: #FFF8DC;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border: 2px solid #D2B48C;
-        }
-
-        .volume-control label {
-            color: brown;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .volume-slider {
-            width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: #D2B48C;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: brown;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .volume-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: brown;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .alert {
-            padding: 12px;
-            border-radius: 8px;
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
             margin-bottom: 20px;
-            text-align: center;
+            backdrop-filter: blur(10px);
         }
 
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        .card h3 {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .alert.hidden {
-            display: none;
-        }
-
-        .status {
-            background: #FFF8DC;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-            color: brown;
-            border: 2px solid #D2B48C;
-        }
-
+        /* Search Results */
         .search-results {
             margin-bottom: 15px;
             display: none;
-            max-height: 320px;
+            max-height: 250px;
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: brown #f0f0f0;
-        }
-
-        .search-results::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .search-results::-webkit-scrollbar-track {
-            background: #f0f0f0;
-            border-radius: 4px;
-        }
-
-        .search-results::-webkit-scrollbar-thumb {
-            background: brown;
-            border-radius: 4px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .search-results.visible {
@@ -263,142 +233,119 @@
         }
 
         .result-item {
-            padding: 15px;
-            background: #FFF8DC;
-            border: 2px solid #D2B48C;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s;
         }
 
-        .result-item:hover {
-            background: #F5DEB3;
-            border-color: brown;
+        .result-item:last-child {
+            border-bottom: none;
         }
 
         .result-item.selected {
-            background: brown;
-            color: white;
-            border-color: brown;
+            background: rgba(245, 158, 11, 0.15);
+            border-left: 3px solid var(--primary);
         }
 
-        .result-categoria {
-            display: inline-block;
-            background: brown;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-
-        .result-item.selected .result-categoria {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .result-numero {
-            font-weight: bold;
-            font-size: 20px;
-            margin-bottom: 5px;
-            color: brown;
-        }
-
-        .result-item.selected .result-numero {
-            color: white;
-        }
-
-        .result-titulo {
+        .result-number-bg {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
             font-size: 14px;
-            color: #666;
-        }
-
-        .result-item.selected .result-titulo {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .no-results {
+            min-width: 40px;
             text-align: center;
-            padding: 20px;
-            color: #999;
         }
 
-        @media (max-width: 480px) {
-            .btn-grid {
-                grid-template-columns: 1fr;
-            }
+        /* Volume Slider */
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 16px;
+            margin-top: 10px;
         }
 
-        /* Estilos para pestañas y navegación */
-        .tab-content {
-            display: none;
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
         }
 
-        .tab-content.visible {
-            display: block;
-            animation: fadeIn 0.3s;
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin-top: -8px;
+            box-shadow: 0 0 10px var(--primary-glow);
         }
 
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        /* Bottom Nav */
         .bottom-nav {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: white;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: rgba(15, 23, 42, 0.85);
+            /* Darker backdrop */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
             display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
+            padding: 4px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 100;
         }
 
         .nav-btn {
+            flex: 1;
             background: none;
             border: none;
-            color: #888;
-            font-size: 14px;
+            color: var(--text-muted);
+            padding: 12px;
+            border-radius: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            cursor: pointer;
-            width: 50%;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-btn i {
+            font-size: 22px;
+            margin-bottom: 2px;
         }
 
         .nav-btn.active {
-            color: brown;
-            font-weight: bold;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
         }
 
-        .nav-icon {
-            font-size: 24px;
-            margin-bottom: 5px;
+        .nav-btn.active i {
+            color: var(--primary);
         }
 
-        .ppt-controls {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 50px;
-        }
-
-        .btn-ppt {
-            width: 100%;
-            height: 150px;
-            font-size: 40px;
-            border-radius: 20px;
-            background: brown;
-            color: white;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 10px 25px rgba(139, 69, 19, 0.4);
-            transition: transform 0.2s;
-        }
-
-        .btn-ppt:active {
-            transform: scale(0.95);
-        }
-
+        /* Animation */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -411,141 +358,224 @@
             }
         }
 
-        /* Ajuste para que el contenido no quede tapado por la barra de navegación */
-        .content {
-            padding-bottom: 80px;
+        .alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, top 0.3s;
+        }
+
+        .alert.visible {
+            opacity: 1;
+            top: 40px;
+        }
+
+        .alert-success {
+            background: #064e3b;
+            color: #34d399;
+            border: 1px solid #059669;
+        }
+
+        .alert-error {
+            background: #450a0a;
+            color: #f87171;
+            border: 1px solid #b91c1c;
+        }
+
+        .ppt-preview-container {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .ppt-preview-card {
+            min-width: 140px;
+            height: 100px;
+            border-radius: 12px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+        }
+
+        .ppt-preview-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
         }
     </style>
 </head>
 
 <body>
     <div class="container">
+        <!-- Notification Alert -->
+        <div id="alert" class="alert"></div>
+
         <div class="header">
-            <h1>📱 Control Remoto</h1>
-            <p>Himnario Adventista Pro</p>
+            <h1><i class='bx bxs-music'></i> Himnario Pro</h1>
+            <p>Control Remoto Inteligente</p>
         </div>
 
-        <div class="content">
-            <div id="alert" class="alert hidden"></div>
-
-            <!-- Sección de PIN -->
-            <div id="pinSection" class="pin-section">
-                <div class="input-group">
-                    <label for="pinInput">🔐 Ingrese el PIN de acceso (6 dígitos)</label>
-                    <input type="password" id="pinInput" placeholder="Ingrese el PIN" maxlength="6">
-                </div>
-                <button class="btn-primary" onclick="validarPIN()">Conectar</button>
+        <!-- PIN Section -->
+        <div id="pinSection" class="pin-section">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <i class='bx bx-mobile-vibration'
+                    style="font-size: 64px; color: var(--primary); margin-bottom: 20px;"></i>
+                <h2 style="font-weight: 300; font-size: 24px;">Conexión Segura</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 10px;">Ingresa el código de 6 dígitos
+                    que aparece en la pantalla principal.</p>
             </div>
 
-            <!-- Sección de Controles -->
-            <div id="controlsSection" class="controls-section">
-                <!-- Pestaña INICIO (Himnos) -->
-                <div id="tab-inicio" class="tab-content">
-                    <div class="status">
-                        ✅ Conectado al Himnario
-                    </div>
+            <div class="input-group">
+                <input type="tel" id="pinInput" class="modern-input" placeholder="000000" maxlength="6"
+                    autocomplete="off">
+            </div>
+            <button class="btn-modern btn-primary" onclick="validarPIN()">
+                Conectar Dispositivo <i class='bx bx-right-arrow-alt'></i>
+            </button>
+        </div>
 
-                    <!-- Búsqueda de Himnos -->
-                    <div class="control-group">
-                        <h3>🔍 Buscar Himno</h3>
+        <!-- Controls Section -->
+        <div id="controlsSection" class="controls-section">
 
-                        <!-- Resultados de búsqueda (arriba del campo) -->
-                        <div id="searchResults" class="search-results"></div>
+            <!-- Tab: Inicio -->
+            <div id="tab-inicio" class="tab-content visible">
+                <div class="status-badge">
+                    <i class='bx bxs-circle' style="font-size: 8px;"></i> Conectado
+                </div>
 
-                        <div class="input-group">
-                            <input type="text" id="searchInput" placeholder="Buscar por número o título..."
-                                autocomplete="off">
-                        </div>
-                    </div>
+                <!-- Search Card -->
+                <div class="card">
+                    <h3><i class='bx bx-search'></i> Buscar Himno</h3>
 
-                    <!-- Controles de Reproducción -->
-                    <div class="control-group">
-                        <h3>▶️ Controles</h3>
+                    <div id="searchResults" class="search-results"></div>
 
-                        <!-- Control de Volumen -->
-                        <div class="volume-control">
-                            <label for="volumeSlider">
-                                <span id="volumeIcon">🔊</span> Volumen: <span id="volumeValue">100</span>%
-                            </label>
-                            <input type="range" id="volumeSlider" min="0" max="100" value="100" class="volume-slider">
-                        </div>
-
-                        <div class="btn-grid">
-                            <button class="btn-control" id="btnReproducir" onclick="reproducirSeleccionado()"
-                                disabled>▶️
-                                Reproducir</button>
-                            <button class="btn-danger" onclick="stopReproduccion()">⏹️ Stop</button>
-                        </div>
-                    </div>
-
-                    <!-- Desconectar -->
-                    <div class="control-group">
-                        <button class="btn-danger" onclick="desconectar()">🔓 Desconectar</button>
+                    <div style="position: relative;">
+                        <input type="text" id="searchInput" class="modern-input"
+                            placeholder="Escribe un número o título..." autocomplete="off"
+                            style="padding-left: 45px; text-align: left;">
+                        <i class='bx bx-search'
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 20px;"></i>
                     </div>
                 </div>
 
-                <!-- Pestaña POWERPOINT -->
-                <div id="tab-ppt" class="tab-content">
-                    <div class="status" id="ppt-status-text">
-                        🖥️ Control PowerPoint (Sin datos)
+                <!-- Playback Controls -->
+                <div class="card">
+                    <h3><i class='bx bx-play-circle'></i> Reproducción</h3>
+
+                    <div class="volume-container">
+                        <span id="volumeIcon" style="font-size: 20px; min-width: 25px;">🔊</span>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="100">
+                        <span id="volumeValue"
+                            style="min-width: 35px; text-align: right; font-size: 14px; font-weight: bold;">100</span>
                     </div>
 
-                    <!-- Botón para subir PPT desde el celular -->
-                    <div class="control-group"
-                        style="background: #FFF8DC; padding: 15px; border-radius: 10px; border: 2px solid #D2B48C; margin-bottom: 20px;">
-                        <h3 style="border-bottom: 1px solid #D2B48C; padding-bottom: 5px; margin-bottom: 10px;">📂 Subir
-                            PowerPoint</h3>
-                        <input type="file" id="ppt-file-input" accept=".pptx,.ppt" style="display: none;">
-                        <button class="btn-primary" onclick="document.getElementById('ppt-file-input').click()"
-                            style="margin-bottom: 5px;">
-                            📤 Seleccionar y Subir PPT
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                        <button class="btn-modern btn-primary" id="btnReproducir" onclick="reproducirSeleccionado()"
+                            disabled>
+                            <i class='bx bx-play'></i> Play
                         </button>
+                        <button class="btn-modern btn-danger" onclick="stopReproduccion()">
+                            <i class='bx bx-stop'></i> Stop
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="btn-modern btn-outlined" onclick="desconectar()"
+                        style="border-color: rgba(239, 68, 68, 0.3); color: var(--danger);">
+                        <i class='bx bx-log-out'></i> Desconectar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab: PowerPoint -->
+            <div id="tab-ppt" class="tab-content">
+                <div class="status-badge"
+                    style="background: rgba(245, 158, 11, 0.15); color: var(--primary); border-color: rgba(245, 158, 11, 0.3);">
+                    <i class='bx bx-slideshow'></i> Modo Presentación
+                </div>
+
+                <div class="card">
+                    <h3><i class='bx bxs-file-ppt'></i> Subir PowerPoint</h3>
+
+                    <div style="border: 2px dashed var(--glass-border); border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;"
+                        onclick="document.getElementById('ppt-file-input').click()"
+                        onmouseover="this.style.borderColor=getComputedStyle(document.documentElement).getPropertyValue('--primary');"
+                        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';">
+                        <i class='bx bx-cloud-upload'
+                            style="font-size: 40px; color: var(--text-muted); margin-bottom: 10px;"></i>
+                        <p style="font-size: 14px; color: var(--text-muted);">Toca para subir archivo PPT</p>
                         <div id="upload-status"
-                            style="font-size: 12px; color: brown; text-align: center; height: 15px;">
+                            style="font-size: 12px; color: var(--primary); margin-top: 10px; min-height: 18px;"></div>
+                    </div>
+                    <input type="file" id="ppt-file-input" accept=".pptx,.ppt" style="display: none;">
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 10px;">
+                        <span>Vista Previa</span>
+                        <span id="ppt-status-text"
+                            style="font-size: 12px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px;">Sin
+                            datos</span>
+                    </h3>
+
+                    <div
+                        style="position: relative; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--glass-border); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                        <!-- Current Slide Main View -->
+                        <img id="ppt-current-img" src=""
+                            style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                        <div id="ppt-placeholder"
+                            style="position: absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; color: var(--text-muted); flex-direction: column; gap: 10px;">
+                            <i class='bx bx-image' style="font-size: 40px; opacity: 0.5;"></i>
+                            <span>Esperando diapositivas...</span>
                         </div>
                     </div>
 
-                    <!-- Previsualización de Diapositivas -->
-                    <div class="ppt-previews" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <div style="flex: 1; display: none;">
-                            <p style="font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #8B4513;">ACTUAL
-                            </p>
-                            <img id="ppt-current-img" src=""
-                                style="width: 100%; border-radius: 8px; border: 2px solid #8B4513; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                        </div>
-                        <div style="flex: 1; display: none; opacity: 0.7;">
-                            <p style="font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #666;">SIGUIENTE
-                            </p>
+                    <!-- Next Slide Preview (Small) -->
+                    <div
+                        style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
+                        <span style="font-size: 12px; color: var(--text-muted);">Siguiente:</span>
+                        <div
+                            style="width: 80px; aspect-ratio: 16/9; background: #000; border-radius: 6px; overflow: hidden; border: 1px solid var(--glass-border); position: relative;">
                             <img id="ppt-next-img" src=""
-                                style="width: 100%; border-radius: 8px; border: 2px dashed #999;">
+                                style="width: 100%; height: 100%; object-fit: contain; display: none; opacity: 0.7;">
                         </div>
                     </div>
 
-                    <div class="ppt-controls">
-                        <button class="btn-ppt" onclick="pptPrev()">
-                            ⬅️<br><span style="font-size: 16px;">Anterior</span>
+                    <div style="display: flex; gap: 15px;">
+                        <button class="btn-modern btn-outlined" onclick="pptPrev()" style="flex: 1; height: 60px;">
+                            <i class='bx bx-chevron-left' style="font-size: 30px;"></i>
                         </button>
-                        <button class="btn-ppt" onclick="pptNext()">
-                            ➡️<br><span style="font-size: 16px;">Siguiente</span>
+                        <button class="btn-modern btn-primary" onclick="pptNext()" style="flex: 1; height: 60px;">
+                            <i class='bx bx-chevron-right' style="font-size: 30px;"></i>
                         </button>
                     </div>
-
-                    <div style="margin-top: 30px; text-align: center; color: #666;">
-                        <p>Controle las diapositivas de la presentación actual.</p>
-                    </div>
                 </div>
+            </div>
 
-                <!-- Barra de Navegación Inferior -->
-                <div class="bottom-nav">
-                    <button id="nav-inicio" class="nav-btn" onclick="cambiarPestana('inicio')">
-                        <span class="nav-icon">📖</span>
-                        Inicio
-                    </button>
-                    <button id="nav-ppt" class="nav-btn" onclick="cambiarPestana('ppt')">
-                        <span class="nav-icon">🖥️</span>
-                        PowerPoint
-                    </button>
-                </div>
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <button id="nav-inicio" class="nav-btn active" onclick="cambiarPestana('inicio')">
+                    <i class='bx bx-home-alt-2'></i>
+                    Inicio
+                </button>
+                <button id="nav-ppt" class="nav-btn" onclick="cambiarPestana('ppt')">
+                    <i class='bx bx-slideshow'></i>
+                    PowerPoint
+                </button>
             </div>
         </div>
     </div>
@@ -586,6 +616,10 @@
 
                 if (data.ok) {
                     PIN_GUARDADO = pin;
+
+                    // Guardar en sesión
+                    localStorage.setItem('saved_pin', pin);
+
                     document.getElementById('pinSection').classList.add('hidden');
                     document.getElementById('controlsSection').classList.add('visible');
                     // Mostrar pestaña de inicio por defecto
@@ -675,6 +709,7 @@
 
         function actualizarVistaPPT(status) {
             const currentImg = document.getElementById('ppt-current-img');
+            const placeholder = document.getElementById('ppt-placeholder');
             const nextImg = document.getElementById('ppt-next-img');
             const statusText = document.getElementById('ppt-status-text');
 
@@ -683,39 +718,36 @@
             // Actualizar texto de estado
             if (statusText) {
                 statusText.textContent = `Diapositiva ${status.current} / ${status.total}`;
+                statusText.style.background = 'var(--primary)';
+                statusText.style.color = 'white';
             }
 
-            // Actualizar imagen actual (usamos la URL recibida, que ya debería ser accesible si estamos en la misma red)
-            // Nota: La URL es localhost en el servidor, pero para el móvil necesitamos reemplazar localhost por la IP del servidor
-            // O mejor aún, el servidor nos envía URLs relativas o corregidas.
-            // Como las URLs son http://localhost:3000/..., necesitamos cambiar el host por el windows.location.hostname
-
+            // IMAGEN ACTUAL
             if (currentImg && status.slideUrl) {
                 const urlObj = new URL(status.slideUrl);
-                // Reemplazar host por el actual (desde donde se ve la página)
                 urlObj.hostname = window.location.hostname;
-                urlObj.port = window.location.port || '3000'; // Asumimos puerto 3000 para assets si es diferente
-                // IMPORTANTE: Los assets están en el puerto 3000 (Express del main.js), la app remoto está en 3555
-                // Asi que siempre forzamos puerto 3000 para las imagenes
                 urlObj.port = '3000';
 
+                currentImg.onload = () => {
+                    currentImg.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                };
                 currentImg.src = urlObj.href;
-                currentImg.parentElement.style.display = 'block';
-            } else if (currentImg) {
-                currentImg.src = '';
-                currentImg.parentElement.style.display = 'none';
+            } else {
+                if (currentImg) currentImg.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'flex';
             }
 
-            // Actualizar siguiente imagen
+            // IMAGEN SIGUIENTE
             if (nextImg && status.nextSlideUrl) {
                 const urlObj = new URL(status.nextSlideUrl);
                 urlObj.hostname = window.location.hostname;
                 urlObj.port = '3000';
 
                 nextImg.src = urlObj.href;
-                nextImg.parentElement.style.display = 'block';
+                nextImg.style.display = 'block';
             } else if (nextImg) {
-                nextImg.parentElement.style.display = 'none';
+                nextImg.style.display = 'none';
             }
         }
 
@@ -778,14 +810,18 @@
             const volumen = e.target.value;
             document.getElementById('volumeValue').textContent = volumen;
 
-            // Cambiar icono según volumen
+            // Cambiar icono según volumen con Boxicons
             const icon = document.getElementById('volumeIcon');
+            // Remove previous classes
+            icon.textContent = ''; // Limpiar emoji si hubiera
+            icon.className = 'bx'; // Base class
+
             if (volumen == 0) {
-                icon.textContent = '🔇';
+                icon.classList.add('bx-volume-mute');
             } else if (volumen < 50) {
-                icon.textContent = '🔉';
+                icon.classList.add('bx-volume-low');
             } else {
-                icon.textContent = '🔊';
+                icon.classList.add('bx-volume-full');
             }
         });
 
@@ -844,25 +880,28 @@
             resultsContainer.innerHTML = '';
 
             if (resultados.length === 0) {
-                resultsContainer.innerHTML = '<div class="no-results">❌ No se encontraron resultados</div>';
+                resultsContainer.innerHTML = '<div class="no-results"><i class="bx bx-error-circle"></i> No se encontraron resultados</div>';
                 resultsContainer.classList.add('visible');
                 himnoSeleccionado = null;
                 document.getElementById('btnReproducir').disabled = true;
                 return;
             }
 
-            // Mostrar todos los resultados (el servidor limita a 20)
+            // Mostrar todos los resultados
             resultados.forEach((himno, index) => {
                 const item = document.createElement('div');
                 item.className = 'result-item';
 
-                const categoriaHTML = himno.categoria ?
-                    `<div class="result-categoria">${himno.categoria}</div>` : '';
+                const catLabel = himno.categoria ?
+                    `<div style="font-size:10px; opacity:0.6; text-transform:uppercase; letter-spacing:0.5px;">${himno.categoria}</div>` : '';
 
                 item.innerHTML = `
-                    ${categoriaHTML}
-                    <div class="result-numero">#${himno.numero}</div>
-                    <div class="result-titulo">${himno.titulo || 'Sin título'}</div>
+                    <div class="result-number-bg">#${himno.numero}</div>
+                    <div style="flex:1;">
+                        ${catLabel}
+                        <div style="font-weight: 500; font-size: 15px;">${himno.titulo || 'Sin título'}</div>
+                    </div>
+                    <i class='bx bx-play-circle' style="font-size: 24px; color: var(--primary); opacity: 0.5;"></i>
                 `;
 
                 item.onclick = () => seleccionarHimno(himno, item);
@@ -913,6 +952,7 @@
 
         function desconectar() {
             PIN_GUARDADO = null;
+            localStorage.removeItem('saved_pin');
             himnoSeleccionado = null;
             document.getElementById('pinSection').classList.remove('hidden');
             document.getElementById('controlsSection').classList.remove('visible');
@@ -931,6 +971,16 @@
 
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && himnoSeleccionado) reproducirSeleccionado();
+        });
+
+        // Auto-login al cargar
+        window.addEventListener('load', () => {
+            const savedPin = localStorage.getItem('saved_pin');
+            if (savedPin) {
+                document.getElementById('pinInput').value = savedPin;
+                console.log('🔄 Intentando reconexión automática...');
+                validarPIN();
+            }
         });
     </script>
 </body>

@@ -557,9 +557,16 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
   // Actualizar URL y PIN del control remoto
   if (datosExtra.url) {
     infoUrl.textContent = `Control remoto corriendo en: ${datosExtra.url}`;
+  } else if (!esPremiumGlobal) {
+    infoUrl.innerHTML =
+      "🔒 <span style='opacity:0.7'>Control remoto: Solo Premium</span>";
   }
+
   if (datosExtra.pin) {
     infoPin.textContent = `Pin del control remoto: ${datosExtra.pin}`;
+  } else if (!esPremiumGlobal) {
+    infoPin.innerHTML =
+      "🔒 <span style='opacity:0.7'>Pin: Actualiza para desbloquear</span>";
   }
 }
 
@@ -712,23 +719,32 @@ botonPremium.addEventListener("click", function () {
     contenedorInterno.style.flexDirection = "column";
     contenedorInterno.style.gap = "15px";
 
-    // Título principal
+    // Título principal con más impacto
     const tituloPrincipal = document.createElement("h2");
-    tituloPrincipal.textContent = "Actualiza tu Experiencia";
+    tituloPrincipal.innerHTML = "¡Lleva tu adoración al<br>siguiente nivel! 🚀";
     tituloPrincipal.style.color = "#FFF8DC";
     tituloPrincipal.style.textAlign = "center";
-    tituloPrincipal.style.margin = "0";
+    tituloPrincipal.style.margin = "0 0 5px 0";
     tituloPrincipal.style.fontFamily = "Arial, sans-serif";
-    tituloPrincipal.style.fontSize = "22px";
+    tituloPrincipal.style.fontSize = "26px";
     tituloPrincipal.style.fontWeight = "bold";
-    tituloPrincipal.style.textShadow = "2px 2px 4px rgba(0,0,0,0.3)";
+    tituloPrincipal.style.textShadow = "2px 2px 4px rgba(0,0,0,0.5)";
     contenedorInterno.appendChild(tituloPrincipal);
 
-    // Contenedor de comparación (layout horizontal para pantallas grandes, vertical para móviles)
+    const subTitulo = document.createElement("p");
+    subTitulo.textContent =
+      "Desbloquea herramientas profesionales para tu iglesia";
+    subTitulo.style.color = "#bdc3c7";
+    subTitulo.style.textAlign = "center";
+    subTitulo.style.margin = "0 0 15px 0";
+    subTitulo.style.fontSize = "14px";
+    contenedorInterno.appendChild(subTitulo);
+
+    // Contenedor de comparación
     const contenedorComparacion = document.createElement("div");
     contenedorComparacion.style.display = "flex";
     contenedorComparacion.style.flexDirection = "row";
-    contenedorComparacion.style.gap = "10px";
+    contenedorComparacion.style.gap = "15px";
     contenedorComparacion.style.flexWrap = "wrap";
     contenedorComparacion.style.justifyContent = "center";
 
@@ -736,106 +752,82 @@ botonPremium.addEventListener("click", function () {
     const columnaGratis = document.createElement("div");
     columnaGratis.style.flex = "1";
     columnaGratis.style.minWidth = "180px";
-    // Glass card style
     columnaGratis.style.background = "rgba(255, 255, 255, 0.05)";
-    columnaGratis.style.padding = "15px";
-    columnaGratis.style.borderRadius = "12px";
+    columnaGratis.style.padding = "20px";
+    columnaGratis.style.borderRadius = "16px";
     columnaGratis.style.textAlign = "center";
-    columnaGratis.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
     columnaGratis.style.border = "1px solid rgba(255,255,255,0.1)";
-    columnaGratis.style.transition = "transform 0.2s";
-
-    // Hover effect via JS since it's inline
-    columnaGratis.onmouseenter = () => {
-      columnaGratis.style.transform = "translateY(-5px)";
-    };
-    columnaGratis.onmouseleave = () => {
-      columnaGratis.style.transform = "translateY(0)";
-    };
+    columnaGratis.style.transform = "scale(0.95)";
+    columnaGratis.style.opacity = "0.8";
 
     const tituloGratis = document.createElement("h3");
-    tituloGratis.textContent = "🎵 Gratis";
-    tituloGratis.style.color = "#FFF8DC"; // Light text for dark bg
+    tituloGratis.textContent = "Básico";
+    tituloGratis.style.color = "rgba(255,255,255,0.7)";
     tituloGratis.style.margin = "0 0 15px 0";
     tituloGratis.style.fontSize = "18px";
     tituloGratis.style.fontWeight = "bold";
-    tituloGratis.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
+    tituloGratis.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
     tituloGratis.style.paddingBottom = "10px";
 
     const listaGratis = document.createElement("ul");
     listaGratis.style.textAlign = "left";
-    listaGratis.style.color = "rgba(255,255,255,0.85)";
+    listaGratis.style.color = "rgba(255,255,255,0.7)";
     listaGratis.style.listStyle = "none";
     listaGratis.style.padding = "0";
     listaGratis.style.margin = "0";
-    listaGratis.style.fontSize = "14px";
+    listaGratis.style.fontSize = "13px";
     listaGratis.innerHTML = `
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Todos los himnos
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Búsqueda y filtros
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Listas de reproducción
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #8B4513; position: absolute; left: 0;">✅</span> Explorador de Archivos
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Con marca de agua
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> YouTube limitado
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> Proyección estándar
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">🟨</span> Presentación Power Point 
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Biblia y versiones
-      </li>
-      <li style="margin-bottom: 6px; padding-left: 18px; position: relative;">
-        <span style="color: #DC143C; position: absolute; left: 0;">❌</span> Himnos personalizables
-      </li>
+      <li style="margin-bottom: 8px;">✅ Todos los himnos</li>
+      <li style="margin-bottom: 8px;">✅ Búsqueda básica</li>
+      <li style="margin-bottom: 8px;">❌ Marca de agua</li>
+      <li style="margin-bottom: 8px;">❌ Sin control remoto</li>
+      <li style="margin-bottom: 8px;">❌ Sin Biblia proyectable</li>
     `;
 
     columnaGratis.appendChild(tituloGratis);
     columnaGratis.appendChild(listaGratis);
     contenedorComparacion.appendChild(columnaGratis);
 
-    // Columna Versión Premium
+    // Columna Versión Premium (DESTACADA)
     const columnaPremium = document.createElement("div");
-    columnaPremium.style.flex = "1";
-    columnaPremium.style.minWidth = "180px";
-    // Slightly more prominent glass/gradient for active item
-    columnaPremium.style.background = "rgba(255, 255, 255, 0.15)";
-    columnaPremium.style.padding = "15px";
-    columnaPremium.style.borderRadius = "12px";
+    columnaPremium.style.flex = "1.2"; // Más grande
+    columnaPremium.style.minWidth = "220px";
+    columnaPremium.style.background =
+      "linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)";
+    columnaPremium.style.padding = "25px";
+    columnaPremium.style.borderRadius = "20px";
     columnaPremium.style.textAlign = "center";
-    columnaPremium.style.boxShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.2)"; // Deeper shadow
-    columnaPremium.style.border = "1px solid rgba(255,255,255,0.3)";
+    columnaPremium.style.boxShadow =
+      "0 10px 40px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,215,0,0.3)"; // Borde dorado sutil
     columnaPremium.style.position = "relative";
-    columnaPremium.style.transition = "transform 0.2s";
+    columnaPremium.style.border = "1px solid rgba(255,255,255,0.2)";
+    columnaPremium.style.zIndex = "10";
 
-    columnaPremium.onmouseenter = () => {
-      columnaPremium.style.transform = "translateY(-5px)";
-    };
-    columnaPremium.onmouseleave = () => {
-      columnaPremium.style.transform = "translateY(0)";
-    };
+    // Badge de Recomendado
+    const badge = document.createElement("div");
+    badge.textContent = "🔥 RECOMENDADO";
+    badge.style.position = "absolute";
+    badge.style.top = "-12px";
+    badge.style.left = "50%";
+    badge.style.transform = "translateX(-50%)";
+    badge.style.background = "#FFD700";
+    badge.style.color = "#000";
+    badge.style.padding = "5px 15px";
+    badge.style.borderRadius = "20px";
+    badge.style.fontSize = "12px";
+    badge.style.fontWeight = "bold";
+    badge.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)";
+    columnaPremium.appendChild(badge);
 
     const tituloPremium = document.createElement("h3");
-    tituloPremium.textContent = "⭐ Premium";
-    tituloPremium.style.color = "#FFD700"; // Gold color for title
-    tituloPremium.style.margin = "0 0 15px 0";
-    tituloPremium.style.fontSize = "18px";
+    tituloPremium.innerHTML = "⭐ PREMIUM PRO";
+    tituloPremium.style.color = "#FFD700";
+    tituloPremium.style.margin = "10px 0 15px 0";
+    tituloPremium.style.fontSize = "24px";
     tituloPremium.style.fontWeight = "bold";
-    tituloPremium.style.textShadow = "0 0 10px rgba(255,215,0,0.5)";
+    tituloPremium.style.textShadow = "0 0 15px rgba(255,215,0,0.3)";
     tituloPremium.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
-    tituloPremium.style.paddingBottom = "10px";
+    tituloPremium.style.paddingBottom = "15px";
 
     const listaPremium = document.createElement("ul");
     listaPremium.style.textAlign = "left";
@@ -845,39 +837,25 @@ botonPremium.addEventListener("click", function () {
     listaPremium.style.margin = "0";
     listaPremium.style.fontSize = "14px";
 
-    // Updated checkmark colors for better visibility on dark bg
-    const checkColor = "#4cd137"; // Vibrant green
-
+    // Lista de beneficios con iconos más atractivos
     listaPremium.innerHTML = `
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Todo lo gratis y:
+      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">📱</span> <strong>Control Remoto desde Celular</strong>
       </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> <strong>Sin marca de agua</strong>
+      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">✨</span> <strong>Sin Marca de Agua (Limpio)</strong>
       </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> YouTube ilimitado
+      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">📖</span> Biblia con múltiples versiones
       </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Máxima velocidad
+      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">🎹</span> Himnos Personalizables & Pistas
       </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Proyección profesional
+      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">🎞️</span> Fondos Dinámicos & YouTube Full
       </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Presentación Power Point
-      </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Biblia y versiones
-      </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Himnos personalizables
-      </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Control Remoto Celular
-      </li>
-      <li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
-        <span style="color: ${checkColor}; position: absolute; left: 0;">✅</span> Soporte prioritario y actualizaciones.
+      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">🚀</span> Soporte Prioritario VIP
       </li>
     `;
 
@@ -886,102 +864,89 @@ botonPremium.addEventListener("click", function () {
     contenedorComparacion.appendChild(columnaPremium);
 
     contenedorInterno.appendChild(contenedorComparacion);
-    // Mensaje motivacional
-    const mensajeMotivacional = document.createElement("div");
-    mensajeMotivacional.style.textAlign = "center";
-    mensajeMotivacional.style.marginBottom = "20px";
-    mensajeMotivacional.style.marginTop = "20px";
-    mensajeMotivacional.style.padding = "15px";
-    mensajeMotivacional.style.background = "rgba(0, 0, 0, 0.3)";
-    mensajeMotivacional.style.borderRadius = "10px";
-    mensajeMotivacional.style.border = "1px solid rgba(255, 255, 255, 0.1)";
 
-    const textoMotivacional = document.createElement("p");
-    textoMotivacional.innerHTML =
-      "✨ <strong>¡Sé un ángel de esperanza!</strong> ✨";
-    textoMotivacional.style.color = "#FFF8DC";
-    textoMotivacional.style.margin = "0";
-    textoMotivacional.style.fontSize = "14px";
-    textoMotivacional.style.lineHeight = "1.3";
-    textoMotivacional.style.textShadow = "1px 1px 2px rgba(0,0,0,0.3)";
+    // Mensaje Social Proof
+    const mensajeSocial = document.createElement("p");
+    mensajeSocial.innerHTML =
+      '<em>"Una herramienta esencial para el ministerio de hoy."</em><br>⭐⭐⭐⭐⭐ - Líderes de Alabanza';
+    mensajeSocial.style.textAlign = "center";
+    mensajeSocial.style.color = "#ecf0f1";
+    mensajeSocial.style.fontSize = "13px";
+    mensajeSocial.style.marginTop = "20px";
+    mensajeSocial.style.opacity = "0.8";
+    contenedorInterno.appendChild(mensajeSocial);
 
-    mensajeMotivacional.appendChild(textoMotivacional);
-    contenedorInterno.appendChild(mensajeMotivacional);
-
-    // Separador
+    // Separador Plan Mensual
     const separador = document.createElement("div");
-    separador.style.width = "100%";
+    separador.style.margin = "20px 0 10px 0";
     separador.style.textAlign = "center";
-    separador.style.margin = "20px 0";
-    separador.style.position = "relative";
-
-    // Line before
-    const hr = document.createElement("div");
-    hr.style.position = "absolute";
-    hr.style.top = "50%";
-    hr.style.width = "100%";
-    hr.style.height = "1px";
-    hr.style.background = "rgba(255,255,255,0.2)";
-    separador.appendChild(hr);
-
-    const textoSeparador = document.createElement("span");
-    textoSeparador.textContent = "Compra tu licencia por $1,99 por mes";
-    textoSeparador.style.background = "#2c3e50"; // Match aprox background color to hide line behind
-    textoSeparador.style.color = "#FFF8DC";
-    textoSeparador.style.padding = "8px 20px";
-    textoSeparador.style.borderRadius = "20px";
-    textoSeparador.style.fontSize = "15px";
-    textoSeparador.style.fontWeight = "bold";
-    textoSeparador.style.position = "relative";
-    textoSeparador.style.zIndex = "1";
-    textoSeparador.style.border = "1px solid rgba(255,255,255,0.2)";
-
-    separador.appendChild(textoSeparador);
+    separador.innerHTML =
+      "<span style='background: rgba(44, 62, 80, 0.8); padding: 5px 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); font-weight: bold;'>💎 Opción Flexible</span>";
     contenedorInterno.appendChild(separador);
 
-    // Contenedor de PayPal - ESPACIO RESERVADO (MENSUAL)
+    // Texto de precio mensual
+    const precioMensual = document.createElement("h3");
+    precioMensual.innerHTML =
+      "$8,99 <span style='font-size: 14px; font-weight: normal; opacity: 0.7;'>/ mes</span>";
+    precioMensual.style.textAlign = "center";
+    precioMensual.style.margin = "5px 0 10px 0";
+    precioMensual.style.fontSize = "28px";
+    precioMensual.style.color = "#FFF";
+    contenedorInterno.appendChild(precioMensual);
+
+    // Contenedor de PayPal (MENSUAL)
     const paypalContainer = document.createElement("div");
     paypalContainer.id = "paypal-button-container-inner";
     paypalContainer.style.width = "100%";
-    paypalContainer.style.maxWidth = "300px";
+    paypalContainer.style.maxWidth = "280px";
     paypalContainer.style.alignSelf = "center";
-    paypalContainer.style.minHeight = "50px";
-    paypalContainer.style.display = "flex";
-    paypalContainer.style.justifyContent = "center";
-    paypalContainer.style.alignItems = "center";
+    paypalContainer.style.minHeight = "45px";
     paypalContainer.style.marginBottom = "10px";
-
-    // Texto temporal mientras carga PayPal
-    const textoCargaPayPal = document.createElement("div");
-    textoCargaPayPal.textContent = "Cargando opciones de pago...";
-    textoCargaPayPal.style.color = "#FFF8DC";
-    textoCargaPayPal.style.fontSize = "12px";
-    textoCargaPayPal.style.fontStyle = "italic";
-    paypalContainer.appendChild(textoCargaPayPal);
-
+    // Placeholder
+    paypalContainer.innerHTML =
+      "<div style='text-align:center;font-size:12px;opacity:0.7'>Cargando botón seguro...</div>";
     contenedorInterno.appendChild(paypalContainer);
 
-    // Separador para Plan Anual
-    const separadorAnual = document.createElement("div");
-    separadorAnual.style.width = "100%";
-    separadorAnual.style.textAlign = "center";
-    separadorAnual.style.margin = "10px 0";
-    separadorAnual.innerHTML =
-      "<span style='color: #FFF8DC; font-weight: bold; font-family: Verdana; font-size: 14px;'>O con el Plan Anual de $23.88</span>";
-    contenedorInterno.appendChild(separadorAnual);
+    // Separador Plan Anual (El más atractivo)
+    const contenedorAnual = document.createElement("div");
+    contenedorAnual.style.background = "rgba(46, 204, 113, 0.1)"; // Fondo verdoso suave
+    contenedorAnual.style.border = "1px solid rgba(46, 204, 113, 0.4)";
+    contenedorAnual.style.borderRadius = "15px";
+    contenedorAnual.style.padding = "15px";
+    contenedorAnual.style.margin = "10px 0";
+    contenedorAnual.style.textAlign = "center";
 
-    // Contenedor de PayPal - ESPACIO RESERVADO (ANUAL)
+    const tituloAnual = document.createElement("h4");
+    tituloAnual.innerHTML = "🏆 MEJOR VALOR: Plan Anual";
+    tituloAnual.style.color = "#2ecc71"; // Verde vibrante
+    tituloAnual.style.margin = "0 0 5px 0";
+    tituloAnual.style.fontSize = "16px";
+    tituloAnual.style.fontWeight = "bold";
+    contenedorAnual.appendChild(tituloAnual);
+
+    const precioAnual = document.createElement("div");
+    precioAnual.innerHTML =
+      "<span style='text-decoration: line-through; opacity: 0.6; font-size: 14px;'>$115.00</span> <span style='font-size: 22px; font-weight: bold;'>$107,88</span> <span style='font-size: 12px;'>/ año</span>";
+    precioAnual.style.marginBottom = "10px";
+    contenedorAnual.appendChild(precioAnual);
+
+    const textoAhorro = document.createElement("div");
+    textoAhorro.textContent = "¡Un solo pago, 12 meses de tranquilidad!";
+    textoAhorro.style.fontSize = "12px";
+    textoAhorro.style.color = "#bdc3c7";
+    textoAhorro.style.marginBottom = "10px";
+    contenedorAnual.appendChild(textoAhorro);
+
+    // Contenedor de PayPal (ANUAL)
     const paypalContainerAnual = document.createElement("div");
     paypalContainerAnual.id = "paypal-button-container-anual";
     paypalContainerAnual.style.width = "100%";
-    paypalContainerAnual.style.maxWidth = "300px";
-    paypalContainerAnual.style.alignSelf = "center";
-    paypalContainerAnual.style.minHeight = "50px";
-    paypalContainerAnual.style.display = "flex";
-    paypalContainerAnual.style.justifyContent = "center";
-    paypalContainerAnual.style.alignItems = "center";
-    paypalContainerAnual.style.marginBottom = "10px";
-    contenedorInterno.appendChild(paypalContainerAnual);
+    paypalContainerAnual.style.maxWidth = "280px";
+    paypalContainerAnual.style.margin = "0 auto";
+    paypalContainerAnual.style.minHeight = "45px";
+    contenedorAnual.appendChild(paypalContainerAnual);
+
+    contenedorInterno.appendChild(contenedorAnual);
 
     // NUEVO: Enlace alternativo si falla - BOTÓN VISIBLE
     const alternativoLinkContainer = document.createElement("div");
@@ -989,37 +954,29 @@ botonPremium.addEventListener("click", function () {
     alternativoLinkContainer.style.margin = "20px 0 10px 0";
 
     const alternativoLink = document.createElement("button");
-    alternativoLink.innerHTML = "🔗 ¿Problemas con el pago? Clic Aquí";
+    alternativoLink.innerHTML = "🔗 ¿Problemas con PayPal? Clic Aquí";
 
-    // Estilos modernos para el botón
-    alternativoLink.style.background =
-      "linear-gradient(90deg, #eb3349 0%, #f45c43 100%)"; // Red/Orange gradient for high visibility
-    alternativoLink.style.color = "white";
-    alternativoLink.style.border = "none";
-    alternativoLink.style.padding = "12px 25px";
+    // Estilos modernos para el botón de ayuda
+    alternativoLink.style.background = "rgba(255, 255, 255, 0.1)";
+    alternativoLink.style.color = "#bdc3c7";
+    alternativoLink.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+    alternativoLink.style.padding = "8px 20px";
     alternativoLink.style.borderRadius = "50px";
-    alternativoLink.style.fontSize = "14px";
-    alternativoLink.style.fontWeight = "bold";
+    alternativoLink.style.fontSize = "12px";
     alternativoLink.style.cursor = "pointer";
-    alternativoLink.style.boxShadow = "0 4px 15px rgba(235, 51, 73, 0.4)";
     alternativoLink.style.transition = "all 0.3s ease";
-    alternativoLink.style.textTransform = "uppercase";
-    alternativoLink.style.letterSpacing = "0.5px";
-    alternativoLink.style.maxWidth = "80%";
 
-    // Efectos Hover
     alternativoLink.onmouseenter = () => {
-      alternativoLink.style.transform = "translateY(-2px) scale(1.02)";
-      alternativoLink.style.boxShadow = "0 6px 20px rgba(235, 51, 73, 0.6)";
+      alternativoLink.style.background = "rgba(255, 255, 255, 0.2)";
+      alternativoLink.style.color = "white";
     };
     alternativoLink.onmouseleave = () => {
-      alternativoLink.style.transform = "translateY(0) scale(1)";
-      alternativoLink.style.boxShadow = "0 4px 15px rgba(235, 51, 73, 0.4)";
+      alternativoLink.style.background = "rgba(255, 255, 255, 0.1)";
+      alternativoLink.style.color = "#bdc3c7";
     };
 
     alternativoLink.onclick = (e) => {
       e.preventDefault();
-      // Abrir en navegador externo
       window.open(
         "https://proyectoja.github.io/suscribirHimnario.html",
         "_blank"
@@ -1033,10 +990,10 @@ botonPremium.addEventListener("click", function () {
     const separadorStripe = document.createElement("div");
     separadorStripe.style.width = "100%";
     separadorStripe.style.textAlign = "center";
-    separadorStripe.style.margin = "15px 0 10px 0";
+    separadorStripe.style.margin = "20px 0 10px 0";
     separadorStripe.innerHTML =
-      "<span style='color: #FFF8DC; font-weight: bold; font-family: Verdana; font-size: 14px;'>💳 O paga con Tarjeta (Stripe) (Próximamente)</span>";
-    contenedorInterno.appendChild(separadorStripe);
+      "<span style='color: #FFF8DC; font-weight: bold; font-family: Verdana; font-size: 14px;'>💳 O paga con Tarjeta (Stripe)</span>";
+    //contenedorInterno.appendChild(separadorStripe);
 
     const contenedorStripe = document.createElement("div");
     contenedorStripe.style.display = "flex";
@@ -1046,22 +1003,33 @@ botonPremium.addEventListener("click", function () {
     contenedorStripe.style.width = "100%";
 
     // Botón Stripe Mensual
-    const btnStripeMensual = document.createElement("a");
-    btnStripeMensual.href = "#"; // REEMPLAZAR CON URL DE PAGO STRIPE MENSUAL
-    btnStripeMensual.target = "_blank";
-    btnStripeMensual.textContent = "Suscripción Mensual ($1.99)";
+    const btnStripeMensual = document.createElement("button");
+    btnStripeMensual.innerHTML =
+      "💳 Suscripción Mensual <strong>($8,99)</strong>";
     btnStripeMensual.style.display = "block";
     btnStripeMensual.style.width = "100%";
     btnStripeMensual.style.maxWidth = "300px";
-    btnStripeMensual.style.padding = "10px";
+    btnStripeMensual.style.padding = "12px";
     btnStripeMensual.style.textAlign = "center";
-    btnStripeMensual.style.background = "#6772e5"; // Color Stripe
+    // Gradient Stripe-like
+    btnStripeMensual.style.background =
+      "linear-gradient(90deg, #6772e5 0%, #5469d4 100%)";
     btnStripeMensual.style.color = "white";
-    btnStripeMensual.style.borderRadius = "4px";
-    btnStripeMensual.style.textDecoration = "none";
+    btnStripeMensual.style.border = "none";
+    btnStripeMensual.style.borderRadius = "8px";
+    btnStripeMensual.style.cursor = "pointer";
     btnStripeMensual.style.fontWeight = "bold";
-    btnStripeMensual.style.fontFamily =
-      "Helvetica Neue, Helvetica, Arial, sans-serif";
+    btnStripeMensual.style.fontSize = "14px";
+    btnStripeMensual.style.boxShadow =
+      "0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08)";
+    btnStripeMensual.style.transition = "transform 0.2s";
+
+    btnStripeMensual.onmouseenter = () => {
+      btnStripeMensual.style.transform = "translateY(-2px)";
+    };
+    btnStripeMensual.onmouseleave = () => {
+      btnStripeMensual.style.transform = "translateY(0)";
+    };
 
     btnStripeMensual.onclick = async () => {
       const res = await fetch(
@@ -1079,22 +1047,31 @@ botonPremium.addEventListener("click", function () {
     contenedorStripe.appendChild(btnStripeMensual);
 
     // Botón Stripe Anual
-    const btnStripeAnual = document.createElement("a");
-    btnStripeAnual.href = "#"; // REEMPLAZAR CON URL DE PAGO STRIPE ANUAL
-    btnStripeAnual.target = "_blank";
-    btnStripeAnual.textContent = "Suscripción Anual ($23.88)";
+    const btnStripeAnual = document.createElement("button");
+    btnStripeAnual.innerHTML =
+      "🏆 Suscripción Anual <strong>($107,88)</strong>";
     btnStripeAnual.style.display = "block";
     btnStripeAnual.style.width = "100%";
     btnStripeAnual.style.maxWidth = "300px";
-    btnStripeAnual.style.padding = "10px";
+    btnStripeAnual.style.padding = "12px";
     btnStripeAnual.style.textAlign = "center";
-    btnStripeAnual.style.background = "#5469d4"; // Color Stripe un poco más oscuro
+    btnStripeAnual.style.background =
+      "linear-gradient(90deg, #00b09b 0%, #96c93d 100%)"; // Green gradient for annual
     btnStripeAnual.style.color = "white";
-    btnStripeAnual.style.borderRadius = "4px";
-    btnStripeAnual.style.textDecoration = "none";
+    btnStripeAnual.style.border = "none";
+    btnStripeAnual.style.borderRadius = "8px";
+    btnStripeAnual.style.cursor = "pointer";
     btnStripeAnual.style.fontWeight = "bold";
-    btnStripeAnual.style.fontFamily =
-      "Helvetica Neue, Helvetica, Arial, sans-serif";
+    btnStripeAnual.style.fontSize = "15px";
+    btnStripeAnual.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)";
+    btnStripeAnual.style.transition = "transform 0.2s";
+
+    btnStripeAnual.onmouseenter = () => {
+      btnStripeAnual.style.transform = "translateY(-2px)";
+    };
+    btnStripeAnual.onmouseleave = () => {
+      btnStripeAnual.style.transform = "translateY(0)";
+    };
 
     btnStripeAnual.onclick = async () => {
       const res = await fetch(
@@ -1114,8 +1091,8 @@ botonPremium.addEventListener("click", function () {
     // Nota Stripe
     const notaStripe = document.createElement("p");
     notaStripe.textContent =
-      "Recibirás un código de activación en tu correo tras el pago.";
-    notaStripe.style.color = "#FFF8DC";
+      "🔒 Pagos 100% seguros procesados por PayPal y Stripe. Recibirás el código inmediatamente.";
+    notaStripe.style.color = "#bdc3c7";
     notaStripe.style.fontSize = "11px";
     notaStripe.style.fontStyle = "italic";
     notaStripe.style.marginTop = "5px";
