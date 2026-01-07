@@ -5239,7 +5239,7 @@ const actualizaciones = [
   {
     fecha: "2026-01-07",
     titulo: "Mejoramiento de interfaz control",
-    mensaje: "Se mejoró la interfaz del control remoto celular, ahora es más moderna y visual cuando se reproduce un himno se sepa que sí se le dio play, además, agradecemos a las iglesias que nos apoyaron desde un principio con él software, ellas tienen una promoción especial que se les reflejará en su suscripción. Dios les bendiga!",
+    mensaje: "Se mejoró la interfaz del control remoto celular, ahora es más moderna y visual cuando se reproduce un himno se sepa que sí se le dio play, además, agradecemos a las iglesias que nos apoyaron desde un principio con el software, ellas tienen una promoción especial que se les reflejará en su suscripción. Dios les bendiga!",
     version: "1.0.88",
     tipo: "Mejora",
   },
