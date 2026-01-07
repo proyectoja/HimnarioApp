@@ -98,9 +98,14 @@
     },
     "mac": {
       "target": [
-        "dmg",
-        "zip",
-        "pkg"
+        {
+          "target": "dmg",
+          "arch": "universal"
+        },
+        {
+          "target": "zip",
+          "arch": "universal"
+        }
       ],
       "icon": "src/iconos/iconoMac.icns",
       "artifactName": "${productName} ${version}.${ext}",
