@@ -1254,7 +1254,7 @@ botonPremium.addEventListener("click", function () {
             },
             createSubscription: function (data, actions) {
               return actions.subscription.create({
-                plan_id: "P-40E25374WC496032ENB62ANQ",
+                plan_id: "P-0KY630971U339254XNFO7TMQ",
               });
             },
             onApprove: function (data, actions) {
@@ -1292,7 +1292,7 @@ botonPremium.addEventListener("click", function () {
             },
             createSubscription: function (data, actions) {
               return actions.subscription.create({
-                plan_id: "P-4P300126BF854730HNE4GATY",
+                plan_id: "P-2YM91167P37929048NFO7UQI",
               });
             },
             onApprove: function (data, actions) {
@@ -2643,6 +2643,11 @@ function ocultarReproductor() {
   // Sincronizar con ventana secundaria
   if (typeof enviarDatos === "function") {
     enviarDatos({ stop: true });
+  }
+
+  // Notificar al control remoto
+  if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+    window.electronAPI.updatePlaybackStatus({ playing: false });
   }
 }
 
@@ -4459,7 +4464,29 @@ function videosLocalesEstandar(url, poster) {
 
   // Escuchar cuando el video termine
   player.on(Clappr.Events.PLAYER_ENDED, function () {
+    if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+      window.electronAPI.updatePlaybackStatus({ playing: false });
+    }
     ocultarReproductor();
+  });
+
+  player.on(Clappr.Events.PLAYER_PLAY, function () {
+    if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+      window.electronAPI.updatePlaybackStatus({
+        playing: true,
+        tipo: "video",
+        titulo: currentHimnoPlaying
+          ? currentHimnoPlaying.titulo || "Reproduciendo Video"
+          : "Reproduciendo Video",
+        numero: currentHimnoPlaying ? currentHimnoPlaying.numero || "" : "",
+      });
+    }
+  });
+
+  player.on(Clappr.Events.PLAYER_PAUSE, function () {
+    if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+      window.electronAPI.updatePlaybackStatus({ playing: false });
+    }
   });
 }
 
@@ -4494,6 +4521,7 @@ let himnosEnglish = [];
 let himnosFiltradosEnglish = [];
 let textoGlobal;
 let idiomaActual = "Español";
+let currentHimnoPlaying = null; // Para control remoto
 
 // Cargar JSON
 async function cargarHimnos() {
@@ -4584,7 +4612,43 @@ function mostrarTitulo(himno) {
       carpeta = "audiosHimnosLetra";
     else carpeta = "audiosHimnos";
     audioHimno.src = srcAux + `${carpeta}/${numeroFormateado}.mp3`;
-    audioHimno.play().catch((err) => console.log("Error al reproducir:", err));
+    audioHimno
+      .play()
+      .then(() => {
+        // Notificar inicio reproducción
+        currentHimnoPlaying = himno;
+        console.log(
+          "[PLAYBACK] 🎵 Reproduciendo:",
+          himno.titulo,
+          "# " + himno.numero
+        );
+        if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+          console.log("[PLAYBACK] ✅ Enviando estado al backend");
+          window.electronAPI.updatePlaybackStatus({
+            playing: true,
+            tipo: "audio",
+            titulo: himno.titulo,
+            numero: himno.numero,
+          });
+        } else {
+          console.warn(
+            "[PLAYBACK] ❌ electronAPI.updatePlaybackStatus no disponible"
+          );
+        }
+      })
+      .catch((err) => console.log("Error al reproducir:", err));
+
+    // Listeners para audio
+    audioHimno.onpause = () => {
+      if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+        window.electronAPI.updatePlaybackStatus({ playing: false });
+      }
+    };
+    audioHimno.onended = () => {
+      if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+        window.electronAPI.updatePlaybackStatus({ playing: false });
+      }
+    };
 
     // 🔹 Marcar título como seleccionado (toggle)
     tituloHimno.style.color = "";
@@ -5173,11 +5237,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-01-07",
+    titulo: "Mejoramiento de interfaz control",
+    mensaje: "Se mejoró la interfaz del control remoto celular, ahora es más moderna y visual cuando se reproduce un himno se sepa que sí se le dio play, además, agradecemos a las iglesias que nos apoyaron desde un principio con él software, ellas tienen una promoción especial que se les reflejará en su suscripción. Dios les bendiga!",
+    version: "1.0.88",
+    tipo: "Mejora",
   },
   {
     fecha: "2026-01-01",

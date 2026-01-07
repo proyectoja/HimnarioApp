@@ -320,6 +320,17 @@ function procesarComandoRemoto(comando, datos) {
               ) {
                 console.log(`✅ ¡Himno encontrado! Título: ${texto}`);
 
+                // Extraer el título completo para la notificación
+                const tituloCompleto = texto.trim();
+
+                // Actualizar variable global para que scripts.js la use
+                if (typeof currentHimnoPlaying !== "undefined") {
+                  currentHimnoPlaying = {
+                    titulo: tituloCompleto,
+                    numero: datos.numero,
+                  };
+                }
+
                 // IMPORTANTE: Hacer click en la IMAGEN, no en el contenedor
                 const img = element.querySelector("img");
                 if (img) {
@@ -352,6 +363,25 @@ function procesarComandoRemoto(comando, datos) {
                         playButton.click();
                       }
                     }
+
+                    // Notificar después de que el reproductor esté listo
+                    setTimeout(() => {
+                      if (
+                        window.electronAPI &&
+                        window.electronAPI.updatePlaybackStatus
+                      ) {
+                        console.log(
+                          "[REMOTE-PLAYBACK] 📡 Notificando:",
+                          tituloCompleto
+                        );
+                        window.electronAPI.updatePlaybackStatus({
+                          playing: true,
+                          tipo: "video",
+                          titulo: tituloCompleto,
+                          numero: datos.numero,
+                        });
+                      }
+                    }, 500);
                   }, 2000); // Esperar 2 segundos para que se cargue el reproductor
 
                   break;
@@ -406,6 +436,24 @@ function procesarComandoRemoto(comando, datos) {
             console.log(
               `🎉 Himno #${datos.numero} cargado, reproducción iniciando...`
             );
+
+            // Notificar estado de reproducción al control remoto
+            setTimeout(() => {
+              if (
+                window.electronAPI &&
+                window.electronAPI.updatePlaybackStatus
+              ) {
+                console.log(
+                  "[REMOTE-PLAYBACK] 📡 Notificando reproducción al control remoto"
+                );
+                window.electronAPI.updatePlaybackStatus({
+                  playing: true,
+                  tipo: "video",
+                  titulo: `Himno #${datos.numero}`,
+                  numero: datos.numero,
+                });
+              }
+            }, 2500); // Esperar a que empiece la reproducción
           }
         }, 1000); // Aumentado a 1 segundo para dar más tiempo a que se cargue
       }
@@ -438,6 +486,14 @@ function procesarComandoRemoto(comando, datos) {
         // Sincronizar con ventana secundaria si ocultarReproductor no lo hizo
         if (typeof enviarDatos === "function") {
           enviarDatos({ stop: true });
+        }
+
+        // Notificar al control remoto que la reproducción se detuvo
+        if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+          console.log(
+            "[REMOTE-PLAYBACK] ⏹️ Notificando detención de reproducción"
+          );
+          window.electronAPI.updatePlaybackStatus({ playing: false });
         }
       }
       break;
@@ -621,25 +677,34 @@ function procesarComandoRemoto(comando, datos) {
       }
       break;
 
-        case "ppt-prev":
+    case "ppt-prev":
       // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
-      const ventanaPowerPoint = document.getElementById("contenedor-power-point");
-      if (ventanaPowerPoint && getComputedStyle(ventanaPowerPoint).display !== "flex") {
+      const ventanaPowerPoint = document.getElementById(
+        "contenedor-power-point"
+      );
+      if (
+        ventanaPowerPoint &&
+        getComputedStyle(ventanaPowerPoint).display !== "flex"
+      ) {
         // Activar el contenedor de PowerPoint automáticamente
         const ventanaBiblia = document.getElementById("contenedor-biblia");
-        const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+        const ventanaHimnosPro = document.getElementById(
+          "contenedor-himnos-personalizados"
+        );
         const ventanaYouTube = document.getElementById("contenedor-youtube");
         const himnarioContainer = document.getElementById("himnario");
-        
+
         ventanaHimnosPro.style.display = "none";
         ventanaBiblia.style.display = "none";
         ventanaYouTube.style.display = "none";
         himnarioContainer.style.display = "none";
         ventanaPowerPoint.style.display = "flex";
         document.getElementById("contenedor-contador").style.display = "none";
-        console.log("[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación");
+        console.log(
+          "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación"
+        );
       }
-      
+
       if (typeof pptPrev === "function") {
         pptPrev();
       } else {
@@ -650,23 +715,32 @@ function procesarComandoRemoto(comando, datos) {
 
     case "ppt-next":
       // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
-      const ventanaPowerPoint2 = document.getElementById("contenedor-power-point");
-      if (ventanaPowerPoint2 && getComputedStyle(ventanaPowerPoint2).display !== "flex") {
+      const ventanaPowerPoint2 = document.getElementById(
+        "contenedor-power-point"
+      );
+      if (
+        ventanaPowerPoint2 &&
+        getComputedStyle(ventanaPowerPoint2).display !== "flex"
+      ) {
         // Activar el contenedor de PowerPoint automáticamente
         const ventanaBiblia = document.getElementById("contenedor-biblia");
-        const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+        const ventanaHimnosPro = document.getElementById(
+          "contenedor-himnos-personalizados"
+        );
         const ventanaYouTube = document.getElementById("contenedor-youtube");
         const himnarioContainer = document.getElementById("himnario");
-        
+
         ventanaHimnosPro.style.display = "none";
         ventanaBiblia.style.display = "none";
         ventanaYouTube.style.display = "none";
         himnarioContainer.style.display = "none";
         ventanaPowerPoint2.style.display = "flex";
         document.getElementById("contenedor-contador").style.display = "none";
-        console.log("[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación");
+        console.log(
+          "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación"
+        );
       }
-      
+
       if (typeof pptNext === "function") {
         pptNext();
       } else {
@@ -675,17 +749,21 @@ function procesarComandoRemoto(comando, datos) {
       }
       break;
 
-        case "cargar-ppt-remoto":
+    case "cargar-ppt-remoto":
       if (datos && datos.filePath) {
         console.log(`📂 Cargando PowerPoint desde remoto: ${datos.fileName}`);
 
         // 1. Activar automáticamente el contenedor de PowerPoint
-        const ventanaPowerPoint = document.getElementById("contenedor-power-point");
+        const ventanaPowerPoint = document.getElementById(
+          "contenedor-power-point"
+        );
         const ventanaBiblia = document.getElementById("contenedor-biblia");
-        const ventanaHimnosPro = document.getElementById("contenedor-himnos-personalizados");
+        const ventanaHimnosPro = document.getElementById(
+          "contenedor-himnos-personalizados"
+        );
         const ventanaYouTube = document.getElementById("contenedor-youtube");
         const himnarioContainer = document.getElementById("himnario");
-        
+
         if (ventanaPowerPoint) {
           ventanaHimnosPro.style.display = "none";
           ventanaBiblia.style.display = "none";
@@ -693,7 +771,9 @@ function procesarComandoRemoto(comando, datos) {
           himnarioContainer.style.display = "none";
           ventanaPowerPoint.style.display = "flex";
           document.getElementById("contenedor-contador").style.display = "none";
-          console.log("[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente");
+          console.log(
+            "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente"
+          );
         }
 
         // 2. Iniciar la conversión directamente con el archivo recibido

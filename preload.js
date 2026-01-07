@@ -114,6 +114,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // Identificador de Hardware
   getMachineId: () => ipcRenderer.invoke("get-machine-id"),
+
+  // Notificación de estado de reproducción
+  updatePlaybackStatus: (status) =>
+    ipcRenderer.send("update-playback-status", status),
 });
 
 // Obtener paths síncronamente

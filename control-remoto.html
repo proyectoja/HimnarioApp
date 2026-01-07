@@ -68,6 +68,7 @@
             font-weight: 700;
             background: linear-gradient(to right, #fff, #cbd5e1);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
             margin-bottom: 5px;
@@ -274,6 +275,7 @@
 
         input[type=range] {
             -webkit-appearance: none;
+            appearance: none;
             width: 100%;
             background: transparent;
         }
@@ -415,6 +417,63 @@
             border-color: var(--primary);
             box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
         }
+
+        .playback-banner {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%) translateY(150px);
+            width: 92%;
+            max-width: 480px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            border-radius: 20px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        .playback-banner.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .playback-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(245, 158, 11, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
+        }
     </style>
 </head>
 
@@ -422,6 +481,26 @@
     <div class="container">
         <!-- Notification Alert -->
         <div id="alert" class="alert"></div>
+
+        <!-- Playback Banner -->
+        <div id="playbackBanner" class="playback-banner">
+            <div class="playback-icon">
+                <i class='bx bx-music'></i>
+            </div>
+            <div style="flex: 1; overflow: hidden;">
+                <div
+                    style="font-size: 10px; color: var(--primary); font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">
+                    Reproduciendo Ahora</div>
+                <div id="pbTitle"
+                    style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    -</div>
+                <div id="pbSub" style="font-size: 12px; color: var(--text-muted);">-</div>
+            </div>
+            <button onclick="stopReproduccion()"
+                style="background: none; border: none; color: var(--danger); font-size: 24px; cursor: pointer;">
+                <i class='bx bx-stop-circle'></i>
+            </button>
+        </div>
 
         <div class="header">
             <h1><i class='bx bxs-music'></i> Himnario Pro</h1>
@@ -691,11 +770,16 @@
 
             eventSource.onmessage = function (event) {
                 const data = JSON.parse(event.data);
+                console.log('[SSE] 📨 Evento recibido:', data.type, data);
 
                 if (data.type === 'connected') {
                     console.log('🔗 Conectado a eventos en tiempo real');
                 } else if (data.type === 'ppt-status') {
                     actualizarVistaPPT(data.data);
+                } else if (data.type === 'playback-status') {
+                    console.log('[SSE] 🎵 Actualizando banner con:', data.data);
+                    // Si ya está visible y es el mismo, no re-animamos
+                    actualizarBannerReproduccion(data.data);
                 }
             };
 
@@ -972,6 +1056,42 @@
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && himnoSeleccionado) reproducirSeleccionado();
         });
+
+        let lastPlayingTitle = '';
+
+        function actualizarBannerReproduccion(status) {
+            console.log('[BANNER] 🎬 Actualizando con status:', status);
+            const banner = document.getElementById('playbackBanner');
+            const title = document.getElementById('pbTitle');
+            const sub = document.getElementById('pbSub');
+
+            if (!banner || !title || !sub) {
+                console.error('[BANNER] ❌ Elementos no encontrados');
+                return;
+            }
+
+            if (status.playing) {
+                // Si el título cambió, hacemos un pequeño efecto
+                if (status.titulo && status.titulo !== lastPlayingTitle) {
+                    banner.style.transform = 'translateX(-50%) scale(1.05)';
+                    setTimeout(() => {
+                        banner.style.transform = '';
+                    }, 200);
+                    lastPlayingTitle = status.titulo;
+                }
+
+                console.log('[BANNER] ▶️ Mostrando banner');
+                if (status.titulo) title.textContent = status.titulo;
+                if (status.numero) sub.textContent = `Himno #${status.numero}`;
+                else if (status.subtitulo) sub.textContent = status.subtitulo;
+
+                banner.classList.add('visible');
+            } else {
+                console.log('[BANNER] ⏹️ Ocultando banner');
+                banner.classList.remove('visible');
+                lastPlayingTitle = '';
+            }
+        }
 
         // Auto-login al cargar
         window.addEventListener('load', () => {

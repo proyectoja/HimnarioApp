@@ -1705,6 +1705,17 @@ ipcMain.handle("ppt:get-slide", async (event, slideIndex) => {
   return null;
 });
 
+// Notificar estado de reproducción al control remoto
+ipcMain.on("update-playback-status", (event, status) => {
+  console.log("[PLAYBACK-IPC] 📡 Recibido:", status);
+  if (global.enviarEventoControlRemoto) {
+    console.log("[PLAYBACK-IPC] ✅ Enviando a control remoto via SSE");
+    global.enviarEventoControlRemoto("playback-status", status);
+  } else {
+    console.warn("[PLAYBACK-IPC] ⚠️ enviarEventoControlRemoto no disponible");
+  }
+});
+
 /* -------------------------------------------------
    ENVIAR PROGRESO
 ------------------------------------------------- */
