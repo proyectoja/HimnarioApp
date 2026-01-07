@@ -103,13 +103,17 @@
           "arch": "universal"
         },
         {
+          "target": "pkg",
+          "arch": "universal"
+        },
+        {
           "target": "zip",
           "arch": "universal"
         }
       ],
       "icon": "src/iconos/iconoMac.icns",
       "artifactName": "${productName} ${version}.${ext}",
-      "hardenedRuntime": false,
+      "hardenedRuntime": true,
       "entitlements": null,
       "identity": null
     },
