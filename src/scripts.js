@@ -1,4 +1,4 @@
-// PayPal suscripción y validación de pago
+//Variables Globales
 let player = null;
 let playerYouTube = null;
 let playerWindow = null;
@@ -96,33 +96,64 @@ if (window.electronAPI && window.electronAPI.onLog) {
 // ========================================
 let appInicializada = false;
 
+// Helper para evitar que las peticiones se queden colgadas (timeout por defecto: 5s)
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 5000 } = options;
+
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+}
+
 async function inicializarAplicacion() {
   if (appInicializada) return;
 
   console.log("[INIT] 🔄 Iniciando carga de la aplicación...");
 
   try {
-    // 1️⃣ Validar premium
-    console.log("[INIT] ✓ Validando premium...");
-    await validarPremium();
+    // Ejecutar tareas independientes en paralelo para mejorar velocidad de carga
+    // Hacemos que la validación premium NO bloquee la carga de la interfaz
+    const validacionPromise = (async () => {
+      console.log("[INIT] ✓ Validando premium...");
+      await validarPremium();
+      // 📌 Actualizar marca de agua de PowerPoint según estado premium
+      actualizarMarcaAguaPowerPoint();
+    })();
 
-    // 📌 Actualizar marca de agua de PowerPoint según estado premium
-    actualizarMarcaAguaPowerPoint();
+    const himnosPromise = (async () => {
+      if (typeof cargarHimnos === "function") {
+        console.log("[INIT] ✓ Cargando himnos...");
+        await cargarHimnos();
+      }
+    })();
 
-    // 2️⃣ Cargar himnos personalizados (si la función existe)
-    console.log("[INIT] ✓ Cargando himnos...");
-    if (typeof cargarHimnos === "function") {
-      await cargarHimnos();
-    }
+    const contadorPromise = (async () => {
+      if (typeof contadorDeVistas === "function") {
+        console.log("[INIT] ✓ Inicializando contador...");
+        await contadorDeVistas();
+      }
+    })();
 
-    // 3️⃣ Contador de vistas
-    console.log("[INIT] ✓ Inicializando contador...");
-    if (typeof contadorDeVistas === "function") {
-      await contadorDeVistas();
-    }
+    // Esperamos a que todo termine, pero sin bloquear por error
+    await Promise.allSettled([
+      validacionPromise,
+      himnosPromise,
+      contadorPromise,
+    ]);
 
-    // 4️⃣ Pequeña espera para asegurar renderizado
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // 4️⃣ Pequeña espera para asegurar renderizado final
+    await new Promise((resolve) => setTimeout(resolve, 300)); // Reducido a 300ms
 
     // 5️⃣ Ocultar loader
     console.log("[INIT] ✓ Ocultando loader...");
@@ -131,7 +162,7 @@ async function inicializarAplicacion() {
       loader.style.display = "none";
     }
 
-    // 6️⃣ Mostrar introducción
+    // 6️⃣ Mostrar introducción (comentado original)
     //console.log('[INIT] ✓ Mostrando introducción...');
     //mostrarIntro();
 
@@ -409,8 +440,9 @@ async function validarPremium() {
   // 1. Validar PROMO
   if (promoCode) {
     try {
-      const res = await fetch(
-        `${API_URL}?promoCode=${promoCode}&machineId=${machineId}`
+      const res = await fetchWithTimeout(
+        `${API_URL}?promoCode=${promoCode}&machineId=${machineId}`,
+        { timeout: 4000 }
       );
       const data = await res.json();
 
@@ -429,8 +461,9 @@ async function validarPremium() {
   if (paypalId) {
     // Intentar validar PayPal primero si existe
     try {
-      const res = await fetch(
-        `${API_URL}?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal&machineId=${machineId}`
+      const res = await fetchWithTimeout(
+        `${API_URL}?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal&machineId=${machineId}`,
+        { timeout: 4000 }
       );
       const data = await res.json();
 
@@ -450,8 +483,9 @@ async function validarPremium() {
   // 3. Validar Stripe
   if (stripeId) {
     try {
-      const res = await fetch(
-        `${API_URL}?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe&machineId=${machineId}`
+      const res = await fetchWithTimeout(
+        `${API_URL}?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe&machineId=${machineId}`,
+        { timeout: 4000 }
       );
       const data = await res.json();
 
@@ -602,7 +636,7 @@ async function validarCodigos() {
 
   // Función auxiliar genérica
   const validarConApi = async (url) => {
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, { timeout: 5000 });
     if (!res.ok) throw new Error("Error servidor");
     return await res.json();
   };
@@ -1336,6 +1370,7 @@ const videoPlayerContainer = document.getElementById("videoPlayerContainer");
 const closePlayerButton = document.getElementById("closePlayer");
 
 // Array para almacenar todos los himnos
+// Array para almacenar todos los himnos
 let todosLosHimnos = [];
 let todosLosHimnosLista = [];
 let todosLosCantadosLista = [];
@@ -1348,6 +1383,107 @@ let todosLosHimnosInfantiles = [];
 let todosLosHimnosAntiguos = [];
 let todosLosFavoritosLista = [];
 let todosLosFavoritosYouTubeLista = [];
+// Listas adicionales para el módulo de programación
+let todosLosHimnosJA = [];
+let todosLosHimnosNacionales = [];
+let todosLosStreamLista = [];
+
+// Función auxiliar para iniciar reproducción (Extraída de crearHimno)
+async function iniciarReproduccionHimno(titulo, videoPath, imagePath, lista) {
+  const monitorActivo = esMonitorActivo();
+  let isYouTube = false;
+  let youtubeId = videoPath;
+
+  // Detectar YouTube
+  if (videoPath) {
+    let regex =
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+    let match = videoPath.match(regex);
+    if (match) {
+      youtubeId = match[1];
+      isYouTube = true;
+    } else if (videoPath.length === 11) {
+      isYouTube = true;
+    }
+  }
+
+  if (isYouTube) {
+    if (botonPRO == false && !monitorActivo) {
+      if (typeof youtubeClapprEstandar === "function")
+        youtubeClapprEstandar(youtubeId, imagePath, lista);
+    } else {
+      if (typeof youtubeClappr === "function")
+        youtubeClappr(youtubeId, imagePath, lista);
+    }
+    return;
+  }
+
+  // Reproducción Local
+  if (botonPRO == false && !monitorActivo) {
+    if (typeof audioHimno !== "undefined") audioHimno.pause();
+    if (videoPlayerContainer) {
+      videoPlayerContainer.innerHTML = "";
+      videoPlayerContainer.appendChild(closePlayerButton);
+      closePlayerButton.style.display = "flex";
+    }
+
+    if (botonLista == false) {
+      let posterBase64 = null;
+      try {
+        if (window.electronAPI && window.electronAPI.leerArchivo) {
+          const base64 = await window.electronAPI.leerArchivo(imagePath);
+          const extension = imagePath.split(".").pop();
+          posterBase64 = `data:image/${extension};base64,${base64}`;
+        }
+      } catch (e) {
+        console.error("[PLAYER] Error poster:", e);
+      }
+
+      player = new Clappr.Player({
+        source: videoPath,
+        parentId: "#videoPlayerContainer",
+        width: "100%",
+        height: "100vh",
+        preload: "auto",
+        autoPlay: true,
+        volume: 100,
+        poster: posterBase64,
+        playbackNotSupportedMessage: "No se puede reproducir el contenido",
+        watermark: waterMark,
+        position: "bottom-right",
+      });
+      if (videoPlayerContainer) videoPlayerContainer.style.display = "flex";
+
+      player.on(Clappr.Events.PLAYER_PLAY, function () {
+        if (videoPlayerContainer.requestFullscreen)
+          videoPlayerContainer.requestFullscreen();
+        else if (videoPlayerContainer.webkitRequestFullscreen)
+          videoPlayerContainer.webkitRequestFullscreen();
+      });
+
+      player.on(Clappr.Events.PLAYER_ENDED, function () {
+        if (typeof ocultarReproductor === "function") ocultarReproductor();
+      });
+    } else {
+      if (typeof cargarReproductorAleatorio === "function")
+        cargarReproductorAleatorio(lista);
+    }
+  } else {
+    // Modo PRO / Monitor
+    if (typeof audioHimno !== "undefined") audioHimno.pause();
+    enviarDatos({
+      videoPath: videoPath,
+      imagePath: imagePath,
+      versiculo: "",
+      libroAux: "",
+      estilosAux: {},
+      lista: lista,
+      fondoBody: null,
+      imagen: null,
+      waterMark: waterMark,
+    });
+  }
+}
 
 // Función para crear los contenedores de himnos
 function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
@@ -2490,6 +2626,8 @@ const ventanaHimnosPro = document.getElementById(
 );
 const botonPowerPoint = document.getElementById("botonPowerPoint");
 const ventanaPowerPoint = document.getElementById("contenedor-power-point");
+const botonProgramacion = document.getElementById("botonProgramacion");
+const ventanaProgramacion = document.getElementById("contenedor-programacion");
 
 /*toggleContainer.addEventListener("click", () => {
   toggleContainer.classList.toggle("active");
@@ -2525,6 +2663,27 @@ const ventanaPowerPoint = document.getElementById("contenedor-power-point");
 });
 */
 
+botonProgramacion.addEventListener("click", function () {
+  const displayActual = getComputedStyle(ventanaProgramacion).display;
+
+  if (displayActual === "none") {
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "flex";
+    document.getElementById("contenedor-contador").style.display = "none";
+  } else {
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
+    himnarioContainer.style.display = "grid";
+  }
+});
+
 botonPowerPoint.addEventListener("click", function () {
   const displayActual = getComputedStyle(ventanaPowerPoint).display;
 
@@ -2533,6 +2692,7 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
@@ -2540,6 +2700,7 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2553,12 +2714,14 @@ botonBiblia.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2572,12 +2735,14 @@ botonHimnosPro.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2591,12 +2756,14 @@ botonYoutube.addEventListener("click", function () {
     ventanaBiblia.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2615,6 +2782,7 @@ function cerrarVentanaReproductor() {
   ventanaBiblia.style.display = "none";
   ventanaYouTube.style.display = "none";
   ventanaPowerPoint.style.display = "none";
+  ventanaProgramacion.style.display = "none";
   himnarioContainer.style.display = "grid";
 }
 
@@ -2708,6 +2876,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2721,6 +2890,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2733,6 +2903,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2745,6 +2916,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2757,6 +2929,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2769,6 +2942,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -2791,6 +2965,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
@@ -2813,6 +2988,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
@@ -2832,6 +3008,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos4.length; i++) {
       const numero = titulos4[i].match(/\d{3}/)[0];
@@ -2851,6 +3028,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos5.length; i++) {
       const numero = titulos5[i].match(/\d{3}/)[0];
@@ -2870,6 +3048,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
@@ -2889,6 +3068,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
@@ -2908,6 +3088,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
@@ -2927,6 +3108,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
@@ -3232,6 +3414,7 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal"
@@ -5095,6 +5278,7 @@ function activarModoNormal() {
   botonHimnosPro.style.display = "none";
   ventanaHimnosPro.style.display = "none";
   ventanaPowerPoint.style.display = "none";
+  ventanaProgramacion.style.display = "none";
   himnarioContainer.style.display = "grid";
 }
 
@@ -5230,16 +5414,18 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-01-10",
+    titulo: "Programación de eventos | Cronograma | Optimización",
+    mensaje:
+      "Se implementó una nueva funcionalidad para la programación de eventos, actividades y especialmente programa de sábado o cultos entre semana o grupos pequeños o clubes. Con esta nueva funcionalidad ahora puedes hacer tus propios cronogramas para encargados de cada actividad y participación, o bien, directamente colocar el himno desde el mismo cronograma y exportarlo a PDF y a JPG para compartirlo con los encargados de cada actividad; además, se optimizó el software porque algunos usuarios no les cargaba bien el inicio, por lo que ahora el software tiene eventos optimizados en paralelo para que trabaje con más rápidez al inicio. Esperamos que con esta nueva funcionalidad sea de gran provecho para su iglesia, disponible para todos.",
+    version: "1.0.96",
+    tipo: "Función nueva",
   },
   {
     fecha: "2026-01-07",
     titulo: "Mejoramiento de interfaz control",
-    mensaje: "Se mejoró la interfaz del control remoto celular, ahora es más moderna y visual cuando se reproduce un himno se sepa que sí se le dio play, además, agradecemos a las iglesias que nos apoyaron desde un principio con el software, ellas tienen una promoción especial que se les reflejará en su suscripción. Dios les bendiga!",
+    mensaje:
+      "Se mejoró la interfaz del control remoto celular, ahora es más moderna y visual cuando se reproduce un himno se sepa que sí se le dio play, además, agradecemos a las iglesias que nos apoyaron desde un principio con el software, ellas tienen una promoción especial que se les reflejará en su suscripción. Dios les bendiga!",
     version: "1.0.88",
     tipo: "Mejora",
   },
@@ -7395,6 +7581,7 @@ function pptNext() {
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
+    ventanaProgramacion.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
     console.log(
       "[PPT] Contenedor activado automáticamente para navegación siguiente"
@@ -7433,6 +7620,7 @@ function pptPrev() {
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
+    ventanaProgramacion.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
     console.log(
       "[PPT] Contenedor activado automáticamente para navegación anterior"
@@ -7504,6 +7692,7 @@ function loadPowerPoint(slidesArray, presentationId = null) {
       ventanaYouTube.style.display = "none";
       himnarioContainer.style.display = "none";
       ventanaPowerPoint.style.display = "flex";
+      ventanaProgramacion.style.display = "none";
       document.getElementById("contenedor-contador").style.display = "none";
       console.log("[PPT] Contenedor de PowerPoint activado automáticamente");
     }
@@ -7976,11 +8165,269 @@ document.addEventListener("DOMContentLoaded", function () {
     actualizarVisibilidadBotonesPowerPoint();
   }, 1000);
 
-  // Actualizar botones periódicamente (por si cambia el estado)
+  // Actualizar botones periódicamente (Restaurado)
   setInterval(() => {
     verificarModoMonitor();
     actualizarVisibilidadBotonesPowerPoint();
   }, 5000);
+});
+
+// ==========================================
+// MÓDULO DE EXPORTACIÓN (PDF / JPG)
+// ==========================================
+
+// Cargar librerías necesarias dinámicamente
+// Cargar librerías necesarias dinámicamente (LOCALES para offline)
+async function cargarLibreriasExportacion() {
+  if (typeof html2canvas === "undefined") {
+    const s1 = document.createElement("script");
+    s1.src = "libs/html2canvas.min.js";
+    document.head.appendChild(s1);
+  }
+  if (typeof jspdf === "undefined") {
+    const s2 = document.createElement("script");
+    s2.src = "libs/jspdf.min.js";
+    document.head.appendChild(s2);
+  }
+  // Esperar un momento a que carguen
+  await new Promise((r) => setTimeout(r, 1000));
+}
+
+// Función principal de exportación
+async function exportarProgramacion(formato) {
+  if (!formato || typeof formato !== "string") formato = "pdf"; // Default para botones antiguos
+  const loader = document.createElement("div");
+  loader.innerHTML = '<div class="spinner"></div> Generando archivo...';
+  loader.style.cssText =
+    "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);color:white;padding:20px;border-radius:10px;z-index:10000;display:flex;align-items:center;gap:10px;";
+  document.body.appendChild(loader);
+
+  try {
+    await cargarLibreriasExportacion();
+
+    // Crear contenedor temporal para el renderizado
+    const container = document.createElement("div");
+    container.style.cssText =
+      "position:fixed;top:-10000px;left:0;width:1200px;background:white;padding:40px;font-family:Arial,sans-serif;color:black;";
+    document.body.appendChild(container);
+
+    // 1. Encabezado con Logos
+    const header = document.createElement("div");
+    header.style.cssText =
+      "display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;border-bottom:3px solid #004481;padding-bottom:15px;";
+
+    // Logo Proyecto JA
+    const imgJA = new Image();
+    imgJA.src = "imagenes/logo-proyectoja.png";
+    imgJA.style.height = "100px";
+
+    // Info Central
+    const infoDiv = document.createElement("div");
+    infoDiv.style.cssText = "text-align:center;flex:1;";
+    const nombreIglesia =
+      document.getElementById("nombre-iglesia")?.value || "IGLESIA ADVENTISTA";
+    const fecha = document.getElementById("fecha-programa")?.value || "";
+    infoDiv.innerHTML = `
+            <h1 style="margin:0;color:#004481;font-size:28px;text-transform:uppercase;">PROGRAMA DE SERVICIOS</h1>
+            <h2 style="margin:10px 0;color:#333;font-size:22px;">${nombreIglesia}</h2>
+            <p style="margin:0;font-size:18px;color:#666;">${fecha}</p>
+        `;
+
+    // Logo Iglesia
+    const imgIglesia = new Image();
+    imgIglesia.src = "imagenes/logo-negro-iglesia-adventista.png";
+    imgIglesia.style.height = "100px";
+
+    header.appendChild(imgJA);
+    header.appendChild(infoDiv);
+    header.appendChild(imgIglesia);
+    container.appendChild(header);
+
+    // 2. Procesar Tablas
+    const clonarTabla = (idOrigen, titulo) => {
+      const origen = document.getElementById(idOrigen); // tbody
+      if (!origen) return;
+      // Buscar la tabla padre real o construir una
+      const wrapper = document.createElement("div");
+      wrapper.style.marginBottom = "30px";
+
+      const tituloDiv = document.createElement("div");
+      tituloDiv.textContent = titulo;
+      tituloDiv.style.cssText =
+        "background:#004481;color:white;padding:8px 15px;font-size:20px;font-weight:bold;margin-bottom:10px;border-radius:5px 5px 0 0;";
+      wrapper.appendChild(tituloDiv);
+
+      const table = document.createElement("table");
+      table.style.cssText =
+        "width:100%;border-collapse:collapse;font-size:16px;";
+
+      // Header de tabla
+      const thead = document.createElement("tr");
+      thead.style.background = "#f0f0f0";
+      thead.innerHTML =
+        '<th style="border:1px solid #ccc;padding:10px;text-align:center;width:60px;">N°</th><th style="border:1px solid #ccc;padding:10px;width:100px;">Hora</th><th style="border:1px solid #ccc;padding:10px;">Descripción</th><th style="border:1px solid #ccc;padding:10px;">Detalle / Himnos</th><th style="border:1px solid #ccc;padding:10px;">Encargado</th>';
+      table.appendChild(thead);
+
+      // Filas (Solo iterar sobre filas editables reales)
+      const filasReales = origen.querySelectorAll("tr.fila-editable");
+      filasReales.forEach((tr) => {
+        const fila = document.createElement("tr");
+
+        // Convertir inputs a texto de forma segura
+        const getVal = (sel) => {
+          const el = tr.querySelector(sel);
+          return el ? el.value || el.textContent || "" : "";
+        };
+
+        // N°
+        fila.innerHTML += `<td style="border:1px solid #ccc;padding:8px;text-align:center;">${
+          tr.querySelector(".numero")?.textContent || ""
+        }</td>`;
+
+        // Hora
+        fila.innerHTML += `<td style="border:1px solid #ccc;padding:8px;">${getVal(
+          ".input-hora"
+        )}</td>`;
+
+        // Desc (Manejo robusto para select/input)
+        let desc = getVal(".select-descripcion");
+        if (!desc) {
+          const select = tr.querySelector("select");
+          if (
+            select &&
+            select.options &&
+            select.options[select.selectedIndex]
+          ) {
+            desc = select.options[select.selectedIndex].text;
+          }
+        }
+        fila.innerHTML += `<td style="border:1px solid #ccc;padding:8px;font-weight:bold;">${
+          desc || ""
+        }</td>`;
+
+        // Detalle y Himnos
+        const detalleTxt = getVal(".input-detalle");
+        const chips = Array.from(tr.querySelectorAll(".texto-chip-himno")).map(
+          (s) => s.textContent
+        );
+        let detalleHtml = detalleTxt ? `<div>${detalleTxt}</div>` : "";
+        if (chips.length) {
+          detalleHtml += `<ul style="margin:5px 0 0 20px;padding:0;color:#004481;">${chips
+            .map((c) => `<li>${c}</li>`)
+            .join("")}</ul>`;
+        }
+        fila.innerHTML += `<td style="border:1px solid #ccc;padding:8px;">${detalleHtml}</td>`;
+
+        // Encargado
+        fila.innerHTML += `<td style="border:1px solid #ccc;padding:8px;">${getVal(
+          ".input-presentacion"
+        )}</td>`;
+
+        table.appendChild(fila);
+      });
+
+      wrapper.appendChild(table);
+      container.appendChild(wrapper);
+    };
+
+    clonarTabla("seccion-servicio-general", "PROGRAMACIÓN | CRONOGRAMA");
+    clonarTabla("seccion-culto-adoracion", "CULTO DE ADORACIÓN");
+
+    // Esperar carga de imagenes
+    await new Promise((r) => setTimeout(r, 1500));
+
+    // Generar Canvas
+    const canvas = await html2canvas(container, {
+      scale: 2, // Mejor calidad
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+
+    // Exportar
+    const validFileName = `Programa_${
+      document.getElementById("fecha-programa")?.value || "proyectoja"
+    }`;
+
+    if (formato === "jpg") {
+      const link = document.createElement("a");
+      link.download = `${validFileName}.jpg`;
+      link.href = canvas.toDataURL("image/jpeg", 0.9);
+      link.click();
+    } else {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgData = canvas.toDataURL("image/jpeg", 0.9);
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${validFileName}.pdf`);
+    }
+
+    document.body.removeChild(container);
+  } catch (e) {
+    console.error(e);
+    alert("Error al exportar: " + e.message);
+  } finally {
+    document.body.removeChild(loader);
+  }
+}
+
+// Inicializar botones de exportación
+function inicializarBotonesExportacion() {
+  const inputFecha = document.getElementById("fecha-programa");
+  if (!inputFecha) return;
+
+  // Limpieza de botones viejos
+  document.querySelectorAll("button").forEach((btn) => {
+    const t = (btn.textContent || "").toLowerCase();
+    if (
+      (t.includes("exportar") || t.includes("txt")) &&
+      !btn.className.includes("btn-exportar")
+    ) {
+      btn.style.display = "none";
+    }
+  });
+
+  const container = inputFecha.parentElement; // Suponemos que está en un div
+
+  // Crear contenedor de botones si no existe
+  let btnContainer = document.getElementById("cont-btns-export");
+  if (!btnContainer) {
+    btnContainer = document.createElement("div");
+    btnContainer.id = "cont-btns-export";
+    btnContainer.style.cssText =
+      "display:inline-flex;gap:10px;margin-left:20px;align-items:center;";
+    container.appendChild(btnContainer);
+  }
+
+  btnContainer.innerHTML = ""; // Limpiar anteriores
+
+  // Botón PDF
+  const btnPDF = document.createElement("button");
+  btnPDF.innerHTML = "PDF";
+  btnPDF.className = "btn-exportar-pdf";
+  btnPDF.style.cssText =
+    "background:#d32f2f;color:white;border:none;padding:5px 15px;border-radius:4px;cursor:pointer;font-weight:bold;";
+  btnPDF.onclick = () => exportarProgramacion("pdf");
+
+  // Botón JPG
+  const btnJPG = document.createElement("button");
+  btnJPG.innerHTML = "JPG";
+  btnJPG.className = "btn-exportar-jpg";
+  btnJPG.style.cssText =
+    "background:#1976d2;color:white;border:none;padding:5px 15px;border-radius:4px;cursor:pointer;font-weight:bold;";
+  btnJPG.onclick = () => exportarProgramacion("jpg");
+
+  btnContainer.appendChild(btnPDF);
+  btnContainer.appendChild(btnJPG);
+}
+
+// Llamar a inicialización al cargar
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(inicializarBotonesExportacion, 2000); // Esperar a que se renderice la interfaz
+  cargarLibreriasExportacion(); // Precargar scripts
 });
 
 /**
@@ -7993,265 +8440,999 @@ document.addEventListener("DOMContentLoaded", function () {
  * HAY QUE IR TRABAJANDO EN CÓMO VAMOS IR IMPLEMENTANDO LA LISTA DE REPRODUCCIÓN QUE EL USUARIO PUEDA HACER,
  * PERO YO PENSABA EN HACERLO VÍA PLAY, QUE EN EL MISMO REGISTRO DE LA TABLA, HALLA UNA COLUMNA ESPECIFICA DONDE
  * VAYA EL BOTON A REPRODUCIR, HAY QUE PLANTEAR BIEN LA LÓGICA.
+ *
+ * Nota: Hacer una conexión bíblica para 10 jugadores gratis, para que lo usen
+ * las iglesias, uniones y asosciaciones...
  */
-
 /**
- * <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Programa de Culto de Adoración</title>
-
-<style>
-    body {
-        font-family: Arial, Helvetica, sans-serif;
-        background: #f5f5f5;
-        padding: 20px;
-    }
-
-    .programa {
-        width: 100%;
-        max-width: 1100px;
-        margin: auto;
-        border-collapse: collapse;
-        background: white;
-        font-size: 13px;
-    }
-
-    .programa th,
-    .programa td {
-        border: 1px solid #999;
-        padding: 6px 8px;
-        vertical-align: middle;
-    }
-
-    .titulo {
-        background: #4f6f2f;
-        color: white;
-        font-weight: bold;
-        text-align: center;
-        font-size: 16px;
-    }
-
-    .subtitulo {
-        background: #4f6f2f;
-        color: white;
-        text-align: center;
-        font-size: 14px;
-    }
-
-    .fecha {
-        background: #e9f0e3;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    .encabezado {
-        background: #d9ead3;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    .numero {
-        text-align: center;
-        width: 40px;
-    }
-
-    .hora {
-        text-align: center;
-        width: 70px;
-    }
-
-    .detalle {
-        font-size: 12px;
-        color: #333;
-    }
-
-    .tema-central {
-        background: #e6f0dc;
-        font-weight: bold;
-    }
-
-    .derecha {
-        text-align: right;
-    }
-
-    .centro {
-        text-align: center;
-    }
-</style>
-</head>
-
-<body>
-
-<table class="programa">
-    <tr>
-        <th colspan="5" class="titulo">PROGRAMA DE SÁBADO | 2025</th>
-    </tr>
-    <tr>
-        <th colspan="3" class="fecha">01 DE ENERO</th>
-        <th colspan="2" class="fecha">IASD CENTRAL</th>
-    </tr>
-    <tr class="encabezado">
-        <th>N°</th>
-        <th>Hora</th>
-        <th>Descripción</th>
-        <th>Detalle</th>
-        <th>Presentación</th>
-    </tr>
-
-    <tr>
-        <td class="numero">1</td>
-        <td class="hora">09:00 AM</td>
-        <td>Servicio de Canto</td>
-        <td class="detalle">
-            Himno 001<br>
-            Nuevo Himnario Adventista
-        </td>
-        <td>Hna María</td>
-    </tr>
-
-    <tr>
-        <td class="numero">2</td>
-        <td class="hora">09:03 AM</td>
-        <td>Bienvenida</td>
-        <td></td>
-        <td>Hna Rolando Mayhuire</td>
-    </tr>
-
-    <tr>
-        <td class="numero">3</td>
-        <td class="hora">09:05 AM</td>
-        <td>Momento Musical<br>Tema Central</td>
-        <td class="detalle">
-            Himno 577<br>
-            Nuevo Himnario Adventista
-        </td>
-        <td>"Yo quiero trabajar por el Señor"</td>
-    </tr>
-    <tr>
-        <th colspan="5" class="subtitulo">CULTO DE ADORACIÓN</th>
-    </tr>
-
-    <tr class="encabezado">
-        <th>N°</th>
-        <th>Hora</th>
-        <th>Descripción</th>
-        <th>Detalle</th>
-        <th>Presentación</th>
-    </tr>
-
-    <tr>
-        <td class="numero">4</td>
-        <td class="hora">11:00 AM</td>
-        <td>,Momento Musical<br>Bienvenida</td>
-        <td class="detalle">
-            Himno 001<br>
-            Nuevo Himnario Adventista
-        </td>
-        <td>"Cantad alegres al Señor"</td>
-    </tr>
-
-    <tr>
-        <td class="numero">5</td>
-        <td class="hora">11:03 AM</td>
-        <td>Bienvenida</td>
-        <td></td>
-        <td>Hna Rolando Mayhuire</td>
-    </tr>
-
-    <tr>
-        <td class="numero">6</td>
-        <td class="hora">11:05 AM</td>
-        <td>Momento Musical<br>Tema Central</td>
-        <td class="detalle">
-            Himno 577<br>
-            Nuevo Himnario Adventista
-        </td>
-        <td>"Yo quiero trabajar por el Señor"</td>
-    </tr>
-
-    <tr>
-        <td class="numero">7</td>
-        <td class="hora">11:06 AM</td>
-        <td>Oración</td>
-        <td></td>
-        <td>Invitar a un hno</td>
-    </tr>
-
-    <tr>
-        <td class="numero">8</td>
-        <td class="hora">11:09 AM</td>
-        <td>Provad y Ved</td>
-        <td>Video</td>
-        <td>"El precio de la vida"</td>
-    </tr>
-
-    <tr>
-        <td class="numero">9</td>
-        <td class="hora">11:14 AM</td>
-        <td>Indicaciones para Diezmar</td>
-        <td class="detalle">
-            Plataforma 7me<br>
-            Clas. de IASD Sta Beatriz<br>
-            Tesoraría
-        </td>
-        <td>Hna Rolando Mayhuire</td>
-    </tr>
-
-    <tr>
-        <td class="numero">10</td>
-        <td class="hora">11:16 AM</td>
-        <td>Adoración Infantil</td>
-        <td>A cargo de: Mensajes y Mensajeros</td>
-        <td>"Mensajes y Mensajero"</td>
-    </tr>
-
-    <tr>
-        <td class="numero">11</td>
-        <td class="hora">11:22 AM</td>
-        <td>Especial (Melodías de Fe)</td>
-        <td>Video</td>
-        <td>Comprado Con Sangre Por Cristo</td>
-    </tr>
-
-    <tr class="tema-central">
-        <td class="numero">12</td>
-        <td class="hora">11:27 AM</td>
-        <td>Tema Central</td>
-        <td>O</td>
-        <td>Pr Elias Torres</td>
-    </tr>
-
-    <tr>
-        <td class="numero">13</td>
-        <td class="hora">12:10 PM</td>
-        <td>Momento Musical<br>Despedida</td>
-        <td class="detalle">
-            Himno 553<br>
-            Nuevo Himnario Adventista
-        </td>
-        <td>"Os pusisteis a arar"</td>
-    </tr>
-
-    <tr>
-        <td class="numero">14</td>
-        <td class="hora">12:12 PM</td>
-        <td>Oración</td>
-        <td></td>
-        <td>Invitar a un hno</td>
-    </tr>
-
-    <tr>
-        <td class="numero">15</td>
-        <td class="hora">12:15 PM</td>
-        <td>Despedida</td>
-        <td></td>
-        <td>Hna Rolando Mayhuire</td>
-    </tr>
-</table>
-
-</body>
-</html>
-
+ * SISTEMA DE PROGRAMACIÓN DE EVENTOS - HIMNARIO ADVENTISTA PRO
+ * Gestiona la tabla de programación de eventos del sábado
  */
+
+// Opciones predefinidas para la columna Descripción
+let opcionesPredefinidas = [
+  "Bienvenida",
+  "Servicio de Canto",
+  "Escuela Sabática",
+  "Doxología",
+  "Oración",
+  "Lectura Bíblica",
+  "Himno",
+  "Momento Musical",
+  "Tema Central",
+  "Sermón",
+  "Provad y Ved",
+  "Diezmos y Ofrendas",
+  "Adoración Infantil",
+  "Especial Musical",
+  "Despedida",
+  "Bendición",
+];
+
+// Cargar opciones personalizadas del localStorage
+function cargarOpcionesPersonalizadas() {
+  const guardadas = localStorage.getItem(
+    "opciones-programacion-personalizadas"
+  );
+  if (guardadas) {
+    const personalizadas = JSON.parse(guardadas);
+    opcionesPredefinidas = [
+      ...new Set([...opcionesPredefinidas, ...personalizadas]),
+    ];
+  }
+}
+
+// Guardar opciones personalizadas en localStorage
+function guardarOpcionesPersonalizadas() {
+  const personalizadas = opcionesPredefinidas.filter(
+    (op) =>
+      ![
+        "Bienvenida",
+        "Servicio de Canto",
+        "Escuela Sabática",
+        "Doxología",
+        "Oración",
+        "Lectura Bíblica",
+        "Himno",
+        "Momento Musical",
+        "Tema Central",
+        "Sermón",
+        "Provad y Ved",
+        "Diezmos y Ofrendas",
+        "Adoración Infantil",
+        "Especial Musical",
+        "Despedida",
+        "Bendición",
+      ].includes(op)
+  );
+  localStorage.setItem(
+    "opciones-programacion-personalizadas",
+    JSON.stringify(personalizadas)
+  );
+}
+
+// Renderizar lista de opciones en el panel de control
+function renderizarListaOpciones() {
+  const lista = document.getElementById("lista-opciones-programacion");
+  if (!lista) return;
+
+  lista.innerHTML = "";
+  opcionesPredefinidas.forEach((opcion, index) => {
+    const div = document.createElement("div");
+    div.className = "opcion-item";
+
+    const span = document.createElement("span");
+    span.textContent = opcion;
+
+    const btnEliminar = document.createElement("button");
+    btnEliminar.textContent = "×";
+    btnEliminar.className = "btn-eliminar-opcion";
+    btnEliminar.onclick = () => eliminarOpcionDescripcion(index);
+
+    div.appendChild(span);
+    div.appendChild(btnEliminar);
+    lista.appendChild(div);
+  });
+}
+
+// Agregar nueva opción de descripción
+function agregarOpcionDescripcion() {
+  const input = document.getElementById("nueva-opcion-programacion");
+  const nuevaOpcion = input.value.trim();
+
+  if (nuevaOpcion && !opcionesPredefinidas.includes(nuevaOpcion)) {
+    opcionesPredefinidas.push(nuevaOpcion);
+    guardarOpcionesPersonalizadas();
+    renderizarListaOpciones();
+    input.value = "";
+
+    // Actualizar todos los selects existentes
+    actualizarTodosLosSelects();
+  } else if (opcionesPredefinidas.includes(nuevaOpcion)) {
+    alert("Esta opción ya existe");
+  }
+}
+
+// Eliminar opción de descripción
+function eliminarOpcionDescripcion(index) {
+  if (confirm(`¿Eliminar la opción "${opcionesPredefinidas[index]}"?`)) {
+    opcionesPredefinidas.splice(index, 1);
+    guardarOpcionesPersonalizadas();
+    renderizarListaOpciones();
+    actualizarTodosLosSelects();
+  }
+}
+
+// Actualizar todos los selects de descripción en la tabla
+function actualizarTodosLosSelects() {
+  const selects = document.querySelectorAll(".select-descripcion");
+  selects.forEach((select) => {
+    const valorActual = select.value;
+    select.innerHTML = "";
+
+    opcionesPredefinidas.forEach((opcion) => {
+      const option = document.createElement("option");
+      option.value = opcion;
+      option.textContent = opcion;
+      if (opcion === valorActual) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+  });
+}
+
+// Crear select de opciones
+function crearSelectDescripcion(valorInicial = "Bienvenida") {
+  const select = document.createElement("select");
+  select.className = "select-descripcion";
+
+  opcionesPredefinidas.forEach((opcion) => {
+    const option = document.createElement("option");
+    option.value = opcion;
+    option.textContent = opcion;
+    if (opcion === valorInicial) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", () => {
+    guardarProgramacionAuto();
+  });
+
+  return select;
+}
+
+// Agregar fila a una sección específica
+function agregarFilaSeccion(seccion) {
+  const tbody = document.getElementById(`seccion-${seccion}`);
+  const filas = tbody.querySelectorAll("tr:not(.subtitulo):not(.encabezado)");
+  const numeroFila = filas.length + 1;
+
+  const tr = document.createElement("tr");
+  tr.className = "fila-editable";
+
+  // N°
+  const tdNumero = document.createElement("td");
+  tdNumero.className = "numero";
+  tdNumero.textContent = numeroFila;
+
+  // Hora
+  const tdHora = document.createElement("td");
+  tdHora.className = "hora";
+  const inputHora = document.createElement("input");
+  inputHora.type = "time";
+  inputHora.className = "input-hora";
+  inputHora.value = "09:00";
+  inputHora.addEventListener("change", guardarProgramacionAuto);
+  tdHora.appendChild(inputHora);
+
+  // Descripción
+  const tdDescripcion = document.createElement("td");
+  const valorInicial =
+    seccion === "culto-adoracion" ? "Doxología" : "Bienvenida";
+  const selectDescripcion = crearSelectDescripcion(valorInicial);
+  tdDescripcion.appendChild(selectDescripcion);
+
+  // Detalle (CON SELECTOR DE HIMNOS)
+  const tdDetalle = document.createElement("td");
+  const { contenedorDetalle } = crearControlesDetalle();
+  tdDetalle.appendChild(contenedorDetalle);
+
+  // Presentación
+  const tdPresentacion = document.createElement("td");
+  const inputPresentacion = document.createElement("input");
+  inputPresentacion.type = "text";
+  inputPresentacion.className = "input-presentacion";
+  inputPresentacion.placeholder = "Encargado(a)...";
+  inputPresentacion.addEventListener("input", guardarProgramacionAuto);
+  tdPresentacion.appendChild(inputPresentacion);
+
+  // Botón eliminar
+  const tdAcciones = document.createElement("td");
+  const btnEliminar = document.createElement("button");
+  btnEliminar.textContent = "−";
+  btnEliminar.className = "btn-eliminar-fila";
+  btnEliminar.onclick = () => eliminarFila(tr, seccion);
+  tdAcciones.appendChild(btnEliminar);
+
+  tr.appendChild(tdNumero);
+  tr.appendChild(tdHora);
+  tr.appendChild(tdDescripcion);
+  tr.appendChild(tdDetalle);
+  tr.appendChild(tdPresentacion);
+  tr.appendChild(tdAcciones);
+
+  tbody.appendChild(tr);
+  renumerarFilas(seccion);
+  guardarProgramacionAuto();
+}
+
+// Eliminar fila (SIN CONFIRMACIÓN)
+function eliminarFila(fila, seccion) {
+  fila.remove();
+  renumerarFilas(seccion);
+  guardarProgramacionAuto();
+}
+
+// Renumerar filas de una sección
+function renumerarFilas(seccion) {
+  const tbody = document.getElementById(`seccion-${seccion}`);
+  const filas = tbody.querySelectorAll("tr.fila-editable");
+
+  filas.forEach((fila, index) => {
+    const tdNumero = fila.querySelector(".numero");
+    if (tdNumero) {
+      tdNumero.textContent = index + 1;
+    }
+  });
+}
+
+// Categorías de himnarios disponibles
+const categoriasHimnarios = {
+  todos: "Himnario Nuevo (1-614)",
+  himnosInfantiles: "Himnario Infantil",
+  orquestado: "Himnario Orquestado",
+  himnosAntiguos: "Himnario Antiguo 1962",
+  coritos: "Coritos Adventistas",
+  himnosJA: "Himnos JA",
+  himnosNacionales: "Himnos Nacionales",
+  orar: "Música Para Orar",
+  himnosPianoPista: "Himnos Piano Pista",
+  stream: "In-Pre-Out Stream",
+};
+
+// Función para obtener himnos según categoría
+// Función para obtener himnos según categoría (DATOS REALES)
+// Función para cargar datos de himnos sin depender del DOM (SOLO DATOS)
+function cargarDatosCategoria(categoria) {
+  console.log(`[DATA] Cargando datos para categoría: ${categoria}`);
+  todosLosHimnos = []; // Reiniciar el array global
+
+  let listaTitulos = [];
+  let pathVideos = "";
+  let pathPortadas = "";
+  let tipoPortada = ".jpg";
+
+  // Caso 1: Himnario Nuevo (Rango numérico)
+  if (
+    categoria === "todos" ||
+    categoria === "1-150" ||
+    categoria === "151-300" ||
+    categoria === "301-450" ||
+    categoria === "451-614"
+  ) {
+    let inicio = 1,
+      fin = 614;
+    // Si se desea, se puede ajustar el rango, pero para búsqueda cargamos todo por defecto si es 'todos'
+    if (categoria !== "todos") {
+      // Extraer rango si fuera necesario, pero el modal suele usar 'todos'
+    }
+
+    for (let i = inicio; i <= fin; i++) {
+      const numero = String(i).padStart(3, "0");
+      // Intentar usar variable global titulos si existe
+      let titulo =
+        typeof titulos !== "undefined" && titulos[i - 1]
+          ? titulos[i - 1]
+          : `Himno ${i}`;
+
+      todosLosHimnos.push({
+        numero,
+        titulo,
+        videoPath: srcAux + "videos/" + numero + ".mp4",
+        imagePath: srcAux + "portadas/" + numero + ".jpg",
+      });
+    }
+    return;
+  }
+
+  // Caso 2: Listas especiales basadas en arrays globales
+  if (categoria === "orquestado") {
+    listaTitulos = typeof titulos2 !== "undefined" ? titulos2 : [];
+    pathVideos = "videosAntiguo/";
+    pathPortadas = "portadasAntiguo/";
+  } else if (categoria === "coritos") {
+    listaTitulos = typeof titulos3 !== "undefined" ? titulos3 : [];
+    pathVideos = "videosCoritos/";
+    pathPortadas = "portadasCoritos/";
+  } else if (categoria === "himnosJA") {
+    listaTitulos = typeof titulos4 !== "undefined" ? titulos4 : [];
+    pathVideos = "videosHimnosJA/";
+    pathPortadas = "portadasHimnosJA/";
+  } else if (categoria === "himnosNacionales") {
+    listaTitulos = typeof titulos5 !== "undefined" ? titulos5 : [];
+    pathVideos = "videosHimnosNacionales/";
+    pathPortadas = "portadasHimnosNacionales/";
+    tipoPortada = ".png";
+  } else if (categoria === "orar") {
+    listaTitulos =
+      typeof tituloMusicaParaOrarDeFondo !== "undefined"
+        ? tituloMusicaParaOrarDeFondo
+        : [];
+    pathVideos = "musicaParaOrarDeFondo/";
+    pathPortadas = "portadasParaOrarDeFondo/";
+    tipoPortada = ".png";
+  } else if (categoria === "himnosPianoPista") {
+    listaTitulos =
+      typeof tituloHimnosPianoPista !== "undefined"
+        ? tituloHimnosPianoPista
+        : [];
+    pathVideos = "videosHimnosPianoPista/";
+    // Portada fija
+  } else if (categoria === "himnosInfantiles") {
+    listaTitulos =
+      typeof tituloHimnosInfantiles !== "undefined"
+        ? tituloHimnosInfantiles
+        : [];
+    pathVideos = "videosHimnosInfantiles/";
+    pathPortadas = "portadasHimnosInfantiles/";
+  } else if (categoria === "himnosAntiguos") {
+    listaTitulos =
+      typeof tituloHimnosAntiguos !== "undefined" ? tituloHimnosAntiguos : [];
+    pathVideos = "videosHimnosAntiguos/";
+    pathPortadas = "portadasHimnosAntiguos/";
+  } else if (categoria === "stream") {
+    listaTitulos = typeof titulos8 !== "undefined" ? titulos8 : []; // Asumiendo titulos8
+    pathVideos = "videosStream/";
+    pathPortadas = "portadasStream/";
+  }
+
+  // Procesar lista de títulos
+  for (let i = 0; i < listaTitulos.length; i++) {
+    const t = listaTitulos[i];
+    const match = t.match(/\d{3}/);
+    const numero = match ? match[0] : String(i + 1).padStart(3, "0");
+
+    let img = srcAux + pathPortadas + numero + tipoPortada;
+    if (categoria === "himnosPianoPista")
+      img = "portadasHimnosPianoPista/001.jpg"; // Fix hardcoded
+
+    todosLosHimnos.push({
+      numero,
+      titulo: t,
+      videoPath: srcAux + pathVideos + numero + ".mp4",
+      imagePath: img,
+    });
+  }
+}
+
+// Función para obtener himnos según categoría (FUSIONADO EN SCRIPTS.JS)
+function obtenerHimnosPorCategoria(categoria) {
+  // Ahora usamos SIEMPRE todosLosHimnos porque cargarDatosCategoria lo ha llenado previamente
+  // La categoría ya fue procesada, simplemente devolvemos lo que hay en memoria
+
+  console.log(
+    `[DEBUG] obtenerHimnosPorCategoria: Retornando ${todosLosHimnos.length} elementos para ${categoria}`
+  );
+
+  if (todosLosHimnos.length === 0) {
+    // Intento de recuperación si está vacío
+    cargarDatosCategoria(categoria);
+  }
+
+  // Mapear al formato requerido por el modal
+  return todosLosHimnos.map((himno, index) => ({
+    numero: himno.numero || String(index + 1).padStart(3, "0"),
+    titulo: himno.titulo || `Himno ${index + 1}`,
+    categoria: categoria,
+    videoPath: himno.videoPath,
+    imagePath: himno.imagePath,
+  }));
+}
+
+// Mantener retrocompatibilidad
+function obtenerTodosLosHimnos() {
+  return obtenerHimnosPorCategoria("todos");
+}
+
+// Función para reproducir himno (Directo sin UI)
+async function reproducirHimno(numeroHimno, categoria = "todos") {
+  console.log(`Reproduciendo himno ${numeroHimno} de categoría ${categoria}`);
+
+  // 1. Asegurar datos cargados
+  cargarDatosCategoria(categoria);
+
+  // 2. Buscar himno en la lista cargada
+  // Intentamos match exacto primero, luego por numero formateado
+  let himno = todosLosHimnos.find((h) => h.numero === numeroHimno);
+  if (!himno) {
+    const numFmt = String(numeroHimno).padStart(3, "0");
+    himno = todosLosHimnos.find((h) => h.numero === numFmt);
+  }
+
+  if (himno) {
+    await iniciarReproduccionHimno(
+      himno.titulo,
+      himno.videoPath,
+      himno.imagePath,
+      null
+    );
+  } else {
+    console.error(`Himno no encontrado: ${numeroHimno} (${categoria})`);
+    alert("No se encontró el himno para reproducir.");
+  }
+}
+
+// Variable global para el modal actual
+let modalSelectorHimnosActual = null;
+
+// Crear modal de selección de himnos (estilo Windows)
+function crearModalSelectorHimnos(onHimnoSeleccionado) {
+  // Crear overlay
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay-himnos";
+
+  // Crear modal
+  const modal = document.createElement("div");
+  modal.className = "modal-selector-himnos";
+
+  // Encabezado
+  const header = document.createElement("div");
+  header.className = "modal-header-himnos";
+  header.innerHTML = "<h3>Seleccionar Himno</h3>";
+
+  const btnCerrar = document.createElement("button");
+  btnCerrar.className = "modal-close-himnos";
+  btnCerrar.textContent = "×";
+  btnCerrar.onclick = () => cerrarModalHimnos();
+  header.appendChild(btnCerrar);
+
+  // Selector de categorías (pestañas)
+  const contenedorCategorias = document.createElement("div");
+  contenedorCategorias.className = "modal-categorias-himnos";
+
+  const selectCategoria = document.createElement("select");
+  selectCategoria.className = "select-categoria-himno";
+
+  Object.entries(categoriasHimnarios).forEach(([key, value]) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = value;
+    selectCategoria.appendChild(option);
+  });
+
+  contenedorCategorias.appendChild(selectCategoria);
+
+  // Buscador
+  const buscador = document.createElement("div");
+  buscador.className = "modal-buscador-himnos";
+  const inputBuscar = document.createElement("input");
+  inputBuscar.type = "text";
+  inputBuscar.placeholder = "Buscar himno por número o título...";
+  inputBuscar.className = "input-buscar-himno";
+  buscador.appendChild(inputBuscar);
+
+  // Lista de himnos
+  const contenedorLista = document.createElement("div");
+  contenedorLista.className = "modal-lista-himnos";
+
+  let categoriaActual = "todos";
+  let himnos = obtenerHimnosPorCategoria(categoriaActual);
+
+  function renderizarHimnos(filtro = "") {
+    contenedorLista.innerHTML = "";
+    const himnosFiltrados = filtro
+      ? himnos.filter(
+          (h) =>
+            h.numero.includes(filtro) ||
+            h.titulo.toLowerCase().includes(filtro.toLowerCase())
+        )
+      : himnos;
+
+    if (himnosFiltrados.length === 0) {
+      contenedorLista.innerHTML =
+        '<div class="no-resultados">No se encontraron himnos</div>';
+      return;
+    }
+
+    himnosFiltrados.forEach((himno) => {
+      const item = document.createElement("div");
+      item.className = "modal-item-himno";
+      item.textContent = `HIMNO ${himno.numero} - ${himno.titulo}`;
+      item.onclick = () => {
+        onHimnoSeleccionado({ ...himno, categoria: categoriaActual });
+        cerrarModalHimnos();
+      };
+      contenedorLista.appendChild(item);
+    });
+  }
+
+  // Event listener para cambio de categoría
+  selectCategoria.addEventListener("change", (e) => {
+    const nuevaCategoria = e.target.value;
+    categoriaActual = nuevaCategoria;
+
+    // CARGA DE DATOS SIN DOM
+    // Llenamos todosLosHimnos con la nueva categoría
+    cargarDatosCategoria(nuevaCategoria);
+
+    // Actualizamos la lista local y renderizamos
+    himnos = obtenerHimnosPorCategoria(nuevaCategoria);
+    inputBuscar.value = "";
+    renderizarHimnos();
+  });
+
+  // Event listener para buscador
+  inputBuscar.addEventListener("input", (e) => {
+    renderizarHimnos(e.target.value);
+  });
+
+  renderizarHimnos();
+
+  // Ensamblar modal
+  modal.appendChild(header);
+  modal.appendChild(contenedorCategorias);
+  modal.appendChild(buscador);
+  modal.appendChild(contenedorLista);
+  overlay.appendChild(modal);
+
+  // Cerrar al hacer click fuera
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      cerrarModalHimnos();
+    }
+  };
+
+  return overlay;
+}
+
+// Cerrar modal de himnos
+function cerrarModalHimnos() {
+  if (modalSelectorHimnosActual) {
+    modalSelectorHimnosActual.remove();
+    modalSelectorHimnosActual = null;
+  }
+}
+
+// Crear controles de detalle mejorados con selector de himnos
+function crearControlesDetalle(valorInicial = "", himnosGuardados = []) {
+  const contenedorDetalle = document.createElement("div");
+  contenedorDetalle.className = "contenedor-detalle-programacion";
+
+  // Fila principal: Input + Botón +
+  const filaPrincipal = document.createElement("div");
+  filaPrincipal.className = "fila-principal-detalle";
+
+  // Input de texto principal
+  const inputDetalle = document.createElement("input");
+  inputDetalle.type = "text";
+  inputDetalle.className = "input-detalle";
+  inputDetalle.value = valorInicial;
+  inputDetalle.placeholder = "Detalles opcionales...";
+  inputDetalle.addEventListener("input", guardarProgramacionAuto);
+
+  // Botón "+" para abrir modal de himnos
+  const btnMas = document.createElement("button");
+  btnMas.className = "btn-mas-detalle";
+  btnMas.textContent = "+";
+  btnMas.title = "Agregar himno";
+
+  filaPrincipal.appendChild(inputDetalle);
+  filaPrincipal.appendChild(btnMas);
+
+  // Contenedor de himnos agregados
+  const contenedorHimnos = document.createElement("div");
+  contenedorHimnos.className = "contenedor-himnos-agregados";
+
+  // Función visibilidad input
+  const actualizarVisibilidadInput = () => {
+    if (contenedorHimnos.children.length > 0) {
+      inputDetalle.style.display = "none";
+    } else {
+      inputDetalle.style.display = "block";
+    }
+  };
+
+  // Función para crear un chip de himno
+  const crearChipHimno = (himno) => {
+    const chip = document.createElement("div");
+    chip.className = "chip-himno";
+    chip.dataset.numeroHimno = himno.numero; // Guardar el número para fácil acceso
+    chip.dataset.categoria = himno.categoria || "todos"; // Guardar la categoría
+
+    const textoChip = document.createElement("span");
+
+    // Lógica para mostrar título completo
+    let textoMostrar = himno.titulo || `Himno ${himno.numero}`;
+
+    // Si es un himno numérico estándar y el título es solo el nombre, agregamos el número para claridad
+    // Pero si el usuario elige un título que ya tiene número, lo respetamos.
+    if (
+      himno.categoria === "todos" ||
+      !textoMostrar.toLowerCase().includes("himno")
+    ) {
+      const numLimpio = String(himno.numero)
+        .replace(/\D/g, "")
+        .padStart(3, "0");
+      // Añadir prefijo si no lo tiene
+      if (
+        !textoMostrar.includes(numLimpio) &&
+        !textoMostrar.toLowerCase().includes("himno")
+      ) {
+        textoMostrar = `HIMNO ${numLimpio} - ${textoMostrar}`;
+      }
+    }
+
+    textoChip.textContent = textoMostrar;
+    textoChip.className = "texto-chip-himno";
+    textoChip.title = textoMostrar; // Tooltip
+
+    const btnPlay = document.createElement("button");
+    btnPlay.className = "btn-play-chip";
+    btnPlay.innerHTML = "▶";
+    btnPlay.title = "Reproducir";
+    btnPlay.onclick = (e) => {
+      e.stopPropagation();
+      reproducirHimno(himno.numero, himno.categoria || "todos");
+    };
+
+    const btnEliminar = document.createElement("button");
+    btnEliminar.className = "btn-eliminar-chip";
+    btnEliminar.innerHTML = "×";
+    btnEliminar.title = "Eliminar";
+    btnEliminar.onclick = (e) => {
+      e.stopPropagation();
+      chip.remove();
+      actualizarVisibilidadInput(); // Actualizar visibilidad
+      guardarProgramacionAuto();
+    };
+
+    chip.appendChild(textoChip);
+    chip.appendChild(btnPlay);
+    chip.appendChild(btnEliminar);
+
+    return chip;
+  };
+
+  // Cargar himnos guardados si existen
+  himnosGuardados.forEach((himnoNumero) => {
+    // Intentar recuperar el objeto completo si es posible
+    // Si todosLosHimnos está vacío, intentamos cargarlo (fallback a 'todos')
+    if (todosLosHimnos.length === 0) cargarDatosCategoria("todos");
+
+    let himno = todosLosHimnos.find((h) => h.numero === himnoNumero);
+
+    if (himno) {
+      contenedorHimnos.appendChild(crearChipHimno(himno));
+    } else {
+      // Fallback básico si no se encuentra el objeto (para no romper la UI)
+      contenedorHimnos.appendChild(
+        crearChipHimno({
+          numero: himnoNumero,
+          titulo: `Himno ${himnoNumero}`,
+          categoria: "todos",
+        })
+      );
+    }
+  });
+
+  actualizarVisibilidadInput(); // Estado inicial
+
+  // Event listener para botón "+"
+  btnMas.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    // Crear y mostrar modal
+    const modal = crearModalSelectorHimnos((himno) => {
+      contenedorHimnos.appendChild(crearChipHimno(himno));
+      actualizarVisibilidadInput(); // Actualizar visibilidad
+      guardarProgramacionAuto();
+    });
+
+    modalSelectorHimnosActual = modal;
+    document.body.appendChild(modal);
+  });
+
+  contenedorDetalle.appendChild(filaPrincipal);
+  contenedorDetalle.appendChild(contenedorHimnos);
+
+  return { contenedorDetalle, inputDetalle, contenedorHimnos };
+}
+
+// Guardar programación automáticamente
+function guardarProgramacionAuto() {
+  const programacion = obtenerDatosProgramacion();
+  localStorage.setItem("programacion-eventos", JSON.stringify(programacion));
+}
+
+// Obtener datos de la programación
+function obtenerDatosProgramacion() {
+  const fecha = document.getElementById("fecha-programa")?.value || "";
+  const iglesia =
+    document.getElementById("nombre-iglesia")?.value || "IASD CENTRAL";
+
+  const servicioGeneral = [];
+  const cultoAdoracion = [];
+
+  // Obtener filas del servicio general
+  const filasServicio = document.querySelectorAll(
+    "#seccion-servicio-general tr.fila-editable"
+  );
+  filasServicio.forEach((fila) => {
+    // Obtener himnos agregados en esta fila
+    const chips = fila.querySelectorAll(".chip-himno");
+    const himnosAgregados = Array.from(chips).map(
+      (chip) => chip.dataset.numeroHimno
+    );
+
+    servicioGeneral.push({
+      hora: fila.querySelector(".input-hora")?.value || "",
+      descripcion: fila.querySelector(".select-descripcion")?.value || "",
+      detalle: fila.querySelector(".input-detalle")?.value || "",
+      himnos: himnosAgregados,
+      presentacion: fila.querySelector(".input-presentacion")?.value || "",
+    });
+  });
+
+  // Obtener filas del culto de adoración
+  const filasCulto = document.querySelectorAll(
+    "#seccion-culto-adoracion tr.fila-editable"
+  );
+  filasCulto.forEach((fila) => {
+    // Obtener himnos agregados en esta fila
+    const chips = fila.querySelectorAll(".chip-himno");
+    const himnosAgregados = Array.from(chips).map(
+      (chip) => chip.dataset.numeroHimno
+    );
+
+    cultoAdoracion.push({
+      hora: fila.querySelector(".input-hora")?.value || "",
+      descripcion: fila.querySelector(".select-descripcion")?.value || "",
+      detalle: fila.querySelector(".input-detalle")?.value || "",
+      himnos: himnosAgregados,
+      presentacion: fila.querySelector(".input-presentacion")?.value || "",
+    });
+  });
+
+  return {
+    fecha,
+    iglesia,
+    servicioGeneral,
+    cultoAdoracion,
+  };
+}
+
+// Cargar programación guardada
+function cargarProgramacionGuardada() {
+  const guardada = localStorage.getItem("programacion-eventos");
+  if (!guardada) {
+    // Si no hay datos guardados, crear filas por defecto
+    agregarFilaSeccion("servicio-general");
+    agregarFilaSeccion("culto-adoracion");
+    return;
+  }
+
+  const programacion = JSON.parse(guardada);
+
+  // Cargar fecha e iglesia
+  if (programacion.fecha) {
+    const inputFecha = document.getElementById("fecha-programa");
+    if (inputFecha) inputFecha.value = programacion.fecha;
+    actualizarFechaEnTabla(programacion.fecha);
+  }
+
+  if (programacion.iglesia) {
+    const inputIglesia = document.getElementById("nombre-iglesia");
+    if (inputIglesia) inputIglesia.value = programacion.iglesia;
+    actualizarIglesiaEnTabla(programacion.iglesia);
+  }
+
+  // Cargar filas del servicio general
+  programacion.servicioGeneral?.forEach((fila) => {
+    const tbody = document.getElementById("seccion-servicio-general");
+    const tr = crearFilaDesdeGuardado(fila, "servicio-general");
+    tbody.appendChild(tr);
+  });
+
+  // Cargar filas del culto de adoración
+  programacion.cultoAdoracion?.forEach((fila) => {
+    const tbody = document.getElementById("seccion-culto-adoracion");
+    const tr = crearFilaDesdeGuardado(fila, "culto-adoracion");
+    tbody.appendChild(tr);
+  });
+
+  renumerarFilas("servicio-general");
+  renumerarFilas("culto-adoracion");
+}
+
+// Crear fila desde datos guardados
+function crearFilaDesdeGuardado(datos, seccion) {
+  const tr = document.createElement("tr");
+  tr.className = "fila-editable";
+
+  // N°
+  const tdNumero = document.createElement("td");
+  tdNumero.className = "numero";
+
+  // Hora
+  const tdHora = document.createElement("td");
+  tdHora.className = "hora";
+  const inputHora = document.createElement("input");
+  inputHora.type = "time";
+  inputHora.className = "input-hora";
+  inputHora.value = datos.hora || "09:00";
+  inputHora.addEventListener("change", guardarProgramacionAuto);
+  tdHora.appendChild(inputHora);
+
+  // Descripción
+  const tdDescripcion = document.createElement("td");
+  const selectDescripcion = crearSelectDescripcion(
+    datos.descripcion || "Bienvenida"
+  );
+  tdDescripcion.appendChild(selectDescripcion);
+
+  // Detalle (CON SELECTOR DE HIMNOS)
+  const tdDetalle = document.createElement("td");
+  const { contenedorDetalle } = crearControlesDetalle(
+    datos.detalle || "",
+    datos.himnos || []
+  );
+  tdDetalle.appendChild(contenedorDetalle);
+
+  // Presentación
+  const tdPresentacion = document.createElement("td");
+  const inputPresentacion = document.createElement("input");
+  inputPresentacion.type = "text";
+  inputPresentacion.className = "input-presentacion";
+  inputPresentacion.value = datos.presentacion || "";
+  inputPresentacion.placeholder = "Encargado(a)...";
+  inputPresentacion.addEventListener("input", guardarProgramacionAuto);
+  tdPresentacion.appendChild(inputPresentacion);
+
+  // Botón eliminar
+  const tdAcciones = document.createElement("td");
+  const btnEliminar = document.createElement("button");
+  btnEliminar.textContent = "−";
+  btnEliminar.className = "btn-eliminar-fila";
+  btnEliminar.onclick = () => eliminarFila(tr, seccion);
+  tdAcciones.appendChild(btnEliminar);
+
+  tr.appendChild(tdNumero);
+  tr.appendChild(tdHora);
+  tr.appendChild(tdDescripcion);
+  tr.appendChild(tdDetalle);
+  tr.appendChild(tdPresentacion);
+  tr.appendChild(tdAcciones);
+
+  return tr;
+}
+
+// Actualizar fecha en la tabla
+function actualizarFechaEnTabla(fecha) {
+  const thFecha = document.getElementById("th-fecha");
+  if (!thFecha || !fecha) return;
+
+  const [year, month, day] = fecha.split("-");
+  const meses = [
+    "ENERO",
+    "FEBRERO",
+    "MARZO",
+    "ABRIL",
+    "MAYO",
+    "JUNIO",
+    "JULIO",
+    "AGOSTO",
+    "SEPTIEMBRE",
+    "OCTUBRE",
+    "NOVIEMBRE",
+    "DICIEMBRE",
+  ];
+
+  thFecha.textContent = `${parseInt(day)} DE ${meses[parseInt(month) - 1]}`;
+}
+
+// Actualizar iglesia en la tabla
+function actualizarIglesiaEnTabla(iglesia) {
+  const thIglesia = document.getElementById("th-iglesia");
+  if (thIglesia) {
+    thIglesia.textContent = iglesia.toUpperCase();
+  }
+}
+
+// Guardar programación (botón manual)
+function guardarProgramacion() {
+  guardarProgramacionAuto();
+  alert("✅ Programación guardada correctamente");
+}
+
+// Limpiar toda la programación
+function limpiarProgramacion() {
+  if (
+    !confirm(
+      "¿Está seguro de limpiar toda la programación? Esta acción no se puede deshacer."
+    )
+  ) {
+    return;
+  }
+
+  // Limpiar filas
+  document
+    .querySelectorAll("#seccion-servicio-general tr.fila-editable")
+    .forEach((fila) => fila.remove());
+  document
+    .querySelectorAll("#seccion-culto-adoracion tr.fila-editable")
+    .forEach((fila) => fila.remove());
+
+  // Limpiar campos
+  const inputFecha = document.getElementById("fecha-programa");
+  const inputIglesia = document.getElementById("nombre-iglesia");
+  if (inputFecha) inputFecha.value = "";
+  if (inputIglesia) inputIglesia.value = "IASD CENTRAL";
+
+  // Limpiar localStorage
+  localStorage.removeItem("programacion-eventos");
+
+  // Agregar al menos una fila en cada sección
+  agregarFilaSeccion("servicio-general");
+  agregarFilaSeccion("culto-adoracion");
+
+  alert("✅ Programación limpiada");
+}
+
+// Exportar programación a texto (OBSOLETA - ELIMINADA)
+// La nueva función exportarProgramacion(formato) maneja PDF y JPG
+// Se mantiene este comentario para evitar conflictos de mezcla
+
+// Inicializar sistema de programación
+function inicializarProgramacion() {
+  cargarOpcionesPersonalizadas();
+  renderizarListaOpciones();
+  cargarProgramacionGuardada();
+
+  // Event listeners para fecha e iglesia
+  const inputFecha = document.getElementById("fecha-programa");
+  const inputIglesia = document.getElementById("nombre-iglesia");
+
+  if (inputFecha) {
+    inputFecha.addEventListener("change", (e) => {
+      actualizarFechaEnTabla(e.target.value);
+      guardarProgramacionAuto();
+    });
+  }
+
+  if (inputIglesia) {
+    inputIglesia.addEventListener("input", (e) => {
+      actualizarIglesiaEnTabla(e.target.value);
+      guardarProgramacionAuto();
+    });
+  }
+
+  // Manejar Enter en el campo de nueva opción
+  const inputNuevaOpcion = document.getElementById("nueva-opcion-programacion");
+  if (inputNuevaOpcion) {
+    inputNuevaOpcion.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        agregarOpcionDescripcion();
+      }
+    });
+  }
+}
+
+// Inicializar cuando el DOM esté listo
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", inicializarProgramacion);
+} else {
+  inicializarProgramacion();
+}

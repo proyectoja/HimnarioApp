@@ -2803,3 +2803,856 @@ audio {
 .marcadeagua-powerpoint.visible {
   display: block;
 }
+
+/*ESTILOS PARA EL CONTENEDOR DE PROGRAMACIÓN DE EVENTOS*/
+.contenedor-programacion {
+  display: none;
+  flex-direction: row;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 60px);
+  background-color: brown;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  color: white;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  margin-left: 5px;
+  margin-right: 5px;
+  padding-right: 5px;
+  gap: 10px;
+}
+
+/* PANEL DE CONTROL LATERAL */
+.panel-control-programacion {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  min-width: 300px;
+  height: calc(100% - 10px);
+  margin: auto;
+  margin-left: 5px;
+  background: linear-gradient(
+    135deg,
+    rgb(60, 15, 15) 0%,
+    rgb(100, 30, 30) 100%
+  );
+  border-radius: 0.5rem;
+  overflow: hidden;
+  overflow-y: auto;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  gap: 15px;
+}
+
+.panel-control-programacion h3 {
+  margin: 0 0 10px 0;
+  color: #ffffff;
+  font-size: 18px;
+  text-align: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 10px;
+}
+
+.panel-control-programacion h4 {
+  margin: 10px 0 5px 0;
+  color: #e9f0e3;
+  font-size: 14px;
+  padding: 10px;
+}
+
+.config-fecha {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.config-fecha label {
+  color: #e9f0e3;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.config-fecha input {
+  padding: 8px;
+  border: 1px solid brown;
+  border-radius: 0.3rem;
+  font-size: 13px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.config-fecha input:focus {
+  outline: none;
+  border-color: rgb(194, 51, 51);
+  box-shadow: 0 0 5px rgba(79, 111, 47, 0.5);
+}
+
+.config-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+/* LISTA DE OPCIONES */
+.lista-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0.3rem;
+}
+
+.opcion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.3rem;
+  transition: all 0.2s;
+}
+
+.opcion-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.opcion-item span {
+  color: white;
+  font-size: 13px;
+  flex: 1;
+}
+
+.btn-eliminar-opcion {
+  background: rgba(220, 53, 69, 0.8);
+  color: white;
+  border: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-eliminar-opcion:hover {
+  background: rgba(220, 53, 69, 1);
+  transform: scale(1.1);
+}
+
+/* AGREGAR OPCIÓN */
+.agregar-opcion {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.agregar-opcion input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid rgba(51, 1, 1, 0.8);
+  border-radius: 0.3rem;
+  font-size: 12px;
+}
+
+.agregar-opcion button {
+  padding: 8px 12px;
+  background: rgba(51, 1, 1, 0.8);
+  color: white;
+  border: none;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.agregar-opcion button:hover {
+  background: rgba(51, 1, 1);
+}
+
+/* ACCIONES DEL PROGRAMA */
+.acciones-programa {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.acciones-programa button {
+  padding: 10px;
+  background: rgba(51, 1, 1, 0.8);
+  color: white;
+  border: none;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.acciones-programa button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.acciones-programa button:active {
+  transform: translateY(0);
+}
+
+/* CONTENEDOR DE LA TABLA */
+.contenedor-tabla-programacion {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 10px);
+  align-items: flex-start;
+  overflow: auto;
+  background: rgba(51, 1, 1, 0.8);
+  border-radius: 0.5rem;
+  margin: auto;
+}
+
+/* ESTILOS PARA LA TABLA DEL PROGRAMA DE SÁBADO */
+.contenedor-tabla-programacion .programa {
+  width: 100%;
+  max-width: 95%;
+  height: auto;
+  max-height: 95%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 13px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin: auto;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.contenedor-tabla-programacion .programa th,
+.contenedor-tabla-programacion .programa td {
+  border: 1px solid #999;
+  padding: 8px;
+  vertical-align: middle;
+}
+
+.contenedor-tabla-programacion .titulo {
+  background: rgba(51, 1, 1, 0.5);
+  color: white;
+  font-weight: bold;
+  text-align: center;
+  font-size: 16px;
+  padding: 12px;
+}
+
+.contenedor-tabla-programacion .subtitulo {
+  background: rgba(51, 1, 1);
+  color: white;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 10px;
+}
+
+.contenedor-tabla-programacion .fecha {
+  background: #e9f0e3;
+  font-weight: bold;
+  text-align: center;
+  color: #333;
+  padding: 10px;
+}
+
+.contenedor-tabla-programacion .encabezado {
+  background: #d9ead3;
+  font-weight: bold;
+  text-align: center;
+  color: #333;
+}
+
+.contenedor-tabla-programacion .numero {
+  text-align: center;
+  width: 40px;
+  color: #333;
+  font-weight: bold;
+}
+
+.contenedor-tabla-programacion .hora {
+  text-align: center;
+  color: #333;
+}
+
+/* INPUTS EDITABLES EN LA TABLA */
+.input-hora {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 0.3rem;
+  font-size: 13px;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.input-hora:focus {
+  outline: none;
+  border-color: brown;
+  box-shadow: 0 0 5px rgba(79, 111, 47, 0.3);
+}
+
+.select-descripcion {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 0.3rem;
+  font-size: 13px;
+  font-family: Arial, Helvetica, sans-serif;
+  background: white;
+  cursor: pointer;
+}
+
+.select-descripcion:focus {
+  outline: none;
+  border-color: brown;
+}
+
+.input-detalle,
+.input-presentacion {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 0.3rem;
+  font-size: 12px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.input-detalle:focus,
+.input-presentacion:focus {
+  outline: none;
+  border-color: brown;
+  box-shadow: 0 0 5px rgba(79, 111, 47, 0.3);
+}
+
+/* BOTONES DE ACCIÓN EN LA TABLA */
+.btn-agregar-fila {
+  width: 35px;
+  height: 35px;
+  background: #4f6f2f;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-agregar-fila:hover {
+  background: #6fa83f;
+  transform: scale(1.1);
+}
+
+.btn-eliminar-fila {
+  width: 30px;
+  height: 30px;
+  background: rgba(220, 53, 69, 0.8);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+}
+
+.btn-eliminar-fila:hover {
+  background: rgba(220, 53, 69, 1);
+  transform: scale(1.1);
+}
+
+.fila-editable {
+  transition: background-color 0.2s;
+}
+
+.fila-editable:hover {
+  background-color: rgba(79, 111, 47, 0.05);
+}
+
+/* Scrollbar personalizado para el contenedor de tabla */
+.contenedor-tabla-programacion::-webkit-scrollbar {
+  background-color: transparent;
+  width: 12px;
+  height: 12px;
+}
+
+.contenedor-tabla-programacion::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 1rem;
+}
+
+.contenedor-tabla-programacion::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 30px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.contenedor-tabla-programacion::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Scrollbar para panel de control */
+.panel-control-programacion::-webkit-scrollbar {
+  background-color: transparent;
+  width: 8px;
+}
+
+.panel-control-programacion::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 1rem;
+}
+
+.panel-control-programacion::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.4);
+  border-radius: 30px;
+}
+
+.panel-control-programacion::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Scrollbar para lista de opciones */
+.lista-opciones::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lista-opciones::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.lista-opciones::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+/* ESTILOS PARA CONTROLES DE DETALLE CON SELECTOR DE HIMNOS */
+.contenedor-detalle-programacion {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+/* FILA PRINCIPAL: INPUT + BOTÓN MÁS (HORIZONTAL) */
+.fila-principal-detalle {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  width: 100%;
+}
+
+.fila-principal-detalle .input-detalle {
+  flex: 1;
+}
+
+.btn-mas-detalle {
+  min-width: 28px;
+  height: 28px;
+  background: brown;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-mas-detalle:hover {
+  background: rgb(109, 28, 28);
+  transform: scale(1.1);
+}
+
+/* MODAL DE SELECCION DE HIMNOS (ESTILO WINDOWS) */
+.modal-overlay-himnos {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-selector-himnos {
+  background: white;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header-himnos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+  background: brown;
+  color: white;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.modal-header-himnos h3 {
+  margin: 0;
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.modal-close-himnos {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.modal-close-himnos:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-categorias-himnos {
+  padding: 10px 20px;
+  border-bottom: 1px solid #eee;
+  background: #f9f9f9;
+}
+
+.select-categoria-himno {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid brown;
+  border-radius: 0.3rem;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select-categoria-himno:focus {
+  outline: none;
+  border-color: rgb(197, 50, 50);
+  box-shadow: 0 0 5px rgba(79, 111, 47, 0.3);
+}
+
+.select-categoria-himno:hover {
+  border-color: rgb(121, 31, 31);
+}
+
+.modal-buscador-himnos {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.input-buscar-himno {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 0.3rem;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.input-buscar-himno:focus {
+  outline: none;
+  border-color: brown;
+  box-shadow: 0 0 5px rgba(79, 111, 47, 0.3);
+}
+
+.modal-lista-himnos {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  max-height: 400px;
+}
+
+.modal-lista-himnos::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-lista-himnos::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.modal-lista-himnos::-webkit-scrollbar-thumb {
+  background: brown;
+  border-radius: 5px;
+}
+
+.modal-lista-himnos::-webkit-scrollbar-thumb:hover {
+  background: rgb(121, 31, 31);
+}
+
+.modal-item-himno {
+  padding: 12px 15px;
+  border: 1px solid #eee;
+  border-radius: 0.3rem;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+
+.modal-item-himno:hover {
+  background: #e9f0e3;
+  border-color: brown;
+  transform: translateX(5px);
+}
+
+.no-resultados {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* CONTENEDOR DE HIMNOS AGREGADOS */
+.contenedor-himnos-agregados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+/* CHIPS DE HIMNOS */
+.chip-himno {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #e9f0e3 0%, #d9ead3 100%);
+  border: 1px solid brown;
+  border-radius: 15px;
+  padding: 4px 8px 4px 10px;
+  font-size: 12px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.chip-himno:hover {
+  box-shadow: 0 2px 5px rgba(79, 111, 47, 0.3);
+}
+
+.texto-chip-himno {
+  color: brown;
+}
+
+.btn-play-chip,
+.btn-eliminar-chip {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-play-chip {
+  background: linear-gradient(135deg, #4f6f2f 0%, #6fa83f 100%);
+  color: white;
+}
+
+.btn-play-chip:hover {
+  background: linear-gradient(135deg, #6fa83f 0%, #8fbe5f 100%);
+  transform: scale(1.15);
+}
+
+.btn-eliminar-chip {
+  background: rgba(220, 53, 69, 0.8);
+  color: white;
+  font-size: 14px;
+}
+
+.btn-eliminar-chip:hover {
+  background: rgba(220, 53, 69, 1);
+  transform: scale(1.15);
+}
+
+/* ========================================================== */
+/* ESTILOS DE TABLA DE PROGRAMACIÓN (Estilo Proyecto JA)      */
+/* ========================================================== */
+
+/* Estilos generales para tablas, replicando la exportación PDF */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Encabezados Azules */
+thead {
+  background-color: #004481;
+  color: white;
+}
+
+th {
+  background-color: #004481;
+  color: white;
+  padding: 12px 10px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid #003366;
+  text-align: center;
+}
+
+/* Celdas del cuerpo */
+td {
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  color: #333;
+  font-family: Arial, sans-serif;
+  vertical-align: middle;
+}
+
+/* Filas editables */
+tr.fila-editable {
+  background-color: #fff;
+  transition: background-color 0.2s;
+}
+
+tr.fila-editable:nth-child(even) {
+  background-color: #f8fbff;
+}
+
+tr.fila-editable:hover {
+  background-color: #e6f0ff;
+}
+
+/* Inputs y Selects dentro de la tabla */
+table input[type="text"],
+table input[type="time"],
+table input[type="number"],
+table select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+  background-color: #fff;
+  color: #333;
+}
+
+table input:focus,
+table select:focus {
+  border-color: #004481;
+  outline: none;
+  box-shadow: 0 0 4px rgba(0, 68, 129, 0.4);
+}
+
+/* Botones dentro de la tabla */
+table button {
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.1s;
+}
+
+table button:hover {
+  background-color: #b71c1c;
+  transform: scale(1.05);
+}
+
+/*ESTILOS PARA EL CONTENEDOR DE PREGUNTAS Y RESPUESTAS*/
+.contenedor-preguntas-y-respuestas {
+  display: none;
+  flex-direction: row;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 60px);
+  background-color: brown; /* fondo negro */
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: 0.75rem; /* opcional */
+  color: white;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  margin-left: 5px;
+  margin-right: 5px;
+}

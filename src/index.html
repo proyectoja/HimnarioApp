@@ -69,6 +69,88 @@
             </div>
         </div>
         <div class="contenedor-columnas">
+            <!-- PREGUNTAS Y RESPUESTAS -->
+            <div style="display: none;" id="contenedor-preguntas-y-respuestas"
+                class="contenedor-preguntas-y-respuestas">
+            </div>
+            <!--PROGRAMACIÓN DE EVENTOS-->
+            <div style="display: none;" id="contenedor-programacion" class="contenedor-programacion">
+                <!-- Panel de control para gestionar opciones -->
+                <div class="panel-control-programacion">
+                    <h3>Panel de Control - Programación</h3>
+                    <div class="config-fecha">
+                        <label>Fecha:</label>
+                        <input type="date" id="fecha-programa" />
+                        <label>Iglesia:</label>
+                        <input type="text" id="nombre-iglesia" placeholder="IASD CENTRAL" />
+                    </div>
+                    <div class="config-opciones">
+                        <h4>Gestionar Actividades</h4>
+                        <div class="lista-opciones" id="lista-opciones-programacion"></div>
+                        <div class="agregar-opcion">
+                            <input type="text" id="nueva-opcion-programacion" placeholder="Nueva actividad..." />
+                            <button onclick="agregarOpcionDescripcion()">+ Agregar</button>
+                        </div>
+                    </div>
+                    <div class="acciones-programa">
+                        <button onclick="limpiarProgramacion()">Limpiar Todo</button>
+                        <button onclick="exportarProgramacion()">Exportar</button>
+                    </div>
+                </div>
+
+                <!-- Tabla del programa -->
+                <div class="contenedor-tabla-programacion">
+                    <table class="programa" id="tabla-programa">
+                        <thead>
+                            <tr>
+                                <th colspan="6" class="titulo">PROGRAMA DE SERVICIOS</th>
+                            </tr>
+                            <tr>
+                                <th colspan="4" class="fecha" id="th-fecha">01 DE ENERO</th>
+                                <th colspan="2" class="fecha" id="th-iglesia">IASD CENTRAL</th>
+                            </tr>
+                        </thead>
+
+                        <!-- SERVICIO GENERAL / ESCUELA SABÁTICA -->
+                        <tbody id="seccion-servicio-general">
+                            <tr>
+                                <th colspan="6" class="subtitulo">SERVICIO GENERAL / ESCUELA SABÁTICA</th>
+                            </tr>
+                            <tr class="encabezado">
+                                <th style="width: 40px;">N°</th>
+                                <th style="width: 100px;">Hora</th>
+                                <th style="width: 200px;">Descripción</th>
+                                <th>Detalle</th>
+                                <th>Presentación</th>
+                                <th style="width: 50px;">
+                                    <button class="btn-agregar-fila"
+                                        onclick="agregarFilaSeccion('servicio-general')">+</button>
+                                </th>
+                            </tr>
+                            <!-- Las filas se generarán dinámicamente -->
+                        </tbody>
+
+                        <!-- CULTO DE ADORACIÓN -->
+                        <tbody id="seccion-culto-adoracion">
+                            <tr>
+                                <th colspan="6" class="subtitulo">CULTO DE ADORACIÓN</th>
+                            </tr>
+                            <tr class="encabezado">
+                                <th style="width: 40px;">N°</th>
+                                <th style="width: 100px;">Hora</th>
+                                <th style="width: 200px;">Descripción</th>
+                                <th>Detalle</th>
+                                <th>Presentación</th>
+                                <th style="width: 50px;">
+                                    <button class="btn-agregar-fila"
+                                        onclick="agregarFilaSeccion('culto-adoracion')">+</button>
+                                </th>
+                            </tr>
+                            <!-- Las filas se generarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <!-- ESCENARIO POWER POINT -->
             <div id="contenedor-power-point" class="contenedor-power-point">
                 <div id="lista-presentacion" class="lista-presentacion">
@@ -555,6 +637,7 @@
             <button id="botonNovedades" onclick="mostrarActualizaciones()"><img src="iconos/novedades.png"></button>
             <button id="botonBiblia" class="botonBiblia"><img src="iconos/biblia.png"></button>
             <button id="botonProgramacion" onclick=""><img src="iconos/programacion.png"></button>
+            <button id="botonConexionBiblica" onclick=""><img src="iconos/pregunta-y-respuesta.png"></button>
 
         </div>
         <div id="paypal-button-container"></div>
@@ -571,6 +654,7 @@
     <script type="text/javascript" src="biblia.js"></script>
     <script type="text/javascript" src="scripts.js"></script>
     <script type="text/javascript" src="simple-tooltip.js"></script>
+    <!-- programacion.js integrado en scripts.js -->
     <script type="text/javascript" charset="utf-8" src="clappr.js"></script>
     <script type="text/javascript" charset="utf-8" src="clappr-playback-rate.js"></script>
     <script type="text/javascript" charset="utf-8" src="clappr-youtube-playback.js"></script>

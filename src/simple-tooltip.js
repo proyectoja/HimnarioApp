@@ -320,14 +320,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
   if (document.getElementById("botonProgramacion")) {
-    addToolTip(
-      "#botonProgramacion",
-      "Programación de Eventos | Próximamente...",
-      "top",
-      {
-        colorFondo: "#54a0ff",
-      }
-    );
+    addToolTip("#botonProgramacion", "Programación de Eventos", "top", {
+      colorFondo: "#54a0ff",
+    });
   }
   if (document.getElementById("cerrar")) {
     addToolTip("#cerrar", "Cerrar Menú", "right");
@@ -357,5 +352,15 @@ document.addEventListener("DOMContentLoaded", function () {
     addToolTip("#botonPowerPoint", "Power Point para proyectar", "top", {
       colorFondo: "#ff6600ff",
     });
+  }
+  if (document.getElementById("botonConexionBiblica")) {
+    addToolTip(
+      "#botonConexionBiblica",
+      "Conexión Bíblica | Próximamente...",
+      "top",
+      {
+        colorFondo: "#ff6600ff",
+      }
+    );
   }
 });
