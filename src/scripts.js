@@ -1402,7 +1402,11 @@ async function iniciarReproduccionHimno(titulo, videoPath, imagePath, lista) {
     if (match) {
       youtubeId = match[1];
       isYouTube = true;
-    } else if (videoPath.length === 11) {
+    } else if (
+      videoPath.length === 11 &&
+      !videoPath.includes(".") &&
+      !videoPath.includes("/")
+    ) {
       isYouTube = true;
     }
   }
@@ -1418,7 +1422,10 @@ async function iniciarReproduccionHimno(titulo, videoPath, imagePath, lista) {
     return;
   }
 
-  // Reproducción Local
+  // Detectar si es Imagen (Local o remota)
+  const esImagen = videoPath && videoPath.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+
+  // Reproducción Local / Estandar
   if (botonPRO == false && !monitorActivo) {
     if (typeof audioHimno !== "undefined") audioHimno.pause();
     if (videoPlayerContainer) {
@@ -1427,16 +1434,46 @@ async function iniciarReproduccionHimno(titulo, videoPath, imagePath, lista) {
       closePlayerButton.style.display = "flex";
     }
 
-    if (botonLista == false) {
-      let posterBase64 = null;
+    if (esImagen) {
+      // 🖼 Mostrar Imagen en modo Estandar
       try {
-        if (window.electronAPI && window.electronAPI.leerArchivo) {
-          const base64 = await window.electronAPI.leerArchivo(imagePath);
-          const extension = imagePath.split(".").pop();
-          posterBase64 = `data:image/${extension};base64,${base64}`;
+        let finalImageUrl = videoPath;
+        if (
+          videoPath.startsWith("file://") &&
+          window.electronAPI &&
+          window.electronAPI.leerArchivo
+        ) {
+          const purePath = videoPath.replace("file://", "");
+          const base64 = await window.electronAPI.leerArchivo(purePath);
+          const extension = purePath.split(".").pop();
+          finalImageUrl = `data:image/${extension};base64,${base64}`;
         }
+
+        const img = document.createElement("img");
+        img.src = finalImageUrl;
+        img.style.maxWidth = "100%";
+        img.style.maxHeight = "100%";
+        img.style.objectFit = "contain";
+        img.style.display = "block";
+        img.style.margin = "auto";
+        videoPlayerContainer.appendChild(img);
+        videoPlayerContainer.style.display = "flex";
       } catch (e) {
-        console.error("[PLAYER] Error poster:", e);
+        console.error("[PLAYER] Error al cargar imagen local:", e);
+      }
+    } else if (botonLista == false) {
+      // 🎥 Reproducir Video en modo Estandar
+      let posterBase64 = null;
+      if (imagePath) {
+        try {
+          if (window.electronAPI && window.electronAPI.leerArchivo) {
+            const base64 = await window.electronAPI.leerArchivo(imagePath);
+            const extension = imagePath.split(".").pop();
+            posterBase64 = `data:image/${extension};base64,${base64}`;
+          }
+        } catch (e) {
+          console.error("[PLAYER] Error poster:", e);
+        }
       }
 
       player = new Clappr.Player({
@@ -1469,19 +1506,41 @@ async function iniciarReproduccionHimno(titulo, videoPath, imagePath, lista) {
         cargarReproductorAleatorio(lista);
     }
   } else {
-    // Modo PRO / Monitor
+    // 🚀 Modo PRO / Monitor
     if (typeof audioHimno !== "undefined") audioHimno.pause();
-    enviarDatos({
-      videoPath: videoPath,
+
+    let datosAEnviar = {
+      videoPath: esImagen ? null : videoPath,
       imagePath: imagePath,
       versiculo: "",
       libroAux: "",
       estilosAux: {},
       lista: lista,
       fondoBody: null,
-      imagen: null,
+      imagen: null, // Caso video
       waterMark: waterMark,
-    });
+    };
+
+    if (esImagen) {
+      try {
+        let finalImageUrl = videoPath;
+        if (
+          videoPath.startsWith("file://") &&
+          window.electronAPI &&
+          window.electronAPI.leerArchivo
+        ) {
+          const purePath = videoPath.replace("file://", "");
+          const base64 = await window.electronAPI.leerArchivo(purePath);
+          const extension = purePath.split(".").pop();
+          finalImageUrl = `data:image/${extension};base64,${base64}`;
+        }
+        datosAEnviar.imagen = finalImageUrl;
+      } catch (e) {
+        console.error("[PLAYER-PRO] Error al procesar imagen:", e);
+      }
+    }
+
+    enviarDatos(datosAEnviar);
   }
 }
 
@@ -3742,197 +3801,134 @@ campoBusqueda.addEventListener("keydown", (event) => {
     buscarVideos();
   }
 });
-//Configuración de búsqueda en YouTube
-async function buscarVideos() {
-  botonYoutubeAux.style.pointerEvents = "none";
-  botonYoutubeAux.style.cursor = "default";
-  botonYoutubeAux.style.opacity = "0.5";
+// Función núcleo para búsqueda en YouTube (Reutilizable)
+async function buscarVideosCore(
+  input,
+  resultsContainer,
+  loaderElement,
+  searchButton,
+  onVideoSelected
+) {
+  if (!input) return;
 
-  let input = document.getElementById("busqueda-youtube").value.trim();
-  document.getElementById("busqueda-youtube").disabled = true;
-  let lista = document.getElementById("lista-videos");
-  let premiumCategoria = localStorage.getItem("premium") === "true";
+  searchButton.style.pointerEvents = "none";
+  searchButton.style.cursor = "default";
+  searchButton.style.opacity = "0.5";
 
-  let velocidadDeBusqueda = 0;
+  const premiumCategoria = localStorage.getItem("premium") === "true";
+  let velocidadDeBusqueda = premiumCategoria ? 100 : 30000;
 
-  if (input !== "" && !input.includes("youtube.com")) {
-    // URL de tu API desplegada en Vercel
+  if (!input.includes("youtube.com") && !input.includes("youtu.be")) {
     let apiUrl = `https://api-youtube-gamma.vercel.app/api/search?q=${encodeURIComponent(
       input
     )}`;
-    lista.innerHTML = ""; // Limpiar resultados anteriores
-    document.getElementById("loader").style.display = "block";
+    resultsContainer.innerHTML = "";
+    if (loaderElement) loaderElement.style.display = "block";
+
     try {
       let response = await fetch(apiUrl);
-      if (!response.ok) throw new Error("Error en la respuesta de la API");
-
+      if (!response.ok) throw new Error("Error API");
       let videos = await response.json();
-      if (premiumCategoria) {
-        velocidadDeBusqueda = 100;
-      } else {
-        velocidadDeBusqueda = 30000;
-        videos = videos.slice(0, 8);
-      }
-      // Mostrar videos uno por uno
+
+      if (!premiumCategoria) videos = videos.slice(0, 8);
+
       for (let video of videos) {
         const div = document.createElement("div");
         div.className = "vid";
         div.innerHTML = `
-          <iframe width="100%" height="200" 
-            src="https://www.youtube.com/embed/${video.id}?rel=0"
-            frameborder="0" allowfullscreen loading="lazy"
-            style="pointer-events: none;">
-          </iframe>
+          <iframe width="100%" height="200" src="https://www.youtube.com/embed/${
+            video.id
+          }?rel=0" frameborder="0" allowfullscreen loading="lazy" style="pointer-events: none;"></iframe>
           <h3>${video.title}</h3>
-          <p style="color: white;font-size: 12px;
-            font-family: Arial, Helvetica, sans-serif;
-            font-weight: bold;">
+          <p style="color: white;font-size: 12px; font-family: Arial, Helvetica, sans-serif; font-weight: bold;">
             ${
               video.duration ? `Duración: ${video.duration}` : ""
-            } | Visualizaciones: ${video.views ? ` ${video.views}` : ""}
+            } | Visualizaciones: ${video.views || ""}
           </p>
-          <small style="color:white;font-size: 12px;
-            font-family: Arial, Helvetica, sans-serif;
-            font-weight: bold;">
-            ${video.uploadedAt ? `Hace: ${video.uploadedAt}` : ""}
-          </small>
-          <small style="color:white;font-size: 12px;
-            font-family: Arial, Helvetica, sans-serif;
-            font-weight: bold;">
-            Canal: ${video.channel?.name || "Desconocido"}
-          </small>
+          <small style="color:white;font-size: 11px; font-family: Arial, Helvetica, sans-serif;">Canal: ${
+            video.channel?.name || "Desconocido"
+          }</small>
         `;
 
-        div.onclick = () => youtubeInicio(video.id, video.thumbnail);
+        div.onclick = () => onVideoSelected(video);
 
-        // Agregar botón de favoritos para YouTube
-        const botonFavoritoYT = document.createElement("div");
-        botonFavoritoYT.classList.add("contenedor-favorito");
-        botonFavoritoYT.textContent = "";
-
-        // Cargar favoritos de YouTube desde localStorage
-        let favoritosYT = [];
-        try {
-          const favYTString = localStorage.getItem("youtubesFavoritos");
-          if (favYTString) {
-            favoritosYT = JSON.parse(favYTString);
-          }
-        } catch (error) {
-          console.error("Error al cargar favoritos de YouTube:", error);
-        }
-
-        // Verificar si este video ya está en favoritos
-        const esFavoritoYT = favoritosYT.some((fav) => fav.id === video.id);
-        if (esFavoritoYT) {
-          botonFavoritoYT.classList.add("active");
-        }
-
-        // Evento click del botón de favoritos
-        botonFavoritoYT.onclick = function (event) {
-          event.stopPropagation();
-
-          let favs = [];
-          try {
-            const favsString = localStorage.getItem("youtubesFavoritos");
-            if (favsString) {
-              favs = JSON.parse(favsString);
-            }
-          } catch (error) {
-            console.error("Error al cargar favoritos de YouTube:", error);
-          }
-
-          const indice = favs.findIndex((fav) => fav.id === video.id);
-
-          if (indice > -1) {
-            // Quitar de favoritos
-            favs.splice(indice, 1);
-            botonFavoritoYT.classList.remove("active");
-            console.log(
-              "[YT FAVORITOS] Video eliminado de favoritos:",
-              video.title
-            );
-          } else {
-            // Agregar a favoritos
-            favs.push({
-              id: video.id,
-              title: video.title,
-              thumbnail: video.thumbnail,
-              duration: video.duration,
-              views: video.views,
-              uploadedAt: video.uploadedAt,
-              channel: video.channel,
-            });
+        // Lógica de favoritos (solo si estamos en la pestaña principal de YouTube)
+        if (resultsContainer.id === "lista-videos") {
+          const botonFavoritoYT = document.createElement("div");
+          botonFavoritoYT.classList.add("contenedor-favorito");
+          let favoritosYT = JSON.parse(
+            localStorage.getItem("youtubesFavoritos") || "[]"
+          );
+          if (favoritosYT.some((fav) => fav.id === video.id))
             botonFavoritoYT.classList.add("active");
-            console.log(
-              "[YT FAVORITOS] Video agregado a favoritos:",
-              video.title
+
+          botonFavoritoYT.onclick = (e) => {
+            e.stopPropagation();
+            let favs = JSON.parse(
+              localStorage.getItem("youtubesFavoritos") || "[]"
             );
-          }
-
-          try {
+            const idx = favs.findIndex((f) => f.id === video.id);
+            if (idx > -1) favs.splice(idx, 1);
+            else favs.push(video);
             localStorage.setItem("youtubesFavoritos", JSON.stringify(favs));
-          } catch (error) {
-            console.error("Error al guardar favoritos de YouTube:", error);
-          }
-        };
-
-        div.appendChild(botonFavoritoYT);
-
-        if (premiumCategoria) {
-          const contenedorPremiumActivado = document.createElement("div");
-          contenedorPremiumActivado.classList.add("contenedorPremiumActivado");
-          contenedorPremiumActivado.textContent = "";
-          contenedorPremiumActivado.style.display = "flex";
-          div.appendChild(contenedorPremiumActivado);
+            botonFavoritoYT.classList.toggle("active");
+          };
+          div.appendChild(botonFavoritoYT);
         }
-        lista.appendChild(div);
 
+        resultsContainer.appendChild(div);
         await new Promise((r) => setTimeout(r, velocidadDeBusqueda));
       }
-
-      botonYoutubeAux.style.pointerEvents = "all";
-      botonYoutubeAux.style.cursor = "pointer";
-      botonYoutubeAux.style.opacity = "1";
     } catch (error) {
       console.error(error);
-      alert("Error al obtener videos");
+      resultsContainer.innerHTML =
+        "<p style='color:red;text-align:center;'>Error al obtener videos</p>";
     } finally {
-      document.getElementById("loader").style.display = "none";
-      botonYoutubeAux.style.pointerEvents = "all";
-      botonYoutubeAux.style.cursor = "pointer";
-      botonYoutubeAux.style.opacity = "1";
-      document.getElementById("busqueda-youtube").disabled = false;
+      if (loaderElement) loaderElement.style.display = "none";
+      searchButton.style.pointerEvents = "all";
+      searchButton.style.cursor = "pointer";
+      searchButton.style.opacity = "1";
     }
-  } else if (input !== "" && input.includes("youtube.com")) {
-    // Si es un link de YouTube, extraemos el video ID
+  } else {
+    // Caso de URL directa
     let videoIdMatch = input.match(
       /(?:v=|\/embed\/|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/
     );
-
     if (videoIdMatch) {
       let videoId = videoIdMatch[1];
-      let img = "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
-
-      let videosHTML = `
+      let img = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+      resultsContainer.innerHTML = `
         <div id="contenedor-embed" style="pointer-events: none;">
-          <iframe width="560" height="315" 
-            src="https://www.youtube.com/embed/${videoId}?mute=1" 
-            frameborder="0" allowfullscreen>
-          </iframe>
-          <h3 id="enviarVideo" style="cursor: pointer; pointer-events: all; text-wrap: nowrap;" onclick='youtubeInicio("${videoId}", "${img}")'>Reproducir video</h3>
-        </div>
-      `;
-      lista.innerHTML = videosHTML;
-      botonYoutubeAux.style.pointerEvents = "all";
-      botonYoutubeAux.style.cursor = "pointer";
-      botonYoutubeAux.style.opacity = "1";
-      document.getElementById("busqueda-youtube").disabled = false;
+          <iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}?mute=1" frameborder="0" allowfullscreen></iframe>
+          <h3 style="cursor: pointer; pointer-events: all; text-align:center; color:white;" id="btn-reproducir-directo">Reproducir video</h3>
+        </div>`;
+      resultsContainer.querySelector("#btn-reproducir-directo").onclick =
+        () => {
+          onVideoSelected({
+            id: videoId,
+            thumbnail: img,
+            title: "Video de YouTube",
+          });
+        };
     }
-  } else {
-    botonYoutubeAux.style.pointerEvents = "all";
-    botonYoutubeAux.style.cursor = "pointer";
-    botonYoutubeAux.style.opacity = "1";
+    searchButton.style.pointerEvents = "all";
+    searchButton.style.cursor = "pointer";
+    searchButton.style.opacity = "1";
   }
+}
+
+// Configuración de búsqueda en YouTube (Pestaña principal)
+async function buscarVideos() {
+  const input = document.getElementById("busqueda-youtube");
+  const lista = document.getElementById("lista-videos");
+  const loader = document.getElementById("loader");
+  const boton = document.getElementById("buscar-youtube-boton");
+
+  input.disabled = true;
+  await buscarVideosCore(input.value.trim(), lista, loader, boton, (video) => {
+    youtubeInicio(video.id, video.thumbnail);
+  });
+  input.disabled = false;
 }
 
 //Configuración YouTube
@@ -5407,11 +5403,12 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-01-11",
+    titulo: "Mejora",
+    mensaje:
+      "Se mejoró la búsqueda en el programador de eventos, ahora se puede agregar a la columna DETALLES un video local o una imagen local, o bien, puedes buscar un video de YouTube y colocarlo dentro de las actividades por ejemplo: tener listo el probad y ved, el video misionero, una música especial, cualquier video o imagen. Esperamos que con está funcionalidad sea de gran de bendición. Disponible para usuarios que nos apoyan con su suscripción al ministerio, Dios les bendiga!",
+    version: "1.0.97",
+    tipo: "Mejora",
   },
   {
     fecha: "2026-01-10",
@@ -8444,6 +8441,7 @@ document.addEventListener("DOMContentLoaded", () => {
  * Nota: Hacer una conexión bíblica para 10 jugadores gratis, para que lo usen
  * las iglesias, uniones y asosciaciones...
  */
+
 /**
  * SISTEMA DE PROGRAMACIÓN DE EVENTOS - HIMNARIO ADVENTISTA PRO
  * Gestiona la tabla de programación de eventos del sábado
@@ -8849,13 +8847,28 @@ function obtenerTodosLosHimnos() {
 
 // Función para reproducir himno (Directo sin UI)
 async function reproducirHimno(numeroHimno, categoria = "todos") {
-  console.log(`Reproduciendo himno ${numeroHimno} de categoría ${categoria}`);
+  console.log(`Reproduciendo contenido: ${numeroHimno} (${categoria})`);
 
-  // 1. Asegurar datos cargados
+  // 1. Detectar si es una URL (YouTube o Local) o un número de himno
+  const esUrl =
+    numeroHimno &&
+    (numeroHimno.startsWith("http") || numeroHimno.startsWith("file://"));
+
+  if (esUrl) {
+    // Si es una URL, la reproducimos directamente
+    await iniciarReproduccionHimno(
+      "Contenido Multimedia",
+      numeroHimno,
+      null,
+      null
+    );
+    return;
+  }
+
+  // 2. Asegurar datos cargados para himnos estándar
   cargarDatosCategoria(categoria);
 
-  // 2. Buscar himno en la lista cargada
-  // Intentamos match exacto primero, luego por numero formateado
+  // 3. Buscar himno en la lista cargada
   let himno = todosLosHimnos.find((h) => h.numero === numeroHimno);
   if (!himno) {
     const numFmt = String(numeroHimno).padStart(3, "0");
@@ -8870,8 +8883,8 @@ async function reproducirHimno(numeroHimno, categoria = "todos") {
       null
     );
   } else {
-    console.error(`Himno no encontrado: ${numeroHimno} (${categoria})`);
-    alert("No se encontró el himno para reproducir.");
+    console.error(`Contenido no encontrado: ${numeroHimno} (${categoria})`);
+    alert("No se encontró el contenido para reproducir.");
   }
 }
 
@@ -8888,7 +8901,7 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   const modal = document.createElement("div");
   modal.className = "modal-selector-himnos";
 
-  // Encabezado
+  // 1. Encabezado
   const header = document.createElement("div");
   header.className = "modal-header-himnos";
   header.innerHTML = "<h3>Seleccionar Himno</h3>";
@@ -8899,7 +8912,7 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   btnCerrar.onclick = () => cerrarModalHimnos();
   header.appendChild(btnCerrar);
 
-  // Selector de categorías (pestañas)
+  // 2. Selector de categorías
   const contenedorCategorias = document.createElement("div");
   contenedorCategorias.className = "modal-categorias-himnos";
 
@@ -8912,10 +8925,112 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
     option.textContent = value;
     selectCategoria.appendChild(option);
   });
-
   contenedorCategorias.appendChild(selectCategoria);
 
-  // Buscador
+  // 3. Contenedor Especial (Botones Local/YouTube)
+  const contenedorEspecial = document.createElement("div");
+  contenedorEspecial.className = "modal-especial-himnos";
+  contenedorEspecial.style.cssText =
+    "display:flex;flex-direction:column;gap:10px;padding:15px 20px;background:#f0f0f0;border-bottom:1px solid #ddd;";
+
+  const filaBotones = document.createElement("div");
+  filaBotones.style.cssText = "display:flex;gap:10px;";
+
+  const btnLocal = document.createElement("button");
+  btnLocal.className = "btn-especial-modal local";
+  btnLocal.innerHTML = "📁 Archivo Local";
+  btnLocal.style.cssText =
+    "flex:1;padding:10px;background:#2c3e50;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:12px;transition:0.2s;";
+  btnLocal.onmouseover = () => (btnLocal.style.background = "#34495e");
+  btnLocal.onmouseout = () => (btnLocal.style.background = "#2c3e50");
+  btnLocal.onclick = async () => {
+    if (!esPremium) {
+      alert(
+        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!"
+      );
+      return;
+    }
+    const ruta = await window.electronAPI.abrirDialogoMultimedia();
+    if (ruta) {
+      const extension = ruta.split(".").pop().toLowerCase();
+      const esImagen = ["jpg", "jpeg", "png", "gif", "webp"].includes(
+        extension
+      );
+      const nombre = ruta.split(/[\\/]/).pop();
+      onHimnoSeleccionado({
+        numero: `file://${ruta}`,
+        titulo: `ARCHIVO: ${nombre}`,
+        categoria: esImagen ? "imagen-local" : "video-local",
+        videoPath: `file://${ruta}`,
+        imagePath: null,
+      });
+      cerrarModalHimnos();
+    }
+  };
+
+  const btnYoutube = document.createElement("button");
+  btnYoutube.className = "btn-especial-modal youtube";
+  btnYoutube.innerHTML = "🎬 YouTube / URL";
+  btnYoutube.style.cssText =
+    "flex:1;padding:10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:12px;transition:0.2s;";
+  btnYoutube.onmouseover = () => (btnYoutube.style.background = "#e74c3c");
+  btnYoutube.onmouseout = () => (btnYoutube.style.background = "#c0392b");
+
+  const areaUrl = document.createElement("div");
+  areaUrl.style.cssText =
+    "display:none;flex-direction:column;gap:10px;margin-top:5px;animation:fadeIn 0.3s;";
+  areaUrl.innerHTML = `
+    <div style="display:flex;gap:5px;">
+      <input type="text" placeholder="Buscar en YouTube o pegar URL..." style="flex:1;padding:10px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+      <button class="btn-buscar-yt" style="padding:10px 15px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer;"><img src="iconos/iconoBuscar.png" style="width:16px;"></button>
+    </div>
+    <div class="loader-yt" style="display:none;padding:10px;text-align:center;"><div class="spinner" style="border-width:3px;width:20px;height:20px;margin:auto;"></div></div>
+    <div class="resultados-yt" style="max-height:250px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+  `;
+
+  const inputYT = areaUrl.querySelector("input");
+  const btnBuscarYT = areaUrl.querySelector(".btn-buscar-yt");
+  const loaderYT = areaUrl.querySelector(".loader-yt");
+  const listaYT = areaUrl.querySelector(".resultados-yt");
+
+  const performSearch = async () => {
+    let query = inputYT.value.trim();
+    if (!query) return;
+
+    await buscarVideosCore(query, listaYT, loaderYT, btnBuscarYT, (video) => {
+      onHimnoSeleccionado({
+        numero: `https://www.youtube.com/watch?v=${video.id}`,
+        titulo: `YOUTUBE: ${video.title}`,
+        categoria: "youtube",
+        videoPath: video.id,
+        imagePath: video.thumbnail,
+      });
+      cerrarModalHimnos();
+    });
+  };
+
+  btnYoutube.onclick = () => {
+    if (!esPremium) {
+      alert(
+        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!"
+      );
+      return;
+    }
+    areaUrl.style.display = areaUrl.style.display === "flex" ? "none" : "flex";
+    if (areaUrl.style.display === "flex") inputYT.focus();
+  };
+
+  btnBuscarYT.onclick = performSearch;
+  inputYT.onkeydown = (e) => {
+    if (e.key === "Enter") performSearch();
+  };
+
+  filaBotones.appendChild(btnLocal);
+  filaBotones.appendChild(btnYoutube);
+  contenedorEspecial.appendChild(filaBotones);
+  contenedorEspecial.appendChild(areaUrl);
+
+  // 4. Buscador
   const buscador = document.createElement("div");
   buscador.className = "modal-buscador-himnos";
   const inputBuscar = document.createElement("input");
@@ -8924,7 +9039,7 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   inputBuscar.className = "input-buscar-himno";
   buscador.appendChild(inputBuscar);
 
-  // Lista de himnos
+  // 5. Lista de himnos
   const contenedorLista = document.createElement("div");
   contenedorLista.className = "modal-lista-himnos";
 
@@ -8959,22 +9074,16 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
     });
   }
 
-  // Event listener para cambio de categoría
+  // Event Listeners
   selectCategoria.addEventListener("change", (e) => {
     const nuevaCategoria = e.target.value;
     categoriaActual = nuevaCategoria;
-
-    // CARGA DE DATOS SIN DOM
-    // Llenamos todosLosHimnos con la nueva categoría
     cargarDatosCategoria(nuevaCategoria);
-
-    // Actualizamos la lista local y renderizamos
     himnos = obtenerHimnosPorCategoria(nuevaCategoria);
     inputBuscar.value = "";
     renderizarHimnos();
   });
 
-  // Event listener para buscador
   inputBuscar.addEventListener("input", (e) => {
     renderizarHimnos(e.target.value);
   });
@@ -8984,15 +9093,14 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   // Ensamblar modal
   modal.appendChild(header);
   modal.appendChild(contenedorCategorias);
+  modal.appendChild(contenedorEspecial);
   modal.appendChild(buscador);
   modal.appendChild(contenedorLista);
   overlay.appendChild(modal);
 
-  // Cerrar al hacer click fuera
+  // Cerrar click fuera
   overlay.onclick = (e) => {
-    if (e.target === overlay) {
-      cerrarModalHimnos();
-    }
+    if (e.target === overlay) cerrarModalHimnos();
   };
 
   return overlay;
@@ -9049,35 +9157,43 @@ function crearControlesDetalle(valorInicial = "", himnosGuardados = []) {
   const crearChipHimno = (himno) => {
     const chip = document.createElement("div");
     chip.className = "chip-himno";
-    chip.dataset.numeroHimno = himno.numero; // Guardar el número para fácil acceso
-    chip.dataset.categoria = himno.categoria || "todos"; // Guardar la categoría
+    chip.dataset.numeroHimno = himno.numero;
+    chip.dataset.categoria = himno.categoria || "todos";
 
     const textoChip = document.createElement("span");
 
-    // Lógica para mostrar título completo
+    // Lógica para mostrar título según tipo
     let textoMostrar = himno.titulo || `Himno ${himno.numero}`;
 
-    // Si es un himno numérico estándar y el título es solo el nombre, agregamos el número para claridad
-    // Pero si el usuario elige un título que ya tiene número, lo respetamos.
+    // Si es YouTube o Local, ya tiene el prefijo en el titulo generado
+    // Solo formateamos himnos numéricos estándar
     if (
-      himno.categoria === "todos" ||
-      !textoMostrar.toLowerCase().includes("himno")
+      (himno.categoria === "todos" || !isNaN(himno.numero)) &&
+      !textoMostrar.toLowerCase().includes("himno") &&
+      !himno.numero.toString().startsWith("http") &&
+      !himno.numero.toString().startsWith("file")
     ) {
       const numLimpio = String(himno.numero)
         .replace(/\D/g, "")
         .padStart(3, "0");
-      // Añadir prefijo si no lo tiene
-      if (
-        !textoMostrar.includes(numLimpio) &&
-        !textoMostrar.toLowerCase().includes("himno")
-      ) {
+      if (!textoMostrar.includes(numLimpio)) {
         textoMostrar = `HIMNO ${numLimpio} - ${textoMostrar}`;
       }
     }
 
+    // Estilo especial para tipos no himnos
+    if (himno.categoria === "youtube") {
+      chip.style.borderLeft = "4px solid #c0392b";
+    } else if (
+      himno.categoria === "video-local" ||
+      himno.categoria === "imagen-local"
+    ) {
+      chip.style.borderLeft = "4px solid #2ecc71";
+    }
+
     textoChip.textContent = textoMostrar;
     textoChip.className = "texto-chip-himno";
-    textoChip.title = textoMostrar; // Tooltip
+    textoChip.title = textoMostrar;
 
     const btnPlay = document.createElement("button");
     btnPlay.className = "btn-play-chip";
@@ -9095,7 +9211,7 @@ function crearControlesDetalle(valorInicial = "", himnosGuardados = []) {
     btnEliminar.onclick = (e) => {
       e.stopPropagation();
       chip.remove();
-      actualizarVisibilidadInput(); // Actualizar visibilidad
+      actualizarVisibilidadInput();
       guardarProgramacionAuto();
     };
 
@@ -9108,8 +9224,29 @@ function crearControlesDetalle(valorInicial = "", himnosGuardados = []) {
 
   // Cargar himnos guardados si existen
   himnosGuardados.forEach((himnoNumero) => {
+    // Si es una URL o ruta local, crear un objeto virtual
+    if (
+      himnoNumero &&
+      (himnoNumero.startsWith("http") || himnoNumero.startsWith("file://"))
+    ) {
+      const esLocal = himnoNumero.startsWith("file://");
+      const esYoutube =
+        himnoNumero.includes("youtube.com") || himnoNumero.includes("youtu.be");
+      const nombre = himnoNumero.split(/[\\/]/).pop().split("?")[0];
+
+      contenedorHimnos.appendChild(
+        crearChipHimno({
+          numero: himnoNumero,
+          titulo: esYoutube
+            ? `YOUTUBE: ${himnoNumero.substring(0, 20)}...`
+            : `ARCHIVO: ${nombre}`,
+          categoria: esYoutube ? "youtube" : "local",
+        })
+      );
+      return;
+    }
+
     // Intentar recuperar el objeto completo si es posible
-    // Si todosLosHimnos está vacío, intentamos cargarlo (fallback a 'todos')
     if (todosLosHimnos.length === 0) cargarDatosCategoria("todos");
 
     let himno = todosLosHimnos.find((h) => h.numero === himnoNumero);
