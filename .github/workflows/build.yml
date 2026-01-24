@@ -7,22 +7,60 @@ on:
 
 permissions:
   contents: write
-  
-jobs:
 
-  build:
-    runs-on: ${{ matrix.os }}
+jobs:
+  # 1. JOB DE VERSIONADO: Se ejecuta UNA sola vez para actualizar package.json
+  version:
+    runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version_step.outputs.version }}
+      new_version: ${{ steps.bump.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Configurar Git e Incrementar Versión
+        id: bump
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          # Incrementar versión (patch) sin crear tag git aún
+          npm version patch --no-git-tag-version
+
+          # Leer la nueva versión generada
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "Nueva versión calculada: $NEW_VERSION"
+
+          # Guardar en output para que lo usen los otros jobs si es necesario
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Commit y Push de la nueva versión
+          # [skip ci] evita que este push dispare el workflow de nuevo (loop infinito)
+          git add package.json package-lock.json
+          git commit -m "Bump version to $NEW_VERSION [skip ci]"
+          git push
+
+  # 2. JOB DE CONTRUCCIÓN: Se ejecuta en paralelo para los 3 sistemas
+  build:
+    needs: version # Espera a que termine el versionado
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
-
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: main # Descarga explícitamente el último commit (con la versión nueva)
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -33,67 +71,9 @@ jobs:
       - name: Instalar dependencias
         run: npm install
 
-      - name: Incrementar versión (sin crear tag)
-        id: version_step
-        shell: bash
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          npm version patch --no-git-tag-version
-
-          NEW_VERSION=$(node -p "require('./package.json').version")
-
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-
-      - name: Commit de nueva versión
-        shell: bash
-        run: |
-          git add package.json package-lock.json || true
-          git commit -m "Bump version to $VERSION" || true
-          git push || true
-
-      - name: Build (npm run release)
+      - name: Build & Publish (Electron Builder)
+        # electron-builder detectará la versión en package.json (ya actualizada)
+        # y subirá los artefactos al mismo Release en GitHub automáticamente.
         run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Subir artefactos
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.os }}
-          path: |
-            dist/*.exe
-            dist/*.msi
-            dist/*.dmg
-            dist/*.zip
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.rpm
-            dist/*.blockmap
-            dist/latest*.yml
-
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Descargar artefactos
-        uses: actions/download-artifact@v4
-        with:
-          path: dist-all
-
-      - name: Crear Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ needs.build.outputs.version }}
-          name: Release v${{ needs.build.outputs.version }}
-          body: "Release generado automáticamente"
-          draft: false
-          prerelease: false
-          files: dist-all/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
