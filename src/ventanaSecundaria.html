@@ -284,6 +284,21 @@
   </div>
 
   <script>
+    // Función para normalizar rutas
+    function formalizarRuta(ruta) {
+      if (!ruta) return ruta;
+      if (ruta.startsWith("http") || ruta.startsWith("https")) return ruta;
+      let rutaNormalizada = ruta.replace(/\\/g, "/");
+      if (!rutaNormalizada.startsWith("file://")) {
+        if (rutaNormalizada.match(/^[a-zA-Z]:\//)) {
+          rutaNormalizada = "file:///" + rutaNormalizada;
+        } else if (rutaNormalizada.startsWith("/")) {
+          rutaNormalizada = "file://" + rutaNormalizada;
+        }
+      }
+      return rutaNormalizada;
+    }
+
     let player = null;
     let playerYouTube = null;
     let waterMarkAux = "";
@@ -664,7 +679,7 @@
           }
           videoPlayerContainer.style.display = "block";
           player = new Clappr.Player({
-            source: videoPath,
+            source: formalizarRuta(videoPath),
             parentId: "#videoPlayerContainer",
             width: "100%",
             height: "100vh",
@@ -675,7 +690,7 @@
             exitFullscreenOnEnd: false,
             disableVideoTagContextMenu: true,
             volume: 100,
-            poster: imagePath,
+            poster: formalizarRuta(imagePath),
             watermark: waterMarkAux,
             playbackNotSupportedMessage: "No se puede reproducir el contenido",
             position: "bottom-right"
@@ -747,8 +762,8 @@
 
       // Seleccionar un video aleatorio de la lista
       const himnoAleatorio = lista[Math.floor(Math.random() * lista.length)];
-      let videoPath = himnoAleatorio.videoPath;
-      let imagePath = himnoAleatorio.imagePath;
+      let videoPath = formalizarRuta(himnoAleatorio.videoPath);
+      let imagePath = formalizarRuta(himnoAleatorio.imagePath);
 
       // Validar si es YouTube ID
       let isYouTube = false;

@@ -81,7 +81,7 @@ if (window.electronAPI && window.electronAPI.onLog) {
 
       // Ejecutar mostrarCategoria('todos') cuando todas las descargas hayan terminado
       console.log(
-        "Todas las descargas completadas - Actualizando categoría todos"
+        "Todas las descargas completadas - Actualizando categoría todos",
       );
       if (typeof mostrarCategoria === "function") {
         mostrarCategoria("todos");
@@ -325,7 +325,7 @@ if (window.electronAPI) {
     mostrarNotificacionUpdate(
       "📥 Descargando Actualización",
       "La descarga se está realizando en segundo plano...",
-      true
+      true,
     );
     progressBar.style.width = "0%";
     pptProgressText.textContent = "0% - Preparando descarga...";
@@ -348,7 +348,7 @@ if (window.electronAPI) {
       mostrarNotificacionUpdate(
         "✅ Actualización Lista",
         "La actualización se instalará cuando cierres la aplicación.",
-        false
+        false,
       );
 
       // Ocultar después de 8 segundos
@@ -442,7 +442,7 @@ async function validarPremium() {
     try {
       const res = await fetchWithTimeout(
         `${API_URL}?promoCode=${promoCode}&machineId=${machineId}`,
-        { timeout: 4000 }
+        { timeout: 4000 },
       );
       const data = await res.json();
 
@@ -463,7 +463,7 @@ async function validarPremium() {
     try {
       const res = await fetchWithTimeout(
         `${API_URL}?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal&machineId=${machineId}`,
-        { timeout: 4000 }
+        { timeout: 4000 },
       );
       const data = await res.json();
 
@@ -485,7 +485,7 @@ async function validarPremium() {
     try {
       const res = await fetchWithTimeout(
         `${API_URL}?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe&machineId=${machineId}`,
-        { timeout: 4000 }
+        { timeout: 4000 },
       );
       const data = await res.json();
 
@@ -510,7 +510,7 @@ async function validarPremium() {
       alert(
         `[PREMIUM] Modo offline (Sin conexión a internet): Periodo de gracia activo (${
           7 - Math.floor(daysDiff)
-        } días restantes.)`
+        } días restantes.)`,
       );
       aplicarEstadoPremium(true);
       return;
@@ -646,7 +646,7 @@ async function validarCodigos() {
     console.log("Intentando validar como Promo Code...");
     try {
       const dataPromo = await validarConApi(
-        `${API_URL}?promoCode=${codigoAValidar}&machineId=${machineId}`
+        `${API_URL}?promoCode=${codigoAValidar}&machineId=${machineId}`,
       );
       if (dataPromo.premium === true) {
         alert("✅ Código Promocional válido, acceso premium activado");
@@ -668,7 +668,7 @@ async function validarCodigos() {
     console.log("Intentando validar como PayPal...");
     try {
       const dataPaypal = await validarConApi(
-        `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=paypal&modo=${modo}&machineId=${machineId}`
+        `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=paypal&modo=${modo}&machineId=${machineId}`,
       );
       if (dataPaypal.premium === true) {
         alert("✅ Código PayPal válido, acceso premium activado");
@@ -689,7 +689,7 @@ async function validarCodigos() {
     // 3. Intentar validar como Stripe
     console.log("Intentando validar como Stripe...");
     const dataStripe = await validarConApi(
-      `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=stripe&modo=${modoAux}&machineId=${machineId}`
+      `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=stripe&modo=${modoAux}&machineId=${machineId}`,
     );
     if (dataStripe.premium === true) {
       alert("✅ Código Stripe válido, acceso premium activado");
@@ -1013,7 +1013,7 @@ botonPremium.addEventListener("click", function () {
       e.preventDefault();
       window.open(
         "https://proyectoja.github.io/suscribirHimnario.html",
-        "_blank"
+        "_blank",
       );
     };
 
@@ -1067,7 +1067,7 @@ botonPremium.addEventListener("click", function () {
 
     btnStripeMensual.onclick = async () => {
       const res = await fetch(
-        `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=mensual&modo=${modoAux}`
+        `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=mensual&modo=${modoAux}`,
       );
       const data = await res.json();
 
@@ -1109,7 +1109,7 @@ botonPremium.addEventListener("click", function () {
 
     btnStripeAnual.onclick = async () => {
       const res = await fetch(
-        `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=anual&modo=${modoAux}`
+        `https://verificador-paypal.vercel.app/api/verificaPremium?proveedor=stripe&crear=checkout&plan=anual&modo=${modoAux}`,
       );
       const data = await res.json();
 
@@ -1255,11 +1255,11 @@ botonPremium.addEventListener("click", function () {
     setTimeout(() => {
       console.log("Intentando renderizar botón de PayPal...");
       const containerInner = document.getElementById(
-        "paypal-button-container-inner"
+        "paypal-button-container-inner",
       );
       if (!containerInner) {
         console.error(
-          "Error: No se encontró el contenedor interno para el botón de PayPal"
+          "Error: No se encontró el contenedor interno para el botón de PayPal",
         );
         return;
       }
@@ -1268,7 +1268,7 @@ botonPremium.addEventListener("click", function () {
 
       if (!window.paypal || typeof window.paypal.Buttons !== "function") {
         console.error(
-          "Error: El SDK de PayPal no se cargó correctamente o la función 'Buttons' no está disponible."
+          "Error: El SDK de PayPal no se cargó correctamente o la función 'Buttons' no está disponible.",
         );
         paypalContainer.innerHTML =
           "<p style='color:red; text-align:center;'>Error: PayPal SDK no pudo inicializarse.<br>Verifique su conexión a internet y recargue la aplicación.</p>";
@@ -1294,7 +1294,7 @@ botonPremium.addEventListener("click", function () {
             onApprove: function (data, actions) {
               const subscriptionId = data.subscriptionID;
               alert(
-                "🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium."
+                "🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium.",
               );
 
               localStorage.setItem("paypalSubscriptionId", subscriptionId);
@@ -1332,7 +1332,7 @@ botonPremium.addEventListener("click", function () {
             onApprove: function (data, actions) {
               const subscriptionId = data.subscriptionID;
               alert(
-                "🎉 ¡Suscripción Anual exitosa! Ahora disfrutas de todas las ventajas premium."
+                "🎉 ¡Suscripción Anual exitosa! Ahora disfrutas de todas las ventajas premium.",
               );
 
               localStorage.setItem("paypalSubscriptionId", subscriptionId);
@@ -1387,6 +1387,28 @@ let todosLosFavoritosYouTubeLista = [];
 let todosLosHimnosJA = [];
 let todosLosHimnosNacionales = [];
 let todosLosStreamLista = [];
+
+// Función para normalizar rutas de video para Clappr (Solución Cross-platform Mac/Win)
+function formalizarRuta(ruta) {
+  if (!ruta) return ruta;
+  if (ruta.startsWith("http") || ruta.startsWith("https")) return ruta;
+
+  // Normalizar separadores a '/'
+  let rutaNormalizada = ruta.replace(/\\/g, "/");
+
+  // Agregar protocolo file:// si no existe y parece ser una ruta de archivo
+  if (!rutaNormalizada.startsWith("file://")) {
+    // Windows drive letter (C:/...)
+    if (rutaNormalizada.match(/^[a-zA-Z]:\//)) {
+      rutaNormalizada = "file:///" + rutaNormalizada;
+    }
+    // Unix/Mac absolute path (/Users/...)
+    else if (rutaNormalizada.startsWith("/")) {
+      rutaNormalizada = "file://" + rutaNormalizada;
+    }
+  }
+  return rutaNormalizada;
+}
 
 // Función auxiliar para iniciar reproducción (Extraída de crearHimno)
 async function iniciarReproduccionHimno(titulo, videoPath, imagePath, lista) {
@@ -1477,7 +1499,7 @@ async function iniciarReproduccionHimno(titulo, videoPath, imagePath, lista) {
       }
 
       player = new Clappr.Player({
-        source: videoPath,
+        source: formalizarRuta(videoPath),
         parentId: "#videoPlayerContainer",
         width: "100%",
         height: "100vh",
@@ -1615,7 +1637,7 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
 
         // Crear el reproductor Clappr
         player = new Clappr.Player({
-          source: videoPath,
+          source: formalizarRuta(videoPath),
           parentId: "#videoPlayerContainer",
           width: "100%",
           height: "100vh",
@@ -1789,7 +1811,7 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
 
     // Verificar si este himno ya está en favoritos
     const esFavorito = favoritosGuardados.some(
-      (fav) => fav.videoPath === claveHimno
+      (fav) => fav.videoPath === claveHimno,
     );
     if (esFavorito) {
       contenedorFavorito.classList.add("active");
@@ -1980,625 +2002,6 @@ async function cargarHimnosEnLotes(inicio, fin, tamanoLote = 50) {
   }
 }
 
-function ventanaSecundaria(
-  videoPath,
-  imagePath,
-  versiculo,
-  libroAux,
-  estilosAux,
-  lista,
-  fondoBody,
-  imagen,
-  waterMark
-) {
-  // Si la ventana no está abierta, la creamos y cargamos el contenido
-
-  if (!playerWindow || playerWindow.closed) {
-    playerWindow = window.open("", "playerWindow", "width=800,height=600");
-
-    // Contenido HTML con Clappr
-    const newWindowContent = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <meta name="description" content="Compartiendo esperanza!">
-                <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Para Internet Explorer -->
-                <link rel="icon" href="iconos/iconoWindows.ico" type="image/ico">
-                <title>Ventana Secundaria Reproductor Himnario PRO | PROYECTO JA</title>
-                
-                <script type="text/javascript" charset="utf-8" src="clappr.js"></script>
-                <script type="text/javascript" charset="utf-8" src="clappr-playback-rate.js"></script>
-                <script type="text/javascript" charset="utf-8" src="clappr-youtube-playback.js"></script>
-                <script type="text/javascript" charset="utf-8" src="clappr-pip-plugin.js"></script>
-                <link rel="stylesheet" href="styles.css">
-                <style>
-                body{
-                    background-image: url('imagenes/fondoBienvenida.jpg');
-                    background-size: cover;
-                    background-position: center;
-                    background-repeat: no-repeat;
-                    z-index: 1;
-
-                }
-                    * {
-          text-decoration: none;
-          -webkit-user-select: none;
-          -moz-user-select: none;
-          -ms-user-select: none;
-          user-select: none;
-          -webkit-user-drag: none;
-        }
-                #contenedor-principal, #videoPlayerContainer {
-                        display: none; /* Ambos contenedores inician ocultos */
-                    }
-                #contenedor-principal{
-                    background-color: brown;
-                    width: 100%;
-                    height: 100%;
-                    margin: 0%;
-                    padding: 0%;
-                    box-sizing: border-box;
-                    overflow: hidden;
-                    position: absolute;
-                    z-index: 2;
-                }
-                    #contenedorImg{
-                    z-index: 6;
-                    width: 100%;
-                    height: 100vh;
-                    display: none;
-  justify-content: center;
-  justify-items: center;
-  align-items: center;
-  background-color: black;
-  overflow: hidden;
-  display: none;
-                    }
- #contenedorImg img{
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  display: block;
-  margin: auto;
-  }
-                #vista-previaVS {
-                    display: flex;
-                    flex-direction: column;
-                    position: relative;
-                    background-color: transparent;
-                    overflow: hidden;
-                    padding: 0;
-                    justify-content: center;
-                    padding: 20px;
-                    width: 100%;
-                    height: 100%;
-                    color: #fff;
-                    box-sizing: border-box;
-                    background-position: bottom;
-                    background-repeat: no-repeat;
-                    background-size: cover;
-                    z-index: 3;
-                    transition: opacity 0.3s ease;
-                    h3 {
-                        position: relative;
-                        z-index: 5;
-                        margin: 0%;
-                        font-weight: bold;
-                        letter-spacing: 2px;
-                    }
-
-                    p {
-                        position: relative;
-                        z-index: 5;
-                        margin: 0%;
-                    }
-                }
-
-                #fondoVS {
-                    display: flex;
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                    box-sizing: border-box;
-                    background-color: #000;
-                    top: 0;
-                    left: 0;
-                    opacity: 0;
-                    /* Nivel inicial de opacidad */
-                    transition: opacity 0.3s ease;
-                    /* Transición suave */
-                    z-index: 4;
-                }
-                #fullscreenButton {
-                        position: absolute;
-                        font-size: 50px;
-                        font-weight: bold;
-                        top: 20px;
-                        right: 20px;
-                        padding: 10px 20px;
-                        background-color: rgba(0, 0, 0, 0.7);
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        z-index: 6;
-                    }
-                    #fullscreenButton:hover {border: 2px solid #ccc;}
-                    #fullscreenButton.hidden {
-                        display: none;
-                    }
-                    #vista-previaVS img {
-                        width: 450px;
-                        height: auto;
-                        display: flex;
-                        position: absolute;
-                        left: 20px;
-                        bottom: 10px;
-                        z-index: 4;
-                    }
-
-#player-container-youtube {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: black;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 7;
-  overflow: hidden;
-}
-
-#player-youtube {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#player-youtube iframe {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain; /* para que no se recorte */
-  border: none;
-  z-index: 8;
-}
-
-
-                </style>
-            </head>
-            <body>
-                <div id="contenedor-principal">
-                    <div id="vista-previaVS">
-                        <div id="fondoVS"></div>
-                        <p id="versiculoVS"></p></br>
-                        <h3 id="tituloVS"></h3>
-                        <img id="waterMark">
-                    </div>
-                </div>
-                <button id="fullscreenButton">Pantalla Completa</button>
-                <div id="videoPlayerContainer"></div>
-                <div id="contenedorImg"><img id="idImg"></div>
-                <div id="player-container-youtube" style='
-                    align-items:center; 
-                    width: 100%; 
-                    height: 100%;
-                    background-color: transparent;
-                    justify-content:center; 
-                    display:none;
-                    position:absolute;
-                    margin:auto;
-                    overflow:hidden;'>
-                    <div id="player-youtube"></div>
-                </div>
-                
-                <script>
-                let player = null;
-                let playerYouTube = null;
-                let waterMarkAux = "";
-                    const fullscreenButton = document.getElementById("fullscreenButton");
-                    const contenedorPrincipal = document.getElementById("contenedor-principal");
-                    const vistaPrevia = document.getElementById("vista-previaVS");
-                    const versiculoContainer = document.getElementById("versiculoVS");
-                    const tituloLibro = document.getElementById("tituloVS");
-                    const fondoContainer = document.getElementById("fondoVS");
-                    const videoPlayerContainer = document.getElementById("videoPlayerContainer");
-                    const waterMarkBiblia = document.getElementById("waterMark");
-                    window.addEventListener("message", (event) => {
-                        console.log("Datos recibidos:", event.data);
-                        const { videoPath, imagePath, versiculo, libroAux, estilosAux, lista, fondoBody, imagen, waterMark } = event.data;
-
-                        waterMarkAux = waterMark;
-                        waterMarkBiblia.src = waterMark;
-                        videoPlayerContainer.innerHTML = "";
-                        contenedorPrincipal.style.display = "none";
-                        videoPlayerContainer.style.display = "none";
-
-                        
-
-
-    
-                        if(fondoBody){
-                            if (player) {
-                                player.destroy();
-                                player = null;
-                            }
-                                if(playerYouTube){
-                                playerYouTube.destroy();
-                                playerYouTube = null;
-                                }
-                            //document.getElementById("player-container-youtube").style.display = "none";
-                            document.body.style.backgroundImage = "url('" + fondoBody + "')";
-                            contenedorPrincipal.style.display = "none";
-                            videoPlayerContainer.style.display = "none";
-
-                        }else if(imagen){
-                          if (player) {
-                                player.destroy();
-                                player = null;
-                            }
-                                if(playerYouTube){
-                                playerYouTube.destroy();
-                                playerYouTube = null;
-                                }
-                            //document.getElementById("player-container-youtube").style.display = "none";
-                            document.getElementById("idImg").src = imagen;
-                            document.getElementById("contenedorImg").style.display = "flex";
-                            contenedorPrincipal.style.display = "none";
-                            videoPlayerContainer.style.display = "none";
-                        }else{
-                          document.getElementById("contenedorImg").style.display = "none";
-                        }
-
-                        // Mostrar contenido según los datos enviados
-                        if (versiculo) {
-                            if (player) {
-                                player.destroy();
-                                player = null;
-                            }
-                                if(playerYouTube){
-                                playerYouTube.destroy();
-                                playerYouTube = null;
-                                }
-                            //document.getElementById("player-container-youtube").style.display = "none";
-                            if(versiculo === "."){versiculoContainer.innerText = "";}else{versiculoContainer.innerText = versiculo;}
-                            tituloLibro.innerText = libroAux;
-                            // Aplica estilos al versículo
-                            Object.keys(estilosAux).forEach(key => {
-                                if (key !== "opacity") { 
-                                    vistaPrevia.style[key] = estilosAux[key];
-                                }else if (key == "opacity"){
-                                    fondoContainer.style[key] = estilosAux[key];
-                                }else{
-                                    fondoContainer.style.opacity = '0';
-                                }
-
-                                if(key == "fontSize"){
-                                    tituloLibro.style[key] = estilosAux[key];
-                                }else if(key == "fontFamily"){
-                                    tituloLibro.style[key] = estilosAux[key];
-                                }else if(key == "color"){
-                                    tituloLibro.style[key] = estilosAux[key];
-                                }
-                            });
-                            contenedorPrincipal.style.display = "block";
-
-                        }else if(lista){
-                            cargarReproductorAleatorioVS(lista);           
-
-                        } else if(videoPath.length <= 11){
-                          if (player) {
-                            player.destroy();
-                            player = null;
-                          }
-                          if(playerYouTube){
-                                playerYouTube.destroy();
-                                playerYouTube = null;
-                                }
-
-                          document.body.style.backgroundImage = "url('imagenes/fondoBienvenida.jpg')";
-                          console.log("Id ventana YouTube: " + videoPath);
-                            document.getElementById("player-container-youtube").style.display = "flex";
-                            const playerYoutube =document.getElementById("player-youtube");
-                          playerYouTube = new Clappr.Player({
-                            source: videoPath,
-                            watermark: waterMarkAux,
-                            position: "bottom-right",
-                            autoPlay: true,
-                            exitFullscreenOnEnd: false,
-                            disableVideoTagContextMenu: true,
-                            volume: 100,
-                            poster: 'https://i.ytimg.com/vi/'+videoPath+'/hqdefault.jpg',
-                            playbackNotSupportedMessage: "No se puede reproducir el contenido",
-                            plugins: [YoutubePlugin,YoutubePluginControl], 
-                            //YoutubePluginControl
-                            YoutubeVars : {"languageCode":"en"},
-                            parentId: "#player-youtube"
-                          });
-
-                          
-
-                          console.log("Clappr version:", Clappr.version);
-
-                          // Esperar a que el póster esté en el DOM
-                          const observer = new MutationObserver(() => {
-                            const poster = document.querySelector('.player-poster.clickable');
-                            if (poster) {
-                              poster.addEventListener('click', () => {
-                                console.log("🟢 Clic en el póster detectado");
-
-                                // Escuchar cuando el video haya avanzado al menos 2 segundos
-                                playerYouTube.on(Clappr.Events.PLAYER_TIMEUPDATE, function checkTime(event) {
-                                  const currentTime = event.current || (event.progress && event.progress.current);
-                                  console.log("⏱ Tiempo actual:", currentTime);
-
-                                  if (currentTime >= 2) {
-  console.log("✅ Verificando pantalla completa...");
-
-  if (!document.fullscreenElement) {
-    console.log("✅ Solicitando pantalla completa...");
-    document.documentElement.requestFullscreen()
-      .then(() => console.log("🟢 Fullscreen activado"))
-      .catch(err => console.warn("❌ No se pudo activar fullscreen:", err));
-  } else {
-    console.log("🔁 Ya estás en pantalla completa, no se solicita nuevamente.");
-  }
-
-  playerYouTube.off(Clappr.Events.PLAYER_TIMEUPDATE, checkTime); // detener escucha
-}
-
-                                });
-                              });
-
-                              observer.disconnect(); // dejamos de observar
-                            }
-                          });
-
-                          // Observar el DOM por si el póster aparece luego
-                          observer.observe(document.body, { childList: true, subtree: true });
-                          expandirIframeYouTube();
-                          
-
-
-
-
-
-
-
-                        } else{
-                          if (player) {
-                            player.destroy();
-                            player = null;
-                          }
-                            if(playerYouTube){
-                                playerYouTube.destroy();
-                                playerYouTube = null;
-                                }
-                            videoPlayerContainer.style.display = "block";
-                            player = new Clappr.Player({
-                                source: videoPath,
-                                parentId: "#videoPlayerContainer",
-                                width: "100%",
-                                height: "100vh",
-                                preload: 'auto',
-                                autoPlay: true,
-                                exitFullscreenOnEnd: false,
-                                disableVideoTagContextMenu: true,
-                                volume: 100,
-                                //plugins: [MediaControl.MainPlugin],
-                                //mediaControl: {
-                                //    disableBeforeVideoStarts: true
-                                //},
-                                poster: imagePath,
-                                watermark: waterMarkAux,
-                                playbackNotSupportedMessage: "No se puede reproducir el contenido",
-                                position: "bottom-right"
-                            });
-
-                            
-                        }
-
-                        
-
-                        function expandirIframeYouTube() {
-  const maxIntentos = 1000000;
-  let intentos = 0;
-
-  const intentarExpandir = () => {
-    const iframe = document.querySelector('#player-youtube iframe');
-
-    if (iframe) {
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.position = 'fixed';
-      iframe.style.top = '0';
-      iframe.style.left = '0';
-      iframe.style.border = 'none';
-      iframe.style.margin = '0';
-      iframe.style.padding = '0';
-      iframe.style.zIndex = '6';
-      iframe.style.objectFit = 'cover';
-      console.log("Iframe ajustado correctamente.");
-    } else {
-      intentos++;
-      if (intentos < maxIntentos) {
-        setTimeout(intentarExpandir, 300);
-      } else {
-        console.warn("No se pudo encontrar el iframe de YouTube.");
-      }
-    }
-  };
-
-  intentarExpandir();
-}
-
-
-                        
-                        
-                    });
-                    
-                    function ajustarZoom() {
-                    let container = document.getElementById("player-container-youtube");
-                    let playerElement = document.getElementById("player-youtube");
-
-                    let contenedorAncho = container.clientWidth;
-                    let contenedorAlto = container.clientHeight;
-
-                    let escalaAncho = contenedorAncho / 640; // Escala basada en el ancho
-                    let escalaAlto = contenedorAlto / 360; // Escala basada en la altura
-
-                    let escalaFinal = Math.min(escalaAncho, escalaAlto); // Mantener proporción
-
-                    playerElement.style.transform = "scale(" + escalaFinal + ")";
-
-                    //playerElement.style.transformOrigin = "top left"; // Evitar desajustes
-                    }
-
-                    //window.addEventListener("resize", ajustarZoom);
-                    //ajustarZoom(); // Ajustar al cargar
-
-                    //Función para listas de reproducción automática en ventana secundaria
-                    function cargarReproductorAleatorioVS(lista){
-                        if (player) {
-                                player.destroy();
-                                player = null;
-                        }
-                        if(playerYouTube){
-                                playerYouTube.destroy();
-                                playerYouTube = null;
-                                }
-                          
-                        
-                        videoPlayerContainer.innerHTML = "";
-
-                        // Seleccionar un video aleatorio de la lista
-                        const himnoAleatorio = lista[Math.floor(Math.random() * lista.length)];
-                        videoPlayerContainer.style.display = "block";
-                            player = new Clappr.Player({
-                                source: himnoAleatorio.videoPath,
-                                parentId: "#videoPlayerContainer",
-                                width: "100%",
-                                height: "100vh",
-                                preload: 'auto',
-                                autoPlay: true,
-                                exitFullscreenOnEnd: false,
-                                volume: 100,
-                                //plugins: [MediaControl.MainPlugin],
-                                //mediaControl: {
-                                //    disableBeforeVideoStarts: true
-                                //},
-                                poster: himnoAleatorio.imagePath,
-                                watermark: waterMarkAux,
-                                playbackNotSupportedMessage: "No se puede reproducir el contenido",
-                                position: "bottom-right"
-                            });
-                            player.unmute();
-                        // Escuchar cuando el video termine
-                        player.on(Clappr.Events.PLAYER_ENDED, function() {
-                            
-                            cargarReproductorAleatorioVS(lista); // Cargar y reproducir un nuevo video aleatorio
-                        });
-                        
-                    }
-
-                    // Función para activar pantalla completa
-                    function toggleFullScreen() {
-  if (!document.fullscreenElement) {
-    document.body.requestFullscreen()
-      .then(() => console.log("🟢 Body en pantalla completa"))
-      .catch(err => console.warn("❌ No se pudo activar fullscreen:", err));
-    fullscreenButton.classList.add('hidden');
-  } else {
-    document.exitFullscreen()
-      .then(() => console.log("🔙 Saliste de pantalla completa"))
-      .catch(err => console.warn("❌ No se pudo salir de fullscreen:", err));
-    fullscreenButton.classList.remove('hidden');
-  }
-}
-
-
-                    // Mostrar el botón cuando la ventana no está en pantalla completa
-                    document.addEventListener('fullscreenchange', () => {
-                        if (document.fullscreenElement) {
-                            fullscreenButton.classList.add('hidden'); // Oculta el botón
-                        } else {
-                            fullscreenButton.classList.remove('hidden'); // Muestra el botón
-                        }
-                            ajustarTamanoReproductorFullscreen();
-                    });
-
-                    fullscreenButton.addEventListener("click", toggleFullScreen);
-                    
-                    function ajustarTamanoReproductorFullscreen() {
-  const isFullscreen = !!document.fullscreenElement;
-
-  const container = document.getElementById("videoPlayerContainer");
-  const playerYoutube = document.getElementById("player-youtube");
-
-  if (isFullscreen) {
-    container.style.width = "100vw";
-    container.style.height = "100vh";
-    container.style.position = "fixed";
-    container.style.top = "0";
-    container.style.left = "0";
-
-    if (playerYoutube) {
-      playerYoutube.style.width = "100%";
-      playerYoutube.style.height = "100%";
-    }
-
-  } else {
-    container.style.width = "100%";
-    container.style.height = "100vh";
-    container.style.position = "relative";
-  }
-}
-
-
-                    window.onbeforeunload = () => {
-                            window.opener.postMessage("closed", "*");
-                        };
-                </script>
-                
-            </body>
-            </html>
-        
-        `;
-
-    // Cargar el contenido en la nueva ventana
-    playerWindow.document.open();
-    playerWindow.document.write(newWindowContent);
-    playerWindow.document.close();
-  }
-
-  // Enviar los datos al reproductor en la ventana secundaria
-  playerWindow.postMessage(
-    {
-      videoPath,
-      imagePath,
-      versiculo,
-      libroAux,
-      estilosAux,
-      lista,
-      fondoBody,
-      imagen,
-      waterMark,
-    },
-    "*"
-  );
-}
-
 let fading = false;
 
 function fadeVolume(to, callback) {
@@ -2681,7 +2084,7 @@ const botonYoutube = document.getElementById("botonYoutube");
 const ventanaYouTube = document.getElementById("contenedor-youtube");
 const botonHimnosPro = document.getElementById("botonHimnosPro");
 const ventanaHimnosPro = document.getElementById(
-  "contenedor-himnos-personalizados"
+  "contenedor-himnos-personalizados",
 );
 const botonPowerPoint = document.getElementById("botonPowerPoint");
 const ventanaPowerPoint = document.getElementById("contenedor-power-point");
@@ -2889,7 +2292,7 @@ function exitFullscreen() {
     document
       .exitFullscreen()
       .catch((err) =>
-        console.error("Error al salir de pantalla completa:", err)
+        console.error("Error al salir de pantalla completa:", err),
       );
   } else {
     console.log("No hay elementos en pantalla completa.");
@@ -2913,7 +2316,7 @@ async function mostrarCategoria(categoria) {
   // Verificar que srcAux esté definido antes de continuar
   if (!srcAux) {
     console.error(
-      "[ERROR] srcAux no está definido. No se pueden cargar himnos."
+      "[ERROR] srcAux no está definido. No se pueden cargar himnos.",
     );
     himnarioContainer.innerHTML =
       "<div style='color: white; text-align: center; padding: 20px;'>⚠️ Error: No se pueden cargar los himnos.</div>";
@@ -2938,7 +2341,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     // Cargar en lotes para mejor rendimiento
     await cargarHimnosEnLotes(inicio, fin, 50);
@@ -2952,7 +2355,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "151-300") {
@@ -2965,7 +2368,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "301-450") {
@@ -2978,7 +2381,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "451-614") {
@@ -2991,7 +2394,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "401-500") {
@@ -3004,7 +2407,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "501-614") {
@@ -3016,7 +2419,7 @@ async function mostrarCategoria(categoria) {
     ventanaPowerPoint.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
     await cargarHimnosEnLotes(inicio, fin, 50);
   } else if (categoria === "orquestado") {
@@ -3040,7 +2443,7 @@ async function mostrarCategoria(categoria) {
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "coritos") {
     ventanaHimnosPro.style.display = "none";
@@ -3060,7 +2463,7 @@ async function mostrarCategoria(categoria) {
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondoJA.jpg")';
   } else if (categoria === "himnosJA") {
     ventanaHimnosPro.style.display = "none";
@@ -3080,7 +2483,7 @@ async function mostrarCategoria(categoria) {
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondoJA.jpg")';
   } else if (categoria === "himnosNacionales") {
     ventanaHimnosPro.style.display = "none";
@@ -3100,7 +2503,7 @@ async function mostrarCategoria(categoria) {
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "orar") {
     ventanaHimnosPro.style.display = "none";
@@ -3113,14 +2516,14 @@ async function mostrarCategoria(categoria) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
       const videoPath = srcAux + `musicaParaOrarDeFondo/${numero}.mp4`;
       const titulo = tituloMusicaParaOrarDeFondo[i];
-      const imagePath = srcAux + `portadasParaOrarDeFondo/${numero}.png`;
+      const imagePath = `portadasParaOrarDeFondo/${numero}.jpg`;
 
       todosLosHimnos.push({ numero, titulo, videoPath, imagePath });
 
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "himnosPianoPista") {
     ventanaHimnosPro.style.display = "none";
@@ -3140,7 +2543,7 @@ async function mostrarCategoria(categoria) {
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "himnosInfantiles") {
     ventanaHimnosPro.style.display = "none";
@@ -3160,7 +2563,7 @@ async function mostrarCategoria(categoria) {
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "himnosAntiguos") {
     ventanaHimnosPro.style.display = "none";
@@ -3180,7 +2583,7 @@ async function mostrarCategoria(categoria) {
       crearHimno(titulo, videoPath, imagePath, null, null);
     }
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   } else if (categoria === "listas") {
     botonLista = true;
@@ -3219,7 +2622,7 @@ async function mostrarCategoria(categoria) {
     }
     console.log(
       "[FAVORITOS] Lista creada, total:",
-      todosLosFavoritosLista.length
+      todosLosFavoritosLista.length,
     );
 
     // Crear el himno de favoritos solo si hay favoritos
@@ -3232,7 +2635,7 @@ async function mostrarCategoria(categoria) {
         null,
         imagePathFavoritos,
         todosLosFavoritosLista,
-        null
+        null,
       );
       console.log("[FAVORITOS] Tarjeta creada exitosamente");
 
@@ -3245,7 +2648,7 @@ async function mostrarCategoria(categoria) {
           (container) => {
             const h3 = container.querySelector("h3");
             return h3 && h3.textContent === "Favoritos";
-          }
+          },
         );
 
         if (tarjetaFavoritos) {
@@ -3257,7 +2660,7 @@ async function mostrarCategoria(categoria) {
           botonEliminar.onclick = function (event) {
             event.stopPropagation();
             const confirmar = confirm(
-              "¿Estás seguro de que deseas eliminar TODOS los favoritos?"
+              "¿Estás seguro de que deseas eliminar TODOS los favoritos?",
             );
             if (confirmar) {
               localStorage.removeItem("himnosFavoritos");
@@ -3303,7 +2706,7 @@ async function mostrarCategoria(categoria) {
     }
     console.log(
       "[YT FAVORITOS] Lista creada, total:",
-      todosLosFavoritosYouTubeLista.length
+      todosLosFavoritosYouTubeLista.length,
     );
 
     // Crear la tarjeta de favoritos de YouTube solo si hay favoritos
@@ -3316,7 +2719,7 @@ async function mostrarCategoria(categoria) {
         null,
         imagePathFavoritosYT,
         todosLosFavoritosYouTubeLista,
-        null
+        null,
       );
       console.log("[YT FAVORITOS] Tarjeta creada exitosamente");
 
@@ -3337,12 +2740,12 @@ async function mostrarCategoria(categoria) {
           botonEliminarYT.onclick = function (event) {
             event.stopPropagation();
             const confirmar = confirm(
-              "¿Estás seguro de que deseas eliminar TODOS los favoritos de YouTube?"
+              "¿Estás seguro de que deseas eliminar TODOS los favoritos de YouTube?",
             );
             if (confirmar) {
               localStorage.removeItem("youtubesFavoritos");
               console.log(
-                "[YT FAVORITOS] Lista de favoritos de YouTube eliminada"
+                "[YT FAVORITOS] Lista de favoritos de YouTube eliminada",
               );
               mostrarCategoria("listas");
             }
@@ -3376,7 +2779,7 @@ async function mostrarCategoria(categoria) {
       null,
       imagePathAux,
       todosLosMusicaParaOrarDeFondoLista,
-      null
+      null,
     );
 
     //Lista de los himnos antiguos: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
@@ -3428,7 +2831,7 @@ async function mostrarCategoria(categoria) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
       const videoPath = srcAux + `videosHimnosPianoPista/${numero}.mp4`;
       const titulo = `Himnos Piano Pista`;
-      const imagePath = `portadasHimnosPianoPista/${numero}.jpg`;
+      const imagePath = `portadasHimnosPianoPista/001.jpg`;
 
       todosLosHimnosLista.push({ numero, titulo, videoPath, imagePath });
       todosHimnosPianoPista.push({ numero, titulo, videoPath, imagePath });
@@ -3476,7 +2879,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
-      "contenedor-principal"
+      "contenedor-principal",
     )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   }
 
@@ -3518,7 +2921,7 @@ function filtrarHimnos(query) {
 
   // Filtrar los himnos que contengan el query en cualquier parte del título
   const himnosFiltrados = todosLosHimnos.filter((himno) =>
-    himno.titulo.toLowerCase().includes(queryLower)
+    himno.titulo.toLowerCase().includes(queryLower),
   );
 
   // Mostrar los himnos filtrados
@@ -3528,7 +2931,7 @@ function filtrarHimnos(query) {
       himno.videoPath,
       himno.imagePath,
       null,
-      himno.duracionesHimnosAux
+      himno.duracionesHimnosAux,
     );
   });
 }
@@ -3538,7 +2941,7 @@ const searchInput = document.getElementById("searchInput");
 searchInput.addEventListener("focus", function () {
   //mostrarCategoria('todos'); // Mostrar todos los himnos al hacer clic en el buscador
   document.getElementsByClassName(
-    "contenedor-principal"
+    "contenedor-principal",
   )[0].style.backgroundImage = 'url("imagenes/fondo1.jpg")';
   searchInput.value = "";
   // mostrarCategoria("todos");
@@ -3807,7 +3210,7 @@ async function buscarVideosCore(
   resultsContainer,
   loaderElement,
   searchButton,
-  onVideoSelected
+  onVideoSelected,
 ) {
   if (!input) return;
 
@@ -3820,7 +3223,7 @@ async function buscarVideosCore(
 
   if (!input.includes("youtube.com") && !input.includes("youtu.be")) {
     let apiUrl = `https://api-youtube-gamma.vercel.app/api/search?q=${encodeURIComponent(
-      input
+      input,
     )}`;
     resultsContainer.innerHTML = "";
     if (loaderElement) loaderElement.style.display = "block";
@@ -3857,7 +3260,7 @@ async function buscarVideosCore(
           const botonFavoritoYT = document.createElement("div");
           botonFavoritoYT.classList.add("contenedor-favorito");
           let favoritosYT = JSON.parse(
-            localStorage.getItem("youtubesFavoritos") || "[]"
+            localStorage.getItem("youtubesFavoritos") || "[]",
           );
           if (favoritosYT.some((fav) => fav.id === video.id))
             botonFavoritoYT.classList.add("active");
@@ -3865,7 +3268,7 @@ async function buscarVideosCore(
           botonFavoritoYT.onclick = (e) => {
             e.stopPropagation();
             let favs = JSON.parse(
-              localStorage.getItem("youtubesFavoritos") || "[]"
+              localStorage.getItem("youtubesFavoritos") || "[]",
             );
             const idx = favs.findIndex((f) => f.id === video.id);
             if (idx > -1) favs.splice(idx, 1);
@@ -3892,7 +3295,7 @@ async function buscarVideosCore(
   } else {
     // Caso de URL directa
     let videoIdMatch = input.match(
-      /(?:v=|\/embed\/|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/
+      /(?:v=|\/embed\/|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/,
     );
     if (videoIdMatch) {
       let videoId = videoIdMatch[1];
@@ -4182,12 +3585,11 @@ function updateTimer() {
   const hours = String(Math.floor(elapsed / 3600000)).padStart(2, "0");
   const minutes = String(Math.floor((elapsed % 3600000) / 60000)).padStart(
     2,
-    "0"
+    "0",
   );
   const seconds = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0");
-  document.getElementById(
-    "timer"
-  ).textContent = `${hours}:${minutes}:${seconds} | cronómetro de inicio`;
+  document.getElementById("timer").textContent =
+    `${hours}:${minutes}:${seconds} | cronómetro de inicio`;
 }
 
 function iniciarCronometro() {
@@ -4239,13 +3641,12 @@ function iniciarCuentaRegresiva() {
     const horas = String(Math.floor(restante / 3600000)).padStart(2, "0");
     const mins = String(Math.floor((restante % 3600000) / 60000)).padStart(
       2,
-      "0"
+      "0",
     );
     const segs = String(Math.floor((restante % 60000) / 1000)).padStart(2, "0");
 
-    document.getElementById(
-      "countdown"
-    ).textContent = `${horas}:${mins}:${segs} | regresivo`;
+    document.getElementById("countdown").textContent =
+      `${horas}:${mins}:${segs} | regresivo`;
   }, 1000);
 }
 
@@ -4258,7 +3659,7 @@ function abrirVentanaContador() {
   ventanaSecundariaContador = window.open(
     "",
     "ContadorSecundario",
-    "width=800,height=600"
+    "width=800,height=600",
   );
 
   const ventanaHTML = `
@@ -4397,7 +3798,7 @@ function enviarDatosASecundaria() {
       document.getElementById("contadores").style.display !== "none";
     ventanaSecundariaContador.postMessage(
       { reloj, cronometro, regresivo, mostrarSTOP, mostrarContadores },
-      "*"
+      "*",
     );
   }
 }
@@ -4463,16 +3864,16 @@ async function contadorDeVistas() {
     if (idsARegistrar.length > 0) {
       promesas.push(
         fetch(`${urlBase}?action=batch&id=${idsARegistrar.join(",")}`).then(
-          (r) => r.json()
-        )
+          (r) => r.json(),
+        ),
       );
     }
 
     if (idsSoloLeer.length > 0) {
       promesas.push(
         fetch(`${urlBase}?action=leer&id=${idsSoloLeer.join(",")}`).then((r) =>
-          r.json()
-        )
+          r.json(),
+        ),
       );
     }
 
@@ -4484,10 +3885,10 @@ async function contadorDeVistas() {
       datos[IDs.vistas] === 1 ? "" : "s"
     }`;
     stats.vistasUnicas = `${formatearNumero(
-      datos[IDs.vistasUnicas]
+      datos[IDs.vistasUnicas],
     )} vistas por día`;
     stats.descargasUnicas = `${formatearNumero(
-      datos[IDs.descargasUnicas]
+      datos[IDs.descargasUnicas],
     )} descarga${datos[IDs.descargasUnicas] === 1 ? "" : "s"}`;
 
     mostrarSiTodoListo();
@@ -4505,9 +3906,8 @@ function mostrarSiTodoListo() {
     stats.vistasUnicas &&
     stats.descargasUnicas
   ) {
-    document.getElementById(
-      "contenedor-vistas"
-    ).innerHTML = `${stats.online} &nbsp;| ${stats.vistas} | ${stats.vistasUnicas} | ${stats.descargasUnicas}`;
+    document.getElementById("contenedor-vistas").innerHTML =
+      `${stats.online} &nbsp;| ${stats.vistas} | ${stats.vistasUnicas} | ${stats.descargasUnicas}`;
   }
 }
 
@@ -4557,7 +3957,7 @@ botonVideoImgLocal.addEventListener("click", async () => {
   }
 
   console.log("Archivo seleccionado:", rutaArchivo);
-  const videoLocalUrl = `file://${rutaArchivo}`;
+  const videoLocalUrl = formalizarRuta(rutaArchivo);
 
   // 🖼 Si es imagen
   if (rutaArchivo.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
@@ -4754,7 +4154,7 @@ searchInput2.addEventListener("input", () => {
           String(himno.numero).includes(query);
         const enTitulo = himno.titulo.toLowerCase().includes(query);
         const enEstrofas = himno.estrofas.some((e) =>
-          e.toLowerCase().includes(query)
+          e.toLowerCase().includes(query),
         );
         const enCoro = himno.coro
           ? himno.coro.toLowerCase().includes(query)
@@ -4790,7 +4190,9 @@ function mostrarTitulo(himno) {
     else if (carpetaSelect.value === "audiosHimnosLetra")
       carpeta = "audiosHimnosLetra";
     else carpeta = "audiosHimnos";
-    audioHimno.src = srcAux + `${carpeta}/${numeroFormateado}.mp3`;
+    audioHimno.src = formalizarRuta(
+      srcAux + `${carpeta}/${numeroFormateado}.mp3`,
+    );
     audioHimno
       .play()
       .then(() => {
@@ -4799,7 +4201,7 @@ function mostrarTitulo(himno) {
         console.log(
           "[PLAYBACK] 🎵 Reproduciendo:",
           himno.titulo,
-          "# " + himno.numero
+          "# " + himno.numero,
         );
         if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
           console.log("[PLAYBACK] ✅ Enviando estado al backend");
@@ -4811,7 +4213,7 @@ function mostrarTitulo(himno) {
           });
         } else {
           console.warn(
-            "[PLAYBACK] ❌ electronAPI.updatePlaybackStatus no disponible"
+            "[PLAYBACK] ❌ electronAPI.updatePlaybackStatus no disponible",
           );
         }
       })
@@ -5160,7 +4562,7 @@ function precargarImagenes() {
   // Verificar que srcAux esté definido antes de precargar
   if (!srcAux) {
     console.warn(
-      "[PRECARGA] srcAux no está definido, omitiendo precarga de imágenes"
+      "[PRECARGA] srcAux no está definido, omitiendo precarga de imágenes",
     );
     return;
   }
@@ -5169,7 +4571,7 @@ function precargarImagenes() {
   for (let i = 1; i <= 20; i++) {
     const numero = i.toString().padStart(3, "0");
     const img = new Image();
-    img.src = srcAux + `portadas/${numero}.jpg`;
+    img.src = formalizarRuta(srcAux + `portadas/${numero}.jpg`);
   }
 }
 
@@ -5396,11 +4798,12 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-01-23",
+    titulo: "Mejora S.O",
+    mensaje:
+      "Se mejora potentemente el sistema de lectura de archivo en los dos sistemas: Windows y principalmente Mac, aunque solo una persona usuaria de Mac nos envío un video de cómo funcionaba, con eso se pudo hacer la lógica para reparar el error, se tuvo que usar mucho análisis ya que no se cuenta con una computadora Mac para hacer pruebas unitarias, se tuvo que hacer las correciones vendados los ojos confiando en Dios; esperamos que esta nueva actualización pueda dar en Mac, recordar que el instalador Mac a veces no funcionará por seguridad de Apple, por si no llega a funcionar, recomendamos descargar el .zip | Se sigue mejorando cada vez este software con la ayuda del Señor. Preguntas y sugerencias en el chat de la aplicación.",
+    version: "1.0.98",
+    tipo: "Mejora",
   },
   {
     fecha: "2026-01-11",
@@ -7339,7 +6742,7 @@ async function cargarCarruselPosts() {
   try {
     const response = await fetch(
       "https://proyectoja.github.io/carrusel-posts.json",
-      { cache: "no-store" }
+      { cache: "no-store" },
     );
     if (!response.ok) throw new Error("No se pudo cargar el carrusel");
 
@@ -7393,13 +6796,13 @@ function renderizarCarruselPosts() {
     card.className = "carrusel-post-card";
     card.innerHTML = `
       <img src="${post.imagen}" alt="${
-      post.iglesia
-    }" class="carrusel-post-imagen" loading="lazy">
+        post.iglesia
+      }" class="carrusel-post-imagen" loading="lazy">
       <div class="carrusel-post-info">
         <h4 class="carrusel-post-iglesia">${post.iglesia}</h4>
         <p class="carrusel-post-pais">🌍 ${post.pais}</p>
         <p class="carrusel-post-fecha">📅 ${formatearFecha(
-          post.fechaPublicada
+          post.fechaPublicada,
         )}</p>
         ${
           post.descripcion
@@ -7519,7 +6922,7 @@ function renderPPTSlide() {
       slide,
       this.naturalWidth,
       "x",
-      this.naturalHeight
+      this.naturalHeight,
     );
     // Solo actualizar la imagen principal si se carga correctamente
     pptImage.src = slide;
@@ -7568,7 +6971,7 @@ function pptNext() {
     // Activar el contenedor de PowerPoint automáticamente
     const ventanaBiblia = document.getElementById("contenedor-biblia");
     const ventanaHimnosPro = document.getElementById(
-      "contenedor-himnos-personalizados"
+      "contenedor-himnos-personalizados",
     );
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
@@ -7581,7 +6984,7 @@ function pptNext() {
     ventanaProgramacion.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
     console.log(
-      "[PPT] Contenedor activado automáticamente para navegación siguiente"
+      "[PPT] Contenedor activado automáticamente para navegación siguiente",
     );
   }
 
@@ -7607,7 +7010,7 @@ function pptPrev() {
     // Activar el contenedor de PowerPoint automáticamente
     const ventanaBiblia = document.getElementById("contenedor-biblia");
     const ventanaHimnosPro = document.getElementById(
-      "contenedor-himnos-personalizados"
+      "contenedor-himnos-personalizados",
     );
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
@@ -7620,7 +7023,7 @@ function pptPrev() {
     ventanaProgramacion.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
     console.log(
-      "[PPT] Contenedor activado automáticamente para navegación anterior"
+      "[PPT] Contenedor activado automáticamente para navegación anterior",
     );
   }
 
@@ -7660,7 +7063,7 @@ function loadPowerPoint(slidesArray, presentationId = null) {
       "imagenes/powerpoint-proyectoja.jpg",
     ];
     console.log(
-      `[PPT] Total de diapositivas (con fin): ${slidesConFinal.length}`
+      `[PPT] Total de diapositivas (con fin): ${slidesConFinal.length}`,
     );
 
     window.powerPointState = {
@@ -7678,7 +7081,7 @@ function loadPowerPoint(slidesArray, presentationId = null) {
     const ventanaPowerPoint = document.getElementById("contenedor-power-point");
     const ventanaBiblia = document.getElementById("contenedor-biblia");
     const ventanaHimnosPro = document.getElementById(
-      "contenedor-himnos-personalizados"
+      "contenedor-himnos-personalizados",
     );
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
@@ -8283,7 +7686,7 @@ async function exportarProgramacion(formato) {
 
         // Hora
         fila.innerHTML += `<td style="border:1px solid #ccc;padding:8px;">${getVal(
-          ".input-hora"
+          ".input-hora",
         )}</td>`;
 
         // Desc (Manejo robusto para select/input)
@@ -8305,7 +7708,7 @@ async function exportarProgramacion(formato) {
         // Detalle y Himnos
         const detalleTxt = getVal(".input-detalle");
         const chips = Array.from(tr.querySelectorAll(".texto-chip-himno")).map(
-          (s) => s.textContent
+          (s) => s.textContent,
         );
         let detalleHtml = detalleTxt ? `<div>${detalleTxt}</div>` : "";
         if (chips.length) {
@@ -8317,7 +7720,7 @@ async function exportarProgramacion(formato) {
 
         // Encargado
         fila.innerHTML += `<td style="border:1px solid #ccc;padding:8px;">${getVal(
-          ".input-presentacion"
+          ".input-presentacion",
         )}</td>`;
 
         table.appendChild(fila);
@@ -8470,7 +7873,7 @@ let opcionesPredefinidas = [
 // Cargar opciones personalizadas del localStorage
 function cargarOpcionesPersonalizadas() {
   const guardadas = localStorage.getItem(
-    "opciones-programacion-personalizadas"
+    "opciones-programacion-personalizadas",
   );
   if (guardadas) {
     const personalizadas = JSON.parse(guardadas);
@@ -8501,11 +7904,11 @@ function guardarOpcionesPersonalizadas() {
         "Especial Musical",
         "Despedida",
         "Bendición",
-      ].includes(op)
+      ].includes(op),
   );
   localStorage.setItem(
     "opciones-programacion-personalizadas",
-    JSON.stringify(personalizadas)
+    JSON.stringify(personalizadas),
   );
 }
 
@@ -8803,14 +8206,14 @@ function cargarDatosCategoria(categoria) {
     const match = t.match(/\d{3}/);
     const numero = match ? match[0] : String(i + 1).padStart(3, "0");
 
-    let img = srcAux + pathPortadas + numero + tipoPortada;
+    let img = formalizarRuta(srcAux + pathPortadas + numero + tipoPortada);
     if (categoria === "himnosPianoPista")
       img = "portadasHimnosPianoPista/001.jpg"; // Fix hardcoded
 
     todosLosHimnos.push({
       numero,
       titulo: t,
-      videoPath: srcAux + pathVideos + numero + ".mp4",
+      videoPath: formalizarRuta(srcAux + pathVideos + numero + ".mp4"),
       imagePath: img,
     });
   }
@@ -8822,7 +8225,7 @@ function obtenerHimnosPorCategoria(categoria) {
   // La categoría ya fue procesada, simplemente devolvemos lo que hay en memoria
 
   console.log(
-    `[DEBUG] obtenerHimnosPorCategoria: Retornando ${todosLosHimnos.length} elementos para ${categoria}`
+    `[DEBUG] obtenerHimnosPorCategoria: Retornando ${todosLosHimnos.length} elementos para ${categoria}`,
   );
 
   if (todosLosHimnos.length === 0) {
@@ -8860,7 +8263,7 @@ async function reproducirHimno(numeroHimno, categoria = "todos") {
       "Contenido Multimedia",
       numeroHimno,
       null,
-      null
+      null,
     );
     return;
   }
@@ -8880,7 +8283,7 @@ async function reproducirHimno(numeroHimno, categoria = "todos") {
       himno.titulo,
       himno.videoPath,
       himno.imagePath,
-      null
+      null,
     );
   } else {
     console.error(`Contenido no encontrado: ${numeroHimno} (${categoria})`);
@@ -8946,7 +8349,7 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   btnLocal.onclick = async () => {
     if (!esPremium) {
       alert(
-        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!"
+        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!",
       );
       return;
     }
@@ -8954,14 +8357,14 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
     if (ruta) {
       const extension = ruta.split(".").pop().toLowerCase();
       const esImagen = ["jpg", "jpeg", "png", "gif", "webp"].includes(
-        extension
+        extension,
       );
       const nombre = ruta.split(/[\\/]/).pop();
       onHimnoSeleccionado({
-        numero: `file://${ruta}`,
+        numero: formalizarRuta(ruta),
         titulo: `ARCHIVO: ${nombre}`,
         categoria: esImagen ? "imagen-local" : "video-local",
-        videoPath: `file://${ruta}`,
+        videoPath: formalizarRuta(ruta),
         imagePath: null,
       });
       cerrarModalHimnos();
@@ -9012,7 +8415,7 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   btnYoutube.onclick = () => {
     if (!esPremium) {
       alert(
-        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!"
+        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!",
       );
       return;
     }
@@ -9052,7 +8455,7 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
       ? himnos.filter(
           (h) =>
             h.numero.includes(filtro) ||
-            h.titulo.toLowerCase().includes(filtro.toLowerCase())
+            h.titulo.toLowerCase().includes(filtro.toLowerCase()),
         )
       : himnos;
 
@@ -9241,7 +8644,7 @@ function crearControlesDetalle(valorInicial = "", himnosGuardados = []) {
             ? `YOUTUBE: ${himnoNumero.substring(0, 20)}...`
             : `ARCHIVO: ${nombre}`,
           categoria: esYoutube ? "youtube" : "local",
-        })
+        }),
       );
       return;
     }
@@ -9260,7 +8663,7 @@ function crearControlesDetalle(valorInicial = "", himnosGuardados = []) {
           numero: himnoNumero,
           titulo: `Himno ${himnoNumero}`,
           categoria: "todos",
-        })
+        }),
       );
     }
   });
@@ -9305,13 +8708,13 @@ function obtenerDatosProgramacion() {
 
   // Obtener filas del servicio general
   const filasServicio = document.querySelectorAll(
-    "#seccion-servicio-general tr.fila-editable"
+    "#seccion-servicio-general tr.fila-editable",
   );
   filasServicio.forEach((fila) => {
     // Obtener himnos agregados en esta fila
     const chips = fila.querySelectorAll(".chip-himno");
     const himnosAgregados = Array.from(chips).map(
-      (chip) => chip.dataset.numeroHimno
+      (chip) => chip.dataset.numeroHimno,
     );
 
     servicioGeneral.push({
@@ -9325,13 +8728,13 @@ function obtenerDatosProgramacion() {
 
   // Obtener filas del culto de adoración
   const filasCulto = document.querySelectorAll(
-    "#seccion-culto-adoracion tr.fila-editable"
+    "#seccion-culto-adoracion tr.fila-editable",
   );
   filasCulto.forEach((fila) => {
     // Obtener himnos agregados en esta fila
     const chips = fila.querySelectorAll(".chip-himno");
     const himnosAgregados = Array.from(chips).map(
-      (chip) => chip.dataset.numeroHimno
+      (chip) => chip.dataset.numeroHimno,
     );
 
     cultoAdoracion.push({
@@ -9416,7 +8819,7 @@ function crearFilaDesdeGuardado(datos, seccion) {
   // Descripción
   const tdDescripcion = document.createElement("td");
   const selectDescripcion = crearSelectDescripcion(
-    datos.descripcion || "Bienvenida"
+    datos.descripcion || "Bienvenida",
   );
   tdDescripcion.appendChild(selectDescripcion);
 
@@ -9424,7 +8827,7 @@ function crearFilaDesdeGuardado(datos, seccion) {
   const tdDetalle = document.createElement("td");
   const { contenedorDetalle } = crearControlesDetalle(
     datos.detalle || "",
-    datos.himnos || []
+    datos.himnos || [],
   );
   tdDetalle.appendChild(contenedorDetalle);
 
@@ -9498,7 +8901,7 @@ function guardarProgramacion() {
 function limpiarProgramacion() {
   if (
     !confirm(
-      "¿Está seguro de limpiar toda la programación? Esta acción no se puede deshacer."
+      "¿Está seguro de limpiar toda la programación? Esta acción no se puede deshacer.",
     )
   ) {
     return;

@@ -225,7 +225,7 @@ function addToolTip(elemento, mensaje, posicion = "top", opciones = {}) {
     actualizar: (
       nuevoMensaje = null,
       nuevaPosicion = null,
-      nuevasOpciones = {}
+      nuevasOpciones = {},
     ) => {
       if (nuevoMensaje !== null) tooltip.textContent = nuevoMensaje;
       if (nuevaPosicion !== null) posicion = nuevaPosicion;
@@ -360,7 +360,24 @@ document.addEventListener("DOMContentLoaded", function () {
       "top",
       {
         colorFondo: "#ff6600ff",
-      }
+      },
+    );
+  }
+  if (document.getElementById("botonPelis")) {
+    addToolTip("#botonPelis", "Películas y series | Próximamente...", "right");
+  }
+  if (document.getElementById("botonBibliaEstudio")) {
+    addToolTip(
+      "#botonBibliaEstudio",
+      "Biblia de estudio | Próximamente...",
+      "right",
+    );
+  }
+  if (document.getElementById("botonDevocionales")) {
+    addToolTip(
+      "#botonDevocionales",
+      "Devocionales matutinos | Próximamente...",
+      "right",
     );
   }
 });

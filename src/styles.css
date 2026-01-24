@@ -258,7 +258,10 @@ html {
 .video-container h3 {
   background-color: rgba(255, 255, 255, 0.5);
   color: white;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -3px 1px 0 #000,
     1px 1px 0 #000;
   width: 500px;
   height: 100%;
@@ -328,7 +331,10 @@ html {
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
   font-style: normal;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -3px 1px 0 #000,
     1px 1px 0 #000;
   cursor: pointer;
   white-space: nowrap;
@@ -480,7 +486,9 @@ input:focus::placeholder {
   justify-content: flex-end;
   align-items: flex-end;
   border: 2px solid rgba(255, 255, 255, 0.5);
-  box-shadow: inset 0 0 10px #000, 0 0 10px white;
+  box-shadow:
+    inset 0 0 10px #000,
+    0 0 10px white;
   margin-right: -305px;
   bottom: 70px;
   width: auto;
@@ -525,13 +533,17 @@ input:focus::placeholder {
   overflow: hidden;
   overflow-y: auto;
   border-radius: 1rem;
-  box-shadow: 0 0 10px #000, inset 0 0 10px #000;
+  box-shadow:
+    0 0 10px #000,
+    inset 0 0 10px #000;
   justify-content: center;
   align-items: flex-start;
   text-align: center;
   padding: 20px;
   bottom: 70px;
-  box-shadow: 8px 8px 15px #bebebe, -8px -8px 15px #ffffff;
+  box-shadow:
+    8px 8px 15px #bebebe,
+    -8px -8px 15px #ffffff;
 }
 .contenedor-ventanas-opciones .opcion1 {
   display: none; /*Original flex*/
@@ -594,14 +606,34 @@ h3,
 h4,
 h5 {
   color: white;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
 }
 .contenedor-ventanas-opciones p {
   font-style: italic;
   color: white;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Open Sans",
+    "Helvetica Neue",
+    sans-serif;
 }
 
 /* Estilo de la clase tooltip-text que muestra el tooltip */
@@ -682,7 +714,10 @@ h5 {
   font-size: 30px;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -3px 1px 0 #000,
     1px 1px 0 #000;
 }
 #menu ul {
@@ -740,7 +775,10 @@ h5 {
   margin: 0%;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -3px 1px 0 #000,
     1px 1px 0 #000;
 }
 #lista-capitulos::-webkit-scrollbar {
@@ -764,7 +802,10 @@ h5 {
   font-size: 20px;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -3px 1px 0 #000,
     1px 1px 0 #000;
 }
 #menu li {
@@ -791,7 +832,10 @@ h5 {
   font-size: 20px;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -3px 1px 0 #000,
     1px 1px 0 #000;
 }
 #lista-capitulos li {
@@ -835,7 +879,10 @@ h5 {
     z-index: 3;
     margin: 0%;
     font-weight: bold;
-    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+    text-shadow:
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -3px 1px 0 #000,
       1px 1px 0 #000;
     letter-spacing: 1px;
   }
@@ -938,7 +985,10 @@ h5 {
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: bold;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -3px 1px 0 #000,
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -3px 1px 0 #000,
     1px 1px 0 #000;
 }
 #config-panel::-webkit-scrollbar {
@@ -1515,7 +1565,9 @@ h5 {
   padding: 0;
   overflow: hidden;
   border: 5px solid rgb(255, 255, 255, 0.8);
-  box-shadow: inset 0px 0px 10px black, 0 0 10px black;
+  box-shadow:
+    inset 0px 0px 10px black,
+    0 0 10px black;
   border-radius: 1rem;
   background-color: brown;
   justify-content: flex-start;
@@ -1591,7 +1643,9 @@ h5 {
   padding-left: 30px;
   padding-right: 30px;
   border: 2px solid rgb(255, 170, 0.8);
-  box-shadow: inset 0 0 10px black, 0 0 10px black;
+  box-shadow:
+    inset 0 0 10px black,
+    0 0 10px black;
   cursor: pointer;
   justify-content: center;
   align-content: center;
@@ -1607,10 +1661,14 @@ h5 {
 }
 @keyframes onda {
   0% {
-    box-shadow: 0 0 0 0 rgb(238, 255, 1), inset 0 0 10px black;
+    box-shadow:
+      0 0 0 0 rgb(238, 255, 1),
+      inset 0 0 10px black;
   }
   100% {
-    box-shadow: 0 0 0 20px rgba(219, 208, 52, 0), inset 0 0 10px black;
+    box-shadow:
+      0 0 0 20px rgba(219, 208, 52, 0),
+      inset 0 0 10px black;
   }
 }
 .botonPremium img {
@@ -1656,7 +1714,9 @@ h5 {
   background-color: black;
   border: 5px solid rgb(255, 255, 255, 0.8);
   border-radius: 1rem;
-  box-shadow: inset 0 0 10px black, 0 0 10px black;
+  box-shadow:
+    inset 0 0 10px black,
+    0 0 10px black;
 }
 
 #contenedor-contador .clock,
@@ -1735,7 +1795,9 @@ input[type="number"] {
   font-weight: bold;
   color: red;
   display: none;
-  animation: parpadeo 1s infinite, zoom 1.5s ease-in-out infinite;
+  animation:
+    parpadeo 1s infinite,
+    zoom 1.5s ease-in-out infinite;
   text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
   font-family: Arial, Helvetica, sans-serif;
   flex-wrap: nowrap;
@@ -2300,7 +2362,9 @@ audio {
   );
   border-radius: 15px;
   padding: 20px;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.3),
+    0 5px 15px rgba(0, 0, 0, 0.5);
   position: relative; /* ← Sticky para quedarse fijo al hacer scroll */
   top: 0; /* ← Se quedará pegado arriba */
   z-index: 15; /* ← Por encima del contenido pero debajo de otros modales */
@@ -2379,7 +2443,9 @@ audio {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -3655,4 +3721,36 @@ table button:hover {
   font-family: Arial, Helvetica, sans-serif;
   margin-left: 5px;
   margin-right: 5px;
+}
+
+/*CONTENEDOR MENÚ LATERAL PARA MÁS OPCIONES O HERRAMIENTAS*/
+.contenedor-menu-lateral {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  overflow-y: auto;
+  min-width: 50px;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: rgba(165, 42, 42, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgb(255, 255, 255, 0.5);
+  border-top-right-radius: 1rem;
+  box-sizing: border-box;
+}
+
+.contenedor-menu-lateral button {
+  width: 100%;
+  height: auto;
+  border: none;
+  background: none;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.contenedor-menu-lateral button img {
+  width: 35px;
+  height: auto;
 }
