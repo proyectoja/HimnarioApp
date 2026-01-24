@@ -72,8 +72,8 @@ jobs:
         run: npm install
 
       - name: Build & Publish (Electron Builder)
-        # electron-builder detectará la versión en package.json (ya actualizada)
-        # y subirá los artefactos al mismo Release en GitHub automáticamente.
-        run: npm run release
+        # Usamos npx directamente para evitar que 'npm run release' dispare el script 'prerelease'
+        # que intenta incrementar la versión nuevamente.
+        run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
