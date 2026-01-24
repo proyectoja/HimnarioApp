@@ -9,8 +9,31 @@
 !macroend
 
 !macro customInstall
-  ; Dejar vacío para que electron-builder maneje la creación de accesos directos
-  ; según la configuración de package.json (createDesktopShortcut, createStartMenuShortcut)
+  SetShellVarContext all
+  
+  ; 🎯 Crear accesos directos MANUALMENTE (después de la instalación)
+  ; Esto garantiza que siempre se creen, incluso con oneClick installers
+  
+  ; Crear acceso directo en el Escritorio
+  CreateShortCut "$DESKTOP\Himnario Adventista Pro.lnk" \
+                 "$INSTDIR\Himnario Adventista Pro.exe" \
+                 "" \
+                 "$INSTDIR\Himnario Adventista Pro.exe" \
+                 0 \
+                 SW_SHOWNORMAL \
+                 "" \
+                 "Himnario Adventista Pro - PROYECTO JA"
+  
+  ; Crear acceso directo en el Menú Inicio
+  CreateDirectory "$SMPROGRAMS\Himnario Adventista Pro"
+  CreateShortCut "$SMPROGRAMS\Himnario Adventista Pro\Himnario Adventista Pro.lnk" \
+                 "$INSTDIR\Himnario Adventista Pro.exe" \
+                 "" \
+                 "$INSTDIR\Himnario Adventista Pro.exe" \
+                 0 \
+                 SW_SHOWNORMAL \
+                 "" \
+                 "Himnario Adventista Pro - PROYECTO JA"
 !macroend
 
 
