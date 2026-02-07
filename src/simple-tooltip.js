@@ -364,7 +364,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
   if (document.getElementById("botonPelis")) {
-    addToolTip("#botonPelis", "Películas y series | Próximamente...", "right");
+    addToolTip("#botonPelis", "Películas y series", "right");
   }
   if (document.getElementById("botonBibliaEstudio")) {
     addToolTip(
@@ -377,6 +377,13 @@ document.addEventListener("DOMContentLoaded", function () {
     addToolTip(
       "#botonDevocionales",
       "Devocionales matutinos | Próximamente...",
+      "right",
+    );
+  }
+  if (document.getElementById("botonManualUsuario")) {
+    addToolTip(
+      "#botonManualUsuario",
+      "Manual del usuario y tutoriales",
       "right",
     );
   }

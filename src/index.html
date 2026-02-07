@@ -6,6 +6,11 @@
     <title>Himnario Adventista Pro</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="simple-tooltip.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="app/styleApp.css" />
   </head>
 
   <body>
@@ -83,6 +88,7 @@
       </div>
       <div id="contenedor-logs">
         <pre id="logs"></pre>
+        <div id="contenedor-barra-logs"></div>
       </div>
       <div id="contenedor-contador">
         <div class="contadores" id="contadores">Contadores:</div>
@@ -119,7 +125,426 @@
           <button id="botonDevocionales" class="botonDevocionales">
             <img src="iconos/devocionales.png" />
           </button>
+          <button id="botonManualUsuario" class="botonManualUsuario">
+            <img src="iconos/manual.png" />
+          </button>
         </div>
+        <!-- PELÍCULAS Y SERIES-->
+        <div
+          id="contenedor-peliculas"
+          class="contenedor-peliculas"
+          style="display: none"
+        >
+          <!-- POP-UP MENSAJE MANUAL -->
+          <div id="modal-mensaje-peliculas" class="modal-pelis-overlay">
+            <div class="modal-pelis-content">
+              <div class="modal-pelis-header">
+                <i class="fa-solid fa-film"></i>
+                <h2>Aviso Importante</h2>
+                <button class="modal-pelis-close" onclick="cerrarModalPelis()">
+                  &times;
+                </button>
+              </div>
+              <div class="modal-pelis-body">
+                <p id="texto-modal-peliculas">
+                  🎥
+                  <strong
+                    >¡Bienvenido a nuestra selección de películas y
+                    series!</strong
+                  >
+                  <br /><br />
+                  Le recordamos que esta sección es un beneficio
+                  <strong>totalmente gratuito</strong> para nuestra comunidad.
+                  <br /><br />
+                  Debido a que dependemos de servidores externos, es posible que
+                  eventualmente algún contenido presente fallos temporales.
+                  Agradecemos su comprensión y <strong>apoyo positivo</strong>
+                  para seguir brindando este servicio sin costo.
+                  <br /><br />
+                  ¡Deseamos que sea de gran bendición para usted!
+                </p>
+              </div>
+              <div class="modal-pelis-footer">
+                <button class="modal-pelis-btn" onclick="cerrarModalPelis()">
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- MENÚ LATERAL DE NAVEGACIÓN -->
+          <nav class="side-nav">
+            <div class="nav-item active" onclick="switchView('home')">
+              <i class="fa-solid fa-house"></i>
+              <span class="nav-label">Inicio</span>
+            </div>
+            <div class="nav-item" onclick="switchView('lists')">
+              <i class="fa-solid fa-layer-group"></i>
+              <span class="nav-label">Listas</span>
+            </div>
+            <div class="nav-item" onclick="switchView('downloads')">
+              <i class="fa-solid fa-download"></i>
+              <span class="nav-label">Descargas</span>
+            </div>
+          </nav>
+
+          <!-- CONTENIDO PRINCIPAL -->
+          <div class="main-content">
+            <!-- VISTA INICIO -->
+            <div id="view-home" class="view-section active">
+              <div class="contenedor-principal">
+                <div class="etiqueta1">
+                  <div class="contenedor-cont-pelis"></div>
+                  <span id="contUsuarios"></span>
+                </div>
+                <div id="contenedorFiltros"></div>
+                <div class="contenedor-lista">
+                  <h3 class="section-title" style="text-wrap: nowrap">
+                    Recién agregadas
+                  </h3>
+                  <div id="contenedorEspecial"></div>
+
+                  <h3 class="section-title" style="text-wrap: nowrap">
+                    Series
+                  </h3>
+                  <div id="contenedorEspecialSeries"></div>
+
+                  <h3 class="section-title" style="text-wrap: nowrap">
+                    Todas las películas y series
+                  </h3>
+                  <div id="contenedorTodas" class="contenedor-grid"></div>
+                </div>
+              </div>
+              <div id="anuncio-container1"></div>
+              <div class="contenedor-buscador">
+                <input
+                  type="search"
+                  id="buscar"
+                  placeholder="Buscar película..."
+                />
+              </div>
+              <div class="contenedor-lateral-derecho">
+                <h3>Contadores</h3>
+                <!-- BEGIN: Powered by Supercounters.com -->
+                <center>
+                  <script
+                    type="text/javascript"
+                    src="//widget.supercounters.com/ssl/online_i.js"
+                  ></script>
+                  <script type="text/javascript">
+                    sc_online_i(1709265, "ffffff", "000000");
+                  </script>
+                  <br /><noscript
+                    ><a href="https://www.supercounters.com/"
+                      >free online counter</a
+                    ></noscript
+                  >
+                </center>
+                <!-- END: Powered by Supercounters.com -->
+                <!-- BEGIN: Powered by Supercounters.com -->
+                <center>
+                  <script
+                    type="text/javascript"
+                    src="//widget.supercounters.com/ssl/vt.js"
+                  ></script>
+                  <script type="text/javascript">
+                    var sc_visitor_var = sc_visitor_var || [];
+                    sc_vt(1709266, "000000", "ffffff", "ffffff", 10);
+                  </script>
+                  <br /><noscript
+                    ><a href="http://www.supercounters.com/"
+                      >free online counter</a
+                    ></noscript
+                  >
+                </center>
+                <!-- END: Powered by Supercounters.com -->
+                <!-- BEGIN: Powered by Supercounters.com -->
+                <center>
+                  <script
+                    type="text/javascript"
+                    src="//widget.supercounters.com/ssl/flag.js"
+                  ></script>
+                  <script type="text/javascript">
+                    sc_flag(
+                      1709261,
+                      "000000",
+                      "FFFFFF",
+                      "FFFFFF",
+                      2,
+                      100,
+                      0,
+                      0,
+                    );
+                  </script>
+                  <br /><noscript
+                    ><a href="http://www.supercounters.com/"
+                      >Flag Counter</a
+                    ></noscript
+                  >
+                </center>
+                <!-- END: Powered by Supercounters.com -->
+                <a href="https://www.andyhoppe.com/" title="Contador"
+                  ><img
+                    src="//c.andyhoppe.com/1740971181"
+                    style="border: none"
+                    alt="Contador"
+                /></a>
+              </div>
+            </div>
+
+            <!-- VISTA LISTAS (Historial, Likes, Watchlist) -->
+            <div id="view-lists" class="view-section" style="display: none">
+              <div class="lists-container">
+                <h2 class="view-title">Mis Cosas</h2>
+
+                <div class="list-section">
+                  <h3>
+                    <i class="fa-solid fa-clock-rotate-left"></i> Continuar
+                    viendo
+                  </h3>
+                  <div id="list-history" class="horizontal-scroll">
+                    <p class="empty-msg">No has visto nada recientemente.</p>
+                  </div>
+                </div>
+
+                <div class="list-section">
+                  <h3><i class="fa-solid fa-thumbs-up"></i> Me gustaron</h3>
+                  <div id="list-liked" class="horizontal-scroll">
+                    <p class="empty-msg">No has dado like a nada aún.</p>
+                  </div>
+                </div>
+
+                <div class="list-section">
+                  <h3>
+                    <i class="fa-solid fa-bookmark"></i> Mi Lista (Watchlist)
+                  </h3>
+                  <div id="list-watchlist" class="horizontal-scroll">
+                    <p class="empty-msg">Tu lista está vacía.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VISTA DESCARGAS -->
+            <div id="view-downloads" class="view-section" style="display: none">
+              <div class="downloads-container">
+                <h2 class="view-title">Descargas</h2>
+                <div id="list-downloads" class="downloads-list">
+                  <p class="empty-msg">No hay descargas recientes.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- POPUP DETALLES PELÍCULA -->
+            <div id="contenedorJWPLAYER">
+              <div class="prime-popup">
+                <div class="background-image" id="bg-image-pop"></div>
+
+                <div class="content">
+                  <div class="poster-container">
+                    <div class="poster-image" id="poster-image-pop">
+                      <div class="movie-title" id="movie-title-poster"></div>
+                    </div>
+
+                    <!-- Player wrapper embedded in poster container -->
+                    <div
+                      id="player-wrapper"
+                      style="
+                        display: none;
+                        width: 100%;
+                        height: 100%;
+                        flex-direction: column;
+                        background: black;
+                        position: relative;
+                      "
+                    >
+                      <div
+                        id="close-player"
+                        onclick="closePlayerOnly()"
+                        style="
+                          position: absolute;
+                          top: 10px;
+                          right: 10px;
+                          z-index: 20;
+                          cursor: pointer;
+                          color: white;
+                          font-size: 20px;
+                          background: rgba(0, 0, 0, 0.5);
+                          padding: 5px 10px;
+                          border-radius: 5px;
+                        "
+                      >
+                        X
+                      </div>
+
+                      <div
+                        id="player"
+                        style="
+                          width: 100%;
+                          flex: 1;
+                          position: relative;
+                          min-height: 150px;
+                        "
+                      ></div>
+
+                      <div
+                        id="next-message"
+                        style="
+                          display: none;
+                          position: absolute;
+                          bottom: 60px;
+                          left: 20px;
+                          z-index: 15;
+                          background: rgba(0, 0, 0, 0.7);
+                          padding: 10px;
+                          border-radius: 5px;
+                        "
+                      ></div>
+
+                      <div
+                        id="series-controls"
+                        style="
+                          display: none;
+                          flex-direction: column;
+                          background: rgba(0, 0, 0, 0.8);
+                        "
+                      >
+                        <h3
+                          id="more-label"
+                          style="
+                            margin: 5px 10px;
+                            font-size: 14px;
+                            display: none;
+                          "
+                        >
+                          Más Capítulos
+                        </h3>
+                        <div
+                          class="shelf"
+                          id="shelf"
+                          style="
+                            display: none;
+                            width: 100%;
+                            overflow-x: auto;
+                            padding: 5px;
+                            min-height: 100px;
+                          "
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="info-container">
+                    <div class="prime-badge">
+                      <i class="fa-solid fa-crown"></i> Gratis
+                    </div>
+
+                    <h1 class="title-main" id="titulo-pop"></h1>
+                    <div class="views" id="vistas"></div>
+                    <div class="meta-info" id="metadata-full-pop">
+                      <!-- Content will be populated by JS -->
+                    </div>
+
+                    <div class="action-row">
+                      <button class="btn btn-play" id="btn-play-movie">
+                        <i class="fa fa-play"></i> Play movie
+                      </button>
+                      <button class="btn btn-download" id="btn-download">
+                        <i class="fa fa-download"></i> Download
+                      </button>
+                    </div>
+
+                    <div class="interaction-row">
+                      <!-- Watchlist -->
+                      <div class="interaction-btn btn-watchlist">
+                        <i class="fa-regular fa-bookmark"></i> Watchlist
+                      </div>
+
+                      <!-- Like/Dislike Group -->
+                      <div class="mobile-group">
+                        <div
+                          class="interaction-btn btn-like-action"
+                          onclick="votar('like')"
+                        >
+                          <i id="iconLike" class="fa-regular fa-thumbs-up"></i>
+                          Like
+                          <span class="count" id="textLike">0</span>
+                        </div>
+                        <div
+                          class="interaction-btn btn-dislike-action"
+                          onclick="votar('dislike')"
+                        >
+                          <i
+                            id="iconDislike"
+                            class="fa-regular fa-circle-xmark"
+                          ></i>
+                          Not for me
+                          <span class="count" id="textDislike">0</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="desc" id="descripcion-pop"></div>
+
+                    <!-- Extra elements from original that might be needed -->
+                    <div id="audios-pop" style="display: none"></div>
+                    <div id="anuncio-container2" style="margin-top: 20px"></div>
+                    <div
+                      id="comentarios-pop"
+                      onclick="cargarChat()"
+                      style="margin-top: 10px; cursor: pointer; opacity: 0.7"
+                    >
+                      Mostrar comentarios
+                    </div>
+                    <div id="disqus_thread"></div>
+
+                    <!-- Hidden elements required by script.js but not used in display -->
+                    <div id="metadata-pop" style="display: none"></div>
+                    <div id="generos-pop" style="display: none"></div>
+                  </div>
+                </div>
+
+                <!-- Close button for the popup -->
+                <div
+                  id="cerrar-pop"
+                  onclick="closePopJW()"
+                  style="
+                    position: absolute;
+                    top: 15px;
+                    right: 15px;
+                    z-index: 20;
+                    cursor: pointer;
+                    color: white;
+                    font-size: 20px;
+                    background: rgba(0, 0, 0, 0.3);
+                    padding: 5px 12px;
+                    border-radius: 50%;
+                  "
+                >
+                  X
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Fin main-content -->
+
+          <!-- Popup para seleccionar calidad -->
+          <div id="popup-calidades" class="popup-calidades">
+            <div class="popup-contenido">
+              <h3>Selecciona la calidad</h3>
+              <div id="lista-calidades" class="lista-calidades">
+                <!-- Aquí se generan los botones de calidades -->
+              </div>
+              <button class="cerrar-popup" onclick="cerrarPopupCalidades()">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- MANUAL DEL USUARIO Y TUTORIALES-->
+        <div
+          id="contenedor-manual-usuario"
+          class="contenedor-manual-usuario"
+        ></div>
         <!-- PREGUNTAS Y RESPUESTAS -->
         <div
           style="display: none"
@@ -781,7 +1206,34 @@
               <p id="info-pin-remoto">Pin del control remoto: ...</p>
               <p>Código premium:</p>
               <p id="info-codigo-premium">Sin código</p>
+              <div
+                id="contenedor-qr-remoto"
+                style="
+                  text-align: center;
+                  margin-top: 15px;
+                  display: none;
+                  background: white;
+                  padding: 10px;
+                  border-radius: 10px;
+                  width: fit-content;
+                  margin-left: auto;
+                  margin-right: auto;
+                "
+              >
+                <p
+                  style="
+                    color: black;
+                    margin-bottom: 5px;
+                    font-weight: bold;
+                    font-size: 14px;
+                  "
+                >
+                  Escanea para conectar:
+                </p>
+                <img id="img-qr-remoto" style="width: 150px; height: 150px" />
+              </div>
               <br />
+              <button id="boton-resetear-conexion">Resetear conexión</button>
 
               <h4>Sección de: Acerca de</h4>
             </div>
@@ -1038,6 +1490,7 @@
     <script type="text/javascript" src="controlRemotoHandler.js"></script>
     <script type="text/javascript" src="biblia.js"></script>
     <script type="text/javascript" src="scripts.js"></script>
+    <script type="text/javascript" src="app/scriptApp.js"></script>
     <script type="text/javascript" src="simple-tooltip.js"></script>
     <!-- programacion.js integrado en scripts.js -->
     <script type="text/javascript" charset="utf-8" src="clappr.js"></script>
@@ -1103,6 +1556,10 @@
           }
         });
       });
+
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault(),
+      );
     </script>
   </body>
 </html>

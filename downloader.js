@@ -5,13 +5,18 @@
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-const { log, sendShowLogs, sendHideLogs, enviarArchivoDescargado } = require("./logHelper");
+const {
+  log,
+  sendShowLogs,
+  sendHideLogs,
+  enviarArchivoDescargado,
+  enviarProgresoDescarga,
+} = require("./logHelper");
 const { app } = require("electron");
 
 // Carpeta base donde se almacenan los archivos
-const BASE_DIR = path.join(app.getPath('userData'), 'src');
+const BASE_DIR = path.join(app.getPath("userData"), "src");
 //const BASE_DIR = "src/pruebas_downloader";
-
 
 // Configuración de carpetas remotas
 const CARPETAS = {
@@ -25,24 +30,20 @@ const CARPETAS = {
   videosCoritos: "https://archive.org/details/videosCoritos",
   portadasHimnosAntiguos: "https://archive.org/details/portadasHimnosAntiguos",
   videosHimnosAntiguos: "https://archive.org/details/videosHimnosAntiguos",
-  portadasHimnosInfantiles: "https://archive.org/details/portadasHimnosInfantiles",
+  portadasHimnosInfantiles:
+    "https://archive.org/details/portadasHimnosInfantiles",
   videosHimnosInfantiles: "https://archive.org/details/videosHimnosInfantiles",
   portadasHimnosJA: "https://archive.org/details/portadasHimnosJA",
   videosHimnosJA: "https://archive.org/details/videosHimnosJA",
-  portadasHimnosNacionales: "https://archive.org/details/portadasHimnosNacionales",
+  portadasHimnosNacionales:
+    "https://archive.org/details/portadasHimnosNacionales",
   videosHimnosNacionales: "https://archive.org/details/videosHimnosNacionales",
   videosHimnosPianoPista: "https://archive.org/details/videosHimnosPianoPista",
   audiosHimnos: "https://archive.org/details/audiosHimnos",
-  audiosHimnosIngles: "https://archive.org/details/audiosHimnosInglesActualizacion",
+  audiosHimnosIngles:
+    "https://archive.org/details/audiosHimnosInglesActualizacion",
   audiosHimnosPista: "https://archive.org/details/audiosHimnosPista",
   musicaParaOrarDeFondo: "https://archive.org/details/musicaParaOrarDeFondo",
-  
-  
-  
-  
-  
-  
-  
 };
 
 // -----------------------------
@@ -145,10 +146,10 @@ async function descargarArchivo(file, carpeta, baseUrl) {
         markFileComplete(carpeta, file); // ← NUEVO
         console.log(`✅ Descargado en ${carpeta}: ${file}`);
         log(`✅ Descargado en ${carpeta}: ${file}`);
-        
+
         // Notificar al renderer que se descargó un archivo
         enviarArchivoDescargado({ carpeta, file });
-        
+
         resolve(true);
       });
 
@@ -167,10 +168,12 @@ async function descargarArchivo(file, carpeta, baseUrl) {
             try {
               fs.unlinkSync(filePath);
             } catch (e) {
-              console.error(`Error al eliminar archivo incompleto: ${e.message}`);
+              console.error(
+                `Error al eliminar archivo incompleto: ${e.message}`,
+              );
             }
           }
-          const msg = `❌ Timeout al descargar ${file} después de ${timeoutDuration/1000}s (cancelado)`;
+          const msg = `❌ Timeout al descargar ${file} después de ${timeoutDuration / 1000}s (cancelado)`;
           console.error(msg);
           log(msg);
           resolve(false);
@@ -192,29 +195,31 @@ async function obtenerListaArchivos(url) {
   log(`🔍 Buscando archivos en el servidor`);
 
   // Usar API de Internet Archive para versionesBiblias
-  if (url.includes('versionesBiblias')) {
+  if (url.includes("versionesBiblias")) {
     try {
-      const identifier = 'versionesBiblias';
+      const identifier = "versionesBiblias";
       const apiUrl = `https://archive.org/metadata/${identifier}`;
       console.log(`📡 Usando API de Internet Archive: ${apiUrl}`);
       log(`📡 Usando API de Internet Archive`);
-      
+
       const { data } = await axios.get(apiUrl, { timeout: 30000 });
-      
+
       // Extraer archivos de la respuesta de la API
       const files = data.files || [];
       const jsonFiles = files
-        .filter(f => f.name && f.name.endsWith('.json'))
-        .map(f => f.name);
-      
+        .filter((f) => f.name && f.name.endsWith(".json"))
+        .map((f) => f.name);
+
       console.log(`📋 Archivos JSON encontrados vía API: ${jsonFiles.length}`);
       log(`📋 Archivos JSON encontrados vía API: ${jsonFiles.length}`);
-      
+
       if (jsonFiles.length > 0) {
-        console.log(`📄 Lista: ${jsonFiles.slice(0, 5).join(', ')}${jsonFiles.length > 5 ? '...' : ''}`);
-        log(`� Primeros archivos: ${jsonFiles.slice(0, 3).join(', ')}...`);
+        console.log(
+          `📄 Lista: ${jsonFiles.slice(0, 5).join(", ")}${jsonFiles.length > 5 ? "..." : ""}`,
+        );
+        log(`� Primeros archivos: ${jsonFiles.slice(0, 3).join(", ")}...`);
       }
-      
+
       return jsonFiles;
     } catch (err) {
       console.error(`❌ Error usando API de Internet Archive: ${err.message}`);
@@ -226,7 +231,8 @@ async function obtenerListaArchivos(url) {
   // Método original para otras carpetas
   const { data } = await axios.get(url, { timeout: 30000 });
 
-  const regex = /href=["']\/download\/[^\/]+\/(?:([^"'?\<>#]+?\.(?:mp4|mp3|wav|ogg|mkv|jpg|jpeg|png|gif|webp|json)))["']/gi;
+  const regex =
+    /href=["']\/download\/[^\/]+\/(?:([^"'?\<>#]+?\.(?:mp4|mp3|wav|ogg|mkv|jpg|jpeg|png|gif|webp|json)))["']/gi;
 
   const archivos = [];
   let match;
@@ -234,18 +240,23 @@ async function obtenerListaArchivos(url) {
     archivos.push(match[1]);
   }
 
-  const uniqueFiles = [...new Set(archivos.filter(f => f && !f.includes(".ia") && !f.includes("_thumb")))];
-  
+  const uniqueFiles = [
+    ...new Set(
+      archivos.filter((f) => f && !f.includes(".ia") && !f.includes("_thumb")),
+    ),
+  ];
+
   console.log(`📋 Archivos encontrados: ${uniqueFiles.length}`);
   log(`📋 Archivos encontrados: ${uniqueFiles.length}`);
-  
+
   if (uniqueFiles.length > 0 && uniqueFiles.length <= 30) {
-    console.log(`📄 Lista: ${uniqueFiles.join(', ')}`);
-    log(`📄 Lista: ${uniqueFiles.slice(0, 10).join(', ')}${uniqueFiles.length > 10 ? '...' : ''}`);
+    console.log(`📄 Lista: ${uniqueFiles.join(", ")}`);
+    log(
+      `📄 Lista: ${uniqueFiles.slice(0, 10).join(", ")}${uniqueFiles.length > 10 ? "..." : ""}`,
+    );
   }
 
   return uniqueFiles;
-
 }
 
 // -----------------------------
@@ -273,7 +284,9 @@ async function descargarTodo() {
         continue;
       }
 
-      console.log(`📂 Carpeta: ${carpeta}, archivos encontrados: ${archivos.length}`);
+      console.log(
+        `📂 Carpeta: ${carpeta}, archivos encontrados: ${archivos.length}`,
+      );
       log(`📂 Carpeta: ${carpeta}, archivos encontrados: ${archivos.length}`);
 
       for (const file of archivos) {
@@ -281,7 +294,7 @@ async function descargarTodo() {
       }
 
       // Verificar que todos tienen .complete
-      const todosCompletos = archivos.every(f => isFileComplete(carpeta, f));
+      const todosCompletos = archivos.every((f) => isFileComplete(carpeta, f));
       if (todosCompletos) {
         markFolderComplete(carpeta);
         console.log(`🎉 Carpeta ${carpeta} COMPLETADA`);
@@ -289,7 +302,6 @@ async function descargarTodo() {
       } else {
         console.log(`⚠️ Carpeta ${carpeta} NO completa, faltan .complete`);
       }
-
     } catch (err) {
       console.error(`❌ Error en carpeta ${carpeta}: ${err.message}`);
       log(`❌ Error en carpeta ${carpeta}: ${err.message}`);
@@ -304,94 +316,109 @@ async function verificarCarpetasYReiniciarSiFaltan() {
   let huboDescarga = false;
   let hayDescargasPendientes = false;
 
-  // Verificar primero si hay descargas pendientes
-  for (const [carpeta, pageUrl] of Object.entries(CARPETAS)) {
-    if (isFolderComplete(carpeta)) continue;
-    
-    const carpetaPath = path.join(BASE_DIR, carpeta);
-    if (!fs.existsSync(carpetaPath)) {
-      hayDescargasPendientes = true;
-      break;
+  const carpetasAProcesar = Object.entries(CARPETAS).filter(
+    ([carpeta]) => !isFolderComplete(carpeta),
+  );
+
+  if (carpetasAProcesar.length === 0) {
+    log("✅ Todas las carpetas están marcadas como completas.");
+    return false;
+  }
+
+  log("🔍 Calculando total de archivos para el progreso...");
+  let totalArchivosGlobal = 0;
+  let archivosProcesados = 0;
+  let carpetasProcesadas = 0;
+  const totalCarpetas = carpetasAProcesar.length;
+  const mapaArchivosRemotos = new Map();
+
+  // Primer paso: Obtener todas las listas de archivos remotos
+  for (const [carpeta, pageUrl] of carpetasAProcesar) {
+    try {
+      const archivosRemotos = await obtenerListaArchivos(pageUrl);
+      mapaArchivosRemotos.set(carpeta, archivosRemotos);
+      totalArchivosGlobal += archivosRemotos.length;
+    } catch (err) {
+      console.error(`Error obteniendo lista para ${carpeta}: ${err.message}`);
+      mapaArchivosRemotos.set(carpeta, []);
     }
-    
-    const archivosLocales = fs.readdirSync(carpetaPath)
-      .filter(f => !f.endsWith(".complete") && f !== ".complete");
-    const archivosRemotos = await obtenerListaArchivos(pageUrl);
-    const faltantes = archivosRemotos.filter(f => {
-      const tieneArchivo = archivosLocales.includes(f);
-      const tieneComplete = isFileComplete(carpeta, f);
-      return !(tieneArchivo && tieneComplete);
+  }
+
+  if (totalArchivosGlobal === 0) {
+    log("✅ Todas las carpetas están al día o no se encontraron archivos.");
+    return false;
+  }
+
+  // Función interna para actualizar UI
+  const actualizarUI = () => {
+    const porcentaje = Math.round(
+      (archivosProcesados / totalArchivosGlobal) * 100,
+    );
+    enviarProgresoDescarga({
+      completados: archivosProcesados,
+      total: totalArchivosGlobal,
+      porcentaje: porcentaje,
+      carpetasCompletadas: carpetasProcesadas,
+      totalCarpetas: totalCarpetas,
     });
-    
-    if (faltantes.length > 0) {
-      hayDescargasPendientes = true;
-      break;
-    }
-  }
+  };
 
-  // Mostrar contenedor de logs si hay descargas pendientes
-  if (hayDescargasPendientes) {
-    sendShowLogs();
-  }
+  // Mostrar el contenedor si hay archivos
+  sendShowLogs();
+  actualizarUI();
 
-  for (const [carpeta, pageUrl] of Object.entries(CARPETAS)) {
-    if (isFolderComplete(carpeta)) continue;
-
+  // Segundo paso: Procesar descargas
+  for (const [carpeta, pageUrl] of carpetasAProcesar) {
     const downloadBase = pageUrl.replace("/details/", "/download/");
     const carpetaPath = path.join(BASE_DIR, carpeta);
-    fs.mkdirSync(carpetaPath, { recursive: true });
+    if (!fs.existsSync(carpetaPath)) {
+      fs.mkdirSync(carpetaPath, { recursive: true });
+    }
 
-    const archivosLocales = fs.readdirSync(carpetaPath)
-      .filter(f => !f.endsWith(".complete") && f !== ".complete");
+    const archivosRemotos = mapaArchivosRemotos.get(carpeta) || [];
 
-    const archivosRemotos = await obtenerListaArchivos(pageUrl);
+    for (const file of archivosRemotos) {
+      const filePath = path.join(carpetaPath, file);
+      const tieneComplete = isFileComplete(carpeta, file);
 
-    const faltantes = archivosRemotos.filter(f => {
-      const tieneArchivo = archivosLocales.includes(f);
-      const tieneComplete = isFileComplete(carpeta, f);
-      return !(tieneArchivo && tieneComplete);
-    });
-
-    if (faltantes.length === 0) {
-
-      const todosCompletos = archivosRemotos.every(f => isFileComplete(carpeta, f));
-
-      if (todosCompletos) {
-        markFolderComplete(carpeta);
-        console.log(`🎉 Carpeta ${carpeta} completada`);
-        log(`🎉 Carpeta ${carpeta} completada`);
+      if (fs.existsSync(filePath) && tieneComplete) {
+        // Ya está completo, solo sumamos al progreso
+        archivosProcesados++;
       } else {
-        console.log(`⚠️ Hay archivos sin .complete en ${carpeta}, no se marca completa`);
+        // Falta o está incompleto, descargar
+        const exito = await descargarArchivo(file, carpeta, downloadBase);
+        if (exito) huboDescarga = true;
+        archivosProcesados++;
       }
-
-      continue;
+      actualizarUI();
     }
 
-    console.log(`⬇️ Descargando ${faltantes.length} archivos en ${carpeta}`);
-    log(`⬇️ Descargando ${faltantes.length} archivos en ${carpeta}`);
+    // Al terminar una carpeta
+    carpetasProcesadas++;
+    actualizarUI();
 
-    for (const file of faltantes) {
-      await descargarArchivo(file, carpeta, downloadBase);
+    // Verificar si la carpeta se completó tras procesar todos sus archivos
+    const todosCompletos = archivosRemotos.every((f) =>
+      isFileComplete(carpeta, f),
+    );
+    if (todosCompletos && archivosRemotos.length > 0) {
+      markFolderComplete(carpeta);
+      log(`🎉 Carpeta ${carpeta} completada`);
+    } else if (archivosRemotos.length > 0) {
+      log(`⚠️ Carpeta ${carpeta} procesada pero faltan algunos .complete`);
     }
-
-    huboDescarga = true;
   }
 
-  // Si no hubo descargas, ocultar el contenedor de logs después de 8 segundos
-  if (!huboDescarga) {
-    log("✅ Todas las carpetas están completas. Ocultando logs en 8 segundos...");
-    setTimeout(() => {
-      log("[INFO] Ocultando contenedor de logs...");
-      sendHideLogs();
-    }, 8000); // 8 segundos para que el usuario vea el mensaje final
-  } else {
-    // Si hubo descargas, también ocultar después de completar
-    log("✅ Descargas completadas. Ocultando logs en 8 segundos...");
-    setTimeout(() => {
-      log("[INFO] Ocultando contenedor de logs...");
-      sendHideLogs();
-    }, 8000);
-  }
+  // Notificación final
+  const msgFinal = huboDescarga
+    ? "✅ Descargas completadas. Ocultando logs en 8 segundos..."
+    : "✅ Todos los archivos ya están presentes. Ocultando logs en 8 segundos...";
+
+  log(msgFinal);
+  setTimeout(() => {
+    log("[INFO] Ocultando contenedor de logs...");
+    sendHideLogs();
+  }, 8000);
 
   return huboDescarga;
 }
@@ -407,7 +434,7 @@ module.exports = {
   markFolderComplete,
   isFolderComplete,
   markFileComplete,
-  isFileComplete
+  isFileComplete,
 };
 
 // -----------------------------
@@ -418,7 +445,5 @@ if (require.main === module) {
     await descargarTodo();
   })();
 }
-
-
 
 //PARA PRUEBAS

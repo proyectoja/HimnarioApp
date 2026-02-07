@@ -1,1108 +1,2632 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Control Remoto Pro</title>
     <!-- Modern Font & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+      rel="stylesheet"
+    />
 
     <style>
-        :root {
-            --primary: #f59e0b;
-            /* Amber Gold */
-            --primary-glow: rgba(245, 158, 11, 0.4);
-            --bg-dark: #0f172a;
-            --bg-card: rgba(30, 41, 59, 0.7);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --danger: #ef4444;
-            --success: #10b981;
-            --glass-border: rgba(255, 255, 255, 0.1);
+      :root {
+        --primary: #f59e0b;
+        /* Amber Gold */
+        --primary-glow: rgba(245, 158, 11, 0.4);
+        --bg-dark: #0f172a;
+        --bg-card: rgba(30, 41, 59, 0.7);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --danger: #ef4444;
+        --success: #10b981;
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        min-height: 100vh;
+        color: var(--text-main);
+        overflow-x: hidden;
+        text-shadow: none !important;
+      }
+
+      /* Glassmorphism Logic */
+      .glass-panel {
+        background: var(--bg-card);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+      }
+
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        padding-bottom: 90px;
+        /* Space for bottom nav */
+      }
+
+      .header {
+        padding: 30px 24px 10px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        background: linear-gradient(to right, #fff, #cbd5e1);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .header p {
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 300;
+      }
+
+      /* PIN Section */
+      .pin-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 40px;
+        gap: 20px;
+      }
+
+      .pin-section.hidden {
+        display: none !important;
+      }
+
+      .input-group label {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .modern-input {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        border: 2px solid var(--glass-border);
+        color: white;
+        padding: 16px;
+        border-radius: 16px;
+        font-size: 18px;
+        text-align: center;
+        letter-spacing: 2px;
+        transition: all 0.3s ease;
+        font-family: "Outfit", sans-serif;
+      }
+
+      .modern-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 20px var(--primary-glow);
+      }
+
+      .btn-modern {
+        width: 100%;
+        padding: 16px;
+        border: none;
+        border-radius: 16px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-family: "Outfit", sans-serif;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, #d97706 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+      }
+
+      .btn-primary:active {
+        transform: scale(0.98);
+      }
+
+      .btn-danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      .btn-outlined {
+        background: transparent;
+        border: 1px solid var(--glass-border);
+        color: var(--text-muted);
+      }
+
+      /* Tabs Logic */
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.visible {
+        display: block;
+        animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Controls Section */
+      .controls-section {
+        padding: 20px;
+        display: none;
+        animation: fadeIn 0.4s ease;
+      }
+
+      .controls-section.visible {
+        display: block;
+      }
+
+      .status-badge {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--success);
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(10px);
+      }
+
+      .card h3 {
+        font-size: 16px;
+        color: var(--text-muted);
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* Search Results */
+      .search-results {
+        margin-bottom: 15px;
+        display: none;
+        max-height: 250px;
+        overflow-y: auto;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .search-results.visible {
+        display: block;
+      }
+
+      .result-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--glass-border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: background 0.2s;
+      }
+
+      .result-item:last-child {
+        border-bottom: none;
+      }
+
+      .result-item.selected {
+        background: rgba(245, 158, 11, 0.15);
+        border-left: 3px solid var(--primary);
+      }
+
+      .result-number-bg {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 14px;
+        min-width: 40px;
+        text-align: center;
+      }
+
+      /* Volume Slider */
+      .volume-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 16px;
+        margin-top: 10px;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        background: transparent;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: var(--primary);
+        margin-top: -8px;
+        box-shadow: 0 0 10px var(--primary-glow);
+      }
+
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+      }
+
+      /* Bottom Nav */
+      .bottom-nav {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 400px;
+        background: rgba(15, 23, 42, 0.85);
+        /* Darker backdrop */
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 24px;
+        display: none;
+        padding: 4px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        z-index: 100;
+        animation: fadeIn 0.4s ease;
+      }
+
+      .bottom-nav.visible {
+        display: flex;
+      }
+
+      .nav-btn {
+        flex: 1;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        padding: 12px;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .nav-btn i {
+        font-size: 22px;
+        margin-bottom: 2px;
+      }
+
+      .nav-btn.active {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
+      }
+
+      .nav-btn.active i {
+        color: var(--primary);
+      }
+
+      /* Animation */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .alert {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 200;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 0.3s,
+          top 0.3s;
+      }
+
+      .alert.visible {
+        opacity: 1;
+        top: 40px;
+      }
+
+      .alert-success {
+        background: #064e3b;
+        color: #34d399;
+        border: 1px solid #059669;
+      }
+
+      .alert-error {
+        background: #450a0a;
+        color: #f87171;
+        border: 1px solid #b91c1c;
+      }
+
+      .ppt-preview-container {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+      }
+
+      .ppt-preview-card {
+        min-width: 140px;
+        height: 100px;
+        border-radius: 12px;
+        background: #000;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid transparent;
+      }
+
+      .ppt-preview-card.active {
+        border-color: var(--primary);
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+      }
+
+      .playback-banner {
+        position: fixed;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%) translateY(150px);
+        width: 92%;
+        max-width: 480px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(245, 158, 11, 0.5);
+        border-radius: 20px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        z-index: 1000;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        opacity: 0;
+        pointer-events: none;
+        will-change: transform, opacity;
+      }
+
+      .playback-banner.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .playback-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(245, 158, 11, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-size: 20px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
         }
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            min-height: 100vh;
-            color: var(--text-main);
-            overflow-x: hidden;
+        70% {
+          box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
         }
 
-        /* Glassmorphism Logic */
-        .glass-panel {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
+        100% {
+          box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
         }
+      }
+      /* Chat Styles */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        /* create context for absolute children if any */
+        position: relative; 
+      }
 
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            padding-bottom: 90px;
-            /* Space for bottom nav */
-        }
+      .chat-bubble {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.4;
+        position: relative;
+        word-wrap: break-word;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
 
-        .header {
-            padding: 30px 24px 10px;
-            text-align: center;
-        }
+      .chat-bubble.mine {
+        align-self: flex-end;
+        background: linear-gradient(135deg, var(--primary) 0%, #d97706 100%);
+        color: white;
+        border-bottom-right-radius: 4px;
+      }
 
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(to right, #fff, #cbd5e1);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+      .chat-bubble.others {
+        align-self: flex-start;
+        background: rgba(30, 41, 59, 0.8);
+        border: 1px solid var(--glass-border);
+        color: var(--text-main);
+        border-bottom-left-radius: 4px;
+      }
 
-        .header p {
-            color: var(--text-muted);
-            font-size: 14px;
-            font-weight: 300;
-        }
+      .chat-user {
+        font-size: 11px;
+        opacity: 0.8;
+        margin-bottom: 4px;
+        font-weight: 600;
+        display: block;
+      }
 
-        /* PIN Section */
-        .pin-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 40px;
-            gap: 20px;
-        }
+      .chat-time {
+        font-size: 10px;
+        opacity: 0.6;
+        text-align: right;
+        margin-top: 4px;
+        display: block;
+      }
 
-        .pin-section.hidden {
-            display: none !important;
-        }
+      .chat-input-area {
+        position: relative; /* Changed from absolute to flow naturally */
+        width: 100%;
+        padding: 15px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid var(--glass-border);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        z-index: 10;
+        flex-shrink: 0; /* Don't shrink when keyboard opens */
+      }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 10px;
-            color: var(--text-muted);
-            font-size: 14px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+      .users-badge {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+        border: 1px solid var(--glass-border);
+      }
+      .users-badge:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      
+      .typing-indicator {
+        position: absolute;
+        bottom: 85px; 
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        background: rgba(15, 23, 42, 0.95);
+        color: var(--text-muted);
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 11px;
+        opacity: 0;
+        transition: all 0.3s;
+        pointer-events: none;
+        z-index: 9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        border: 1px solid var(--glass-border);
+      }
+      .typing-indicator span#typingText {
+          color: var(--primary);
+          font-weight: 500;
+      }
+      .typing-indicator.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      
+      .typing-dots span {
+        width: 3px;
+        height: 3px;
+        background: var(--primary);
+        border-radius: 50%;
+        display: inline-block;
+        animation: typing 1.4s infinite ease-in-out both; 
+      }
+      .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+      .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+      
+      @keyframes typing {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+      }
 
-        .modern-input {
-            width: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            border: 2px solid var(--glass-border);
-            color: white;
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 18px;
-            text-align: center;
-            letter-spacing: 2px;
-            transition: all 0.3s ease;
-            font-family: 'Outfit', sans-serif;
-        }
+      /* Listado de usuarios modal simple */
+      .users-modal {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.8);
+          z-index: 300;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          animation: fadeIn 0.3s;
+      }
+      .users-modal.visible { display: flex; }
+      .users-list-card {
+          width: 90%;
+          max-width: 350px;
+          background: #1e293b;
+          border-radius: 20px;
+          padding: 20px;
+          max-height: 70vh;
+          overflow-y: auto;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+          border: 1px solid var(--glass-border);
+      }
+    </style>
+  </head>
 
-        .modern-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 20px var(--primary-glow);
-        }
+  <body>
+    <div class="container">
+      <!-- Notification Alert -->
+      <div id="alert" class="alert"></div>
 
-        .btn-modern {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, #d97706 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .btn-outlined {
-            background: transparent;
-            border: 1px solid var(--glass-border);
-            color: var(--text-muted);
-        }
-
-        /* Tabs Logic */
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.visible {
-            display: block;
-            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Controls Section */
-        .controls-section {
-            padding: 20px;
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-
-        .controls-section.visible {
-            display: block;
-        }
-
-        .status-badge {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .card h3 {
-            font-size: 16px;
-            color: var(--text-muted);
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        /* Search Results */
-        .search-results {
-            margin-bottom: 15px;
-            display: none;
-            max-height: 250px;
-            overflow-y: auto;
-            border-radius: 12px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .search-results.visible {
-            display: block;
-        }
-
-        .result-item {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: background 0.2s;
-        }
-
-        .result-item:last-child {
-            border-bottom: none;
-        }
-
-        .result-item.selected {
-            background: rgba(245, 158, 11, 0.15);
-            border-left: 3px solid var(--primary);
-        }
-
-        .result-number-bg {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-main);
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 14px;
-            min-width: 40px;
-            text-align: center;
-        }
-
-        /* Volume Slider */
-        .volume-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 16px;
-            margin-top: 10px;
-        }
-
-        input[type=range] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            background: transparent;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: var(--primary);
-            margin-top: -8px;
-            box-shadow: 0 0 10px var(--primary-glow);
-        }
-
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-        }
-
-        /* Bottom Nav */
-        .bottom-nav {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 400px;
-            background: rgba(15, 23, 42, 0.85);
-            /* Darker backdrop */
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            display: flex;
-            padding: 4px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            z-index: 100;
-        }
-
-        .nav-btn {
-            flex: 1;
+      <!-- Playback Banner -->
+      <div id="playbackBanner" class="playback-banner">
+        <div style="margin-right: 15px; font-size: 24px; color: var(--primary)">
+          <i id="pbIcon" class="bx bx-music"></i>
+        </div>
+        <div style="flex: 1; overflow: hidden">
+          <div
+            id="pbStatusLabel"
+            style="
+              font-size: 10px;
+              color: var(--primary);
+              font-weight: bold;
+              letter-spacing: 1px;
+              text-transform: uppercase;
+            "
+          >
+            Reproduciendo Ahora
+          </div>
+          <div
+            id="pbTitle"
+            style="
+              font-size: 14px;
+              font-weight: 500;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+          >
+            -
+          </div>
+          <div id="pbSub" style="font-size: 12px; color: var(--text-muted)">
+            -
+          </div>
+        </div>
+        <button
+          onclick="stopReproduccion()"
+          style="
             background: none;
             border: none;
-            color: var(--text-muted);
-            padding: 12px;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+            color: var(--danger);
+            font-size: 24px;
+            cursor: pointer;
+          "
+        >
+          <i class="bx bx-stop-circle"></i>
+        </button>
+      </div>
 
-        .nav-btn i {
-            font-size: 22px;
-            margin-bottom: 2px;
-        }
+      <div class="header">
+        <h1><i class="bx bxs-music"></i> Himnario Pro</h1>
+        <p>Control Remoto Inteligente</p>
+        
+        <!-- Connected Users Badge -->
+        <div id="usersBadge" class="users-badge" onclick="toggleUsersList()" style="display:none;">
+             <i class='bx bx-show'></i> 
+             <span id="usersCount">0</span> conectado(s)
+        </div>
+      </div>
 
-        .nav-btn.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-main);
-        }
 
-        .nav-btn.active i {
-            color: var(--primary);
-        }
+      <!-- Users List Modal -->
+      <div id="usersModal" class="users-modal" onclick="if(event.target === this) toggleUsersList()">
+          <div class="users-list-card">
+              <h3 style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                  <i class='bx bx-group'></i> Usuarios Conectados
+              </h3>
+              <div id="usersListContainer" style="display:flex; flex-direction:column; gap:10px;">
+                  <!-- Lista JS -->
+              </div>
+              <button onclick="toggleUsersList()" class="btn-modern btn-outlined" style="margin-top:20px; width:100%;">
+                  Cerrar
+              </button>
+          </div>
+      </div>
 
-        /* Animation */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+      <!-- PIN Section -->
+      <div id="pinSection" class="pin-section">
+        <div style="text-align: center; margin-bottom: 20px">
+          <i
+            class="bx bx-mobile-vibration"
+            style="font-size: 64px; color: var(--primary); margin-bottom: 20px"
+          ></i>
+          <h2 style="font-weight: 300; font-size: 24px">Conexión Segura</h2>
+          <p
+            style="color: var(--text-muted); font-size: 14px; margin-top: 10px"
+          >
+            Ingresa el código de 6 dígitos que aparece en la pantalla principal.
+          </p>
+        </div>
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        <div class="input-group">
+          <input
+            type="tel"
+            id="pinInput"
+            class="modern-input"
+            placeholder="000000"
+            maxlength="6"
+            autocomplete="off"
+          />
+        </div>
+        <button class="btn-modern btn-primary" onclick="validarPIN()">
+          Conectar Dispositivo <i class="bx bx-right-arrow-alt"></i>
+        </button>
+      </div>
 
-        .alert {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 200;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s, top 0.3s;
-        }
+      <!-- Controls Section -->
+      <div id="controlsSection" class="controls-section">
+        <!-- Tab: Inicio -->
+        <div id="tab-inicio" class="tab-content visible">
+          <div class="status-badge">
+            <i class="bx bxs-circle" style="font-size: 8px"></i> Conectado
+          </div>
 
-        .alert.visible {
-            opacity: 1;
-            top: 40px;
-        }
+          <!-- Monitor Selector -->
 
-        .alert-success {
-            background: #064e3b;
-            color: #34d399;
-            border: 1px solid #059669;
-        }
-
-        .alert-error {
-            background: #450a0a;
-            color: #f87171;
-            border: 1px solid #b91c1c;
-        }
-
-        .ppt-preview-container {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-        }
-
-        .ppt-preview-card {
-            min-width: 140px;
-            height: 100px;
-            border-radius: 12px;
-            background: #000;
-            position: relative;
-            overflow: hidden;
-            border: 2px solid transparent;
-        }
-
-        .ppt-preview-card.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
-        }
-
-        .playback-banner {
-            position: fixed;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%) translateY(150px);
-            width: 92%;
-            max-width: 480px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(245, 158, 11, 0.5);
-            border-radius: 20px;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            opacity: 0;
-            pointer-events: none;
-            will-change: transform, opacity;
-        }
-
-        .playback-banner.visible {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .playback-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(245, 158, 11, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-size: 20px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
-            }
-
-            70% {
-                box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <!-- Notification Alert -->
-        <div id="alert" class="alert"></div>
-
-        <!-- Playback Banner -->
-        <div id="playbackBanner" class="playback-banner">
-            <div class="playback-icon">
-                <i class='bx bx-music'></i>
+          <!-- Monitor Selector Style based on Main App -->
+          <div
+            id="contenedor-monitores"
+            style="
+              display: flex;
+              position: relative;
+              width: 100%;
+              justify-content: center;
+              align-items: center;
+              background: rgba(0, 0, 0, 0.2);
+              padding: 10px;
+              border-radius: 12px;
+              margin-bottom: 20px;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                background: white;
+                padding: 5px 10px;
+                border-radius: 1rem;
+                border: 2px solid white;
+              "
+            >
+              <img
+                src="iconos/monitores.png"
+                alt=""
+                style="width: 24px; height: 24px; margin-right: 5px"
+              />
+              <select
+                id="selectMonitores"
+                style="
+                  border: none;
+                  background: transparent;
+                  font-family: Arial, sans-serif;
+                  font-size: 14px;
+                  font-weight: bold;
+                  color: black;
+                  outline: none;
+                  min-width: 150px;
+                "
+              >
+                <option value="">Monitores</option>
+                <option value="-1">❌ Desactivar monitor</option>
+              </select>
             </div>
-            <div style="flex: 1; overflow: hidden;">
-                <div
-                    style="font-size: 10px; color: var(--primary); font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">
-                    Reproduciendo Ahora</div>
-                <div id="pbTitle"
-                    style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    -</div>
-                <div id="pbSub" style="font-size: 12px; color: var(--text-muted);">-</div>
+          </div>
+
+          <!-- Search Card -->
+          <div class="card">
+            <h3><i class="bx bx-search"></i> Buscar Himno</h3>
+
+            <div id="searchResults" class="search-results"></div>
+
+            <div style="position: relative">
+              <input
+                type="text"
+                id="searchInput"
+                class="modern-input"
+                placeholder="Escribe un número o título..."
+                autocomplete="off"
+                style="padding-left: 45px; text-align: left"
+              />
+              <i
+                class="bx bx-search"
+                style="
+                  position: absolute;
+                  left: 15px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  color: var(--text-muted);
+                  font-size: 20px;
+                "
+              ></i>
             </div>
-            <button onclick="stopReproduccion()"
-                style="background: none; border: none; color: var(--danger); font-size: 24px; cursor: pointer;">
-                <i class='bx bx-stop-circle'></i>
+          </div>
+
+          <!-- Playback Controls -->
+          <div class="card">
+            <h3><i class="bx bx-play-circle"></i> Reproducción</h3>
+
+            <div class="volume-container">
+              <span id="volumeIcon" style="font-size: 20px; min-width: 25px"
+                >🔊</span
+              >
+              <input
+                type="range"
+                id="volumeSlider"
+                min="0"
+                max="100"
+                value="100"
+              />
+              <span
+                id="volumeValue"
+                style="
+                  min-width: 35px;
+                  text-align: right;
+                  font-size: 14px;
+                  font-weight: bold;
+                "
+                >100</span
+              >
+            </div>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin-top: 20px;
+              "
+            >
+              <button
+                class="btn-modern btn-primary"
+                id="btnReproducir"
+                onclick="reproducirSeleccionado()"
+                disabled
+              >
+                <i class="bx bx-play"></i> Play
+              </button>
+              <button
+                class="btn-modern btn-danger"
+                onclick="stopReproduccion()"
+              >
+                <i class="bx bx-stop"></i> Stop
+              </button>
+            </div>
+          </div>
+
+          <!-- Video Upload Card -->
+          <div class="card" style="margin-top: 20px">
+            <h3>
+              <i class="bx bxs-camera-movie"></i> Proyectar Video / Imagen
+            </h3>
+
+            <div
+              style="
+                border: 2px dashed var(--glass-border);
+                border-radius: 16px;
+                padding: 20px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              onclick="document.getElementById('video-file-input').click()"
+              onmouseover="
+                this.style.borderColor = getComputedStyle(
+                  document.documentElement,
+                ).getPropertyValue('--primary')
+              "
+              onmouseout="this.style.borderColor = 'rgba(255,255,255,0.1)'"
+            >
+              <i
+                class="bx bx-cloud-upload"
+                style="
+                  font-size: 40px;
+                  color: var(--text-muted);
+                  margin-bottom: 10px;
+                "
+              ></i>
+              <p style="font-size: 14px; color: var(--text-muted)">
+                Toca para subir MP4, JPG o PNG
+              </p>
+              <div
+                id="upload-video-status"
+                style="
+                  font-size: 12px;
+                  color: var(--primary);
+                  margin-top: 10px;
+                  min-height: 18px;
+                "
+              ></div>
+            </div>
+            <input
+              type="file"
+              id="video-file-input"
+              accept="video/mp4,image/jpeg,image/png,image/gif"
+              style="display: none"
+            />
+          </div>
+
+          <div style="margin-top: 20px">
+            <button
+              class="btn-modern btn-outlined"
+              onclick="desconectar()"
+              style="border-color: rgba(239, 68, 68, 0.3); color: var(--danger)"
+            >
+              <i class="bx bx-log-out"></i> Desconectar
             </button>
+          </div>
         </div>
 
-        <div class="header">
-            <h1><i class='bx bxs-music'></i> Himnario Pro</h1>
-            <p>Control Remoto Inteligente</p>
+        <!-- Tab: PowerPoint -->
+        <div id="tab-ppt" class="tab-content">
+          <div
+            class="status-badge"
+            style="
+              background: rgba(245, 158, 11, 0.15);
+              color: var(--primary);
+              border-color: rgba(245, 158, 11, 0.3);
+            "
+          >
+            <i class="bx bx-slideshow"></i> Modo Presentación
+          </div>
+
+          <div class="card">
+            <h3><i class="bx bxs-file-ppt"></i> Subir PowerPoint</h3>
+
+            <div
+              style="
+                border: 2px dashed var(--glass-border);
+                border-radius: 16px;
+                padding: 20px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              onclick="document.getElementById('ppt-file-input').click()"
+              onmouseover="
+                this.style.borderColor = getComputedStyle(
+                  document.documentElement,
+                ).getPropertyValue('--primary')
+              "
+              onmouseout="this.style.borderColor = 'rgba(255,255,255,0.1)'"
+            >
+              <i
+                class="bx bx-cloud-upload"
+                style="
+                  font-size: 40px;
+                  color: var(--text-muted);
+                  margin-bottom: 10px;
+                "
+              ></i>
+              <p style="font-size: 14px; color: var(--text-muted)">
+                Toca para subir archivo PPT
+              </p>
+              <div
+                id="upload-status"
+                style="
+                  font-size: 12px;
+                  color: var(--primary);
+                  margin-top: 10px;
+                  min-height: 18px;
+                "
+              ></div>
+            </div>
+            <input
+              type="file"
+              id="ppt-file-input"
+              accept=".pptx,.ppt"
+              style="display: none"
+            />
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom: 10px">
+              <span>Vista Previa</span>
+              <span
+                id="ppt-status-text"
+                style="
+                  font-size: 12px;
+                  background: rgba(0, 0, 0, 0.3);
+                  padding: 4px 8px;
+                  border-radius: 6px;
+                "
+                >Sin datos</span
+              >
+            </h3>
+
+            <div
+              style="
+                position: relative;
+                aspect-ratio: 16/9;
+                background: #000;
+                border-radius: 12px;
+                overflow: hidden;
+                margin-bottom: 20px;
+                border: 1px solid var(--glass-border);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+              "
+            >
+              <!-- Current Slide Main View -->
+              <img
+                id="ppt-current-img"
+                src=""
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: contain;
+                  display: none;
+                "
+              />
+              <div
+                id="ppt-placeholder"
+                style="
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--text-muted);
+                  flex-direction: column;
+                  gap: 10px;
+                "
+              >
+                <i
+                  class="bx bx-image"
+                  style="font-size: 40px; opacity: 0.5"
+                ></i>
+                <span>Esperando diapositivas...</span>
+              </div>
+            </div>
+
+            <!-- Next Slide Preview (Small) -->
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 10px;
+                margin-bottom: 20px;
+              "
+            >
+              <span style="font-size: 12px; color: var(--text-muted)"
+                >Siguiente:</span
+              >
+              <div
+                style="
+                  width: 80px;
+                  aspect-ratio: 16/9;
+                  background: #000;
+                  border-radius: 6px;
+                  overflow: hidden;
+                  border: 1px solid var(--glass-border);
+                  position: relative;
+                "
+              >
+                <img
+                  id="ppt-next-img"
+                  src=""
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    display: none;
+                    opacity: 0.7;
+                  "
+                />
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 15px">
+              <button
+                class="btn-modern btn-outlined"
+                onclick="pptPrev()"
+                style="flex: 1; height: 60px"
+              >
+                <i class="bx bx-chevron-left" style="font-size: 30px"></i>
+              </button>
+              <button
+                class="btn-modern btn-primary"
+                onclick="pptNext()"
+                style="flex: 1; height: 60px"
+              >
+                <i class="bx bx-chevron-right" style="font-size: 30px"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Tab: YouTube -->
+        <div id="tab-youtube" class="tab-content">
+          <div class="card">
+            <h3><i class="bx bxl-youtube"></i> Buscar en YouTube</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+              <input type="text" id="inputYoutube" class="modern-input" placeholder="Buscar video o pegar URL..." style="flex: 1;" />
+              <button id="btnBuscarYoutube" class="modern-button" style="width: auto; padding: 0 15px;">
+                <i class="bx bx-search"></i>
+              </button>
+            </div>
+            <div id="youtubeResults" class="search-results visible" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Resultados aquí -->
+            </div>
+          </div>
         </div>
 
-        <!-- PIN Section -->
-        <div id="pinSection" class="pin-section">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <i class='bx bx-mobile-vibration'
-                    style="font-size: 64px; color: var(--primary); margin-bottom: 20px;"></i>
-                <h2 style="font-weight: 300; font-size: 24px;">Conexión Segura</h2>
-                <p style="color: var(--text-muted); font-size: 14px; margin-top: 10px;">Ingresa el código de 6 dígitos
-                    que aparece en la pantalla principal.</p>
-            </div>
+        <!-- Tab: Chat -->
+        <div id="tab-chat" class="tab-content">
+           <div class="card" style="height: calc(100vh - 160px); padding: 0; overflow: hidden; display: flex; flex-direction: column; position: relative; background: rgba(0,0,0,0.2);">
+              
+              <!-- Name Prompt (Visible if no name) -->
+              <div id="chatNamePrompt" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:30px; gap:20px; text-align:center;">
+                  <div style="background: rgba(245, 158, 11, 0.15); padding: 25px; border-radius: 50%; box-shadow: 0 0 20px rgba(245,158,11,0.2);">
+                    <i class='bx bx-user-voice' style='font-size: 50px; color: var(--primary);'></i>
+                  </div>
+                  <div>
+                    <h3 style="margin-bottom: 5px;">Únete al Chat</h3>
+                    <p style="color: var(--text-muted); font-size: 14px;">Ingresa tu nombre para identificarte ante el equipo técnico.</p>
+                  </div>
+                  <input type="text" id="chatNameInput" class="modern-input" placeholder="Tu Nombre..." maxlength="20" autocomplete="off" style="text-align: center;">
+                  <button class="btn-modern btn-primary" onclick="guardarNombreChat()">
+                      Entrar al Chat
+                  </button>
+              </div>
 
-            <div class="input-group">
-                <input type="tel" id="pinInput" class="modern-input" placeholder="000000" maxlength="6"
-                    autocomplete="off">
-            </div>
-            <button class="btn-modern btn-primary" onclick="validarPIN()">
-                Conectar Dispositivo <i class='bx bx-right-arrow-alt'></i>
-            </button>
+              <!-- Chat Interface (Hidden by default) -->
+              <div id="chatInterface" style="display: none; flex-direction: column; height: 100%; width: 100%;">
+                  <!-- Header -->
+                  <div style="padding: 15px; border-bottom: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.4); display:flex; justify-content:space-between; align-items:center;">
+                      <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                          <i class='bx bx-message-square-dots' style="color: var(--primary);"></i> Chat Técnico
+                      </div>
+                      <div id="chatWelcome" style="font-size: 12px; color: var(--text-muted); font-weight: 500;"></div>
+                  </div>
+
+                  <!-- Call Control Section -->
+                  <div id="callControlSection" style="padding: 10px 15px; border-bottom: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.3); display:flex; flex-direction:column; gap:10px;">
+                      <button id="btnCallAction" class="btn-modern btn-primary" onclick="handleCallAction()" style="padding: 10px; font-size: 14px;">
+                          <i class='bx bxs-phone-call'></i> Iniciar llamada grupal
+                      </button>
+                      
+                      <!-- Active Call UI -->
+                      <div id="activeCallUI" style="display:none; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 10px; margin-top: 5px;">
+                          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                             <span style="font-size:12px; font-weight:600; color:var(--success); display:flex; align-items:center; gap:5px;">
+                                 <i class='bx bxs-circle' style="font-size:8px;"></i> Audio Activo
+                             </span>
+                             <button class="btn-modern btn-outlined" onclick="toggleMute()" id="btnMute" style="width:36px; height:36px; border-radius:50%; padding:0; border-color:white; color:white;">
+                                 <i class='bx bxs-microphone'></i>
+                             </button>
+                          </div>
+                          <div id="callParticipantsList" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:5px;">
+                             <!-- Participants will be injected here -->
+                          </div>
+                      </div>
+                      <audio id="remoteAudio" autoplay style="display:none;"></audio>
+                  </div>
+
+                  <!-- Messages -->
+                  <div id="chatMessages" class="chat-messages">
+                      <!-- Messages will appear here -->
+                  </div>
+
+                  <!-- Typing Indicator Here -->
+                  <div id="typingIndicator" class="typing-indicator">
+                     <div class="typing-dots"><span></span><span></span><span></span></div>
+                     <span id="typingText">Alguien está escribiendo...</span>
+                  </div>
+
+                  <!-- Input -->
+                  <div class="chat-input-area">
+                      <input type="text" id="chatMessageInput" class="modern-input" 
+                             style="border-radius: 25px; padding: 12px 20px; font-size: 14px; text-align: left;" 
+                             placeholder="Escribe un mensaje..." autocomplete="off">
+                      <button class="btn-modern btn-primary" onclick="enviarMensajeChat()" 
+                              style="width: 50px; height: 50px; border-radius: 50%; padding: 0; flex-shrink: 0;">
+                          <i class='bx bxs-send' style="font-size: 24px;"></i>
+                      </button>
+                  </div>
+              </div>
+           </div>
         </div>
+      </div>
 
-        <!-- Controls Section -->
-        <div id="controlsSection" class="controls-section">
-
-            <!-- Tab: Inicio -->
-            <div id="tab-inicio" class="tab-content visible">
-                <div class="status-badge">
-                    <i class='bx bxs-circle' style="font-size: 8px;"></i> Conectado
-                </div>
-
-                <!-- Search Card -->
-                <div class="card">
-                    <h3><i class='bx bx-search'></i> Buscar Himno</h3>
-
-                    <div id="searchResults" class="search-results"></div>
-
-                    <div style="position: relative;">
-                        <input type="text" id="searchInput" class="modern-input"
-                            placeholder="Escribe un número o título..." autocomplete="off"
-                            style="padding-left: 45px; text-align: left;">
-                        <i class='bx bx-search'
-                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 20px;"></i>
-                    </div>
-                </div>
-
-                <!-- Playback Controls -->
-                <div class="card">
-                    <h3><i class='bx bx-play-circle'></i> Reproducción</h3>
-
-                    <div class="volume-container">
-                        <span id="volumeIcon" style="font-size: 20px; min-width: 25px;">🔊</span>
-                        <input type="range" id="volumeSlider" min="0" max="100" value="100">
-                        <span id="volumeValue"
-                            style="min-width: 35px; text-align: right; font-size: 14px; font-weight: bold;">100</span>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
-                        <button class="btn-modern btn-primary" id="btnReproducir" onclick="reproducirSeleccionado()"
-                            disabled>
-                            <i class='bx bx-play'></i> Play
-                        </button>
-                        <button class="btn-modern btn-danger" onclick="stopReproduccion()">
-                            <i class='bx bx-stop'></i> Stop
-                        </button>
-                    </div>
-                </div>
-
-                <div style="margin-top: 20px;">
-                    <button class="btn-modern btn-outlined" onclick="desconectar()"
-                        style="border-color: rgba(239, 68, 68, 0.3); color: var(--danger);">
-                        <i class='bx bx-log-out'></i> Desconectar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tab: PowerPoint -->
-            <div id="tab-ppt" class="tab-content">
-                <div class="status-badge"
-                    style="background: rgba(245, 158, 11, 0.15); color: var(--primary); border-color: rgba(245, 158, 11, 0.3);">
-                    <i class='bx bx-slideshow'></i> Modo Presentación
-                </div>
-
-                <div class="card">
-                    <h3><i class='bx bxs-file-ppt'></i> Subir PowerPoint</h3>
-
-                    <div style="border: 2px dashed var(--glass-border); border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s;"
-                        onclick="document.getElementById('ppt-file-input').click()"
-                        onmouseover="this.style.borderColor=getComputedStyle(document.documentElement).getPropertyValue('--primary');"
-                        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';">
-                        <i class='bx bx-cloud-upload'
-                            style="font-size: 40px; color: var(--text-muted); margin-bottom: 10px;"></i>
-                        <p style="font-size: 14px; color: var(--text-muted);">Toca para subir archivo PPT</p>
-                        <div id="upload-status"
-                            style="font-size: 12px; color: var(--primary); margin-top: 10px; min-height: 18px;"></div>
-                    </div>
-                    <input type="file" id="ppt-file-input" accept=".pptx,.ppt" style="display: none;">
-                </div>
-
-                <div class="card">
-                    <h3 style="margin-bottom: 10px;">
-                        <span>Vista Previa</span>
-                        <span id="ppt-status-text"
-                            style="font-size: 12px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px;">Sin
-                            datos</span>
-                    </h3>
-
-                    <div
-                        style="position: relative; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--glass-border); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                        <!-- Current Slide Main View -->
-                        <img id="ppt-current-img" src=""
-                            style="width: 100%; height: 100%; object-fit: contain; display: none;">
-                        <div id="ppt-placeholder"
-                            style="position: absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; color: var(--text-muted); flex-direction: column; gap: 10px;">
-                            <i class='bx bx-image' style="font-size: 40px; opacity: 0.5;"></i>
-                            <span>Esperando diapositivas...</span>
-                        </div>
-                    </div>
-
-                    <!-- Next Slide Preview (Small) -->
-                    <div
-                        style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
-                        <span style="font-size: 12px; color: var(--text-muted);">Siguiente:</span>
-                        <div
-                            style="width: 80px; aspect-ratio: 16/9; background: #000; border-radius: 6px; overflow: hidden; border: 1px solid var(--glass-border); position: relative;">
-                            <img id="ppt-next-img" src=""
-                                style="width: 100%; height: 100%; object-fit: contain; display: none; opacity: 0.7;">
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 15px;">
-                        <button class="btn-modern btn-outlined" onclick="pptPrev()" style="flex: 1; height: 60px;">
-                            <i class='bx bx-chevron-left' style="font-size: 30px;"></i>
-                        </button>
-                        <button class="btn-modern btn-primary" onclick="pptNext()" style="flex: 1; height: 60px;">
-                            <i class='bx bx-chevron-right' style="font-size: 30px;"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bottom Navigation -->
-            <div class="bottom-nav">
-                <button id="nav-inicio" class="nav-btn active" onclick="cambiarPestana('inicio')">
-                    <i class='bx bx-home-alt-2'></i>
-                    Inicio
-                </button>
-                <button id="nav-ppt" class="nav-btn" onclick="cambiarPestana('ppt')">
-                    <i class='bx bx-slideshow'></i>
-                    PowerPoint
-                </button>
-            </div>
-        </div>
+      <!-- Bottom Navigation -->
+      <nav class="bottom-nav">
+        <button
+          class="nav-btn active"
+          id="nav-inicio"
+          onclick="cambiarPestana('inicio')"
+        >
+          <i class="bx bx-home-alt"></i>
+          <span>Inicio</span>
+        </button>
+        <button
+          class="nav-btn"
+          id="nav-ppt"
+          onclick="cambiarPestana('ppt')"
+        >
+          <i class="bx bxs-slideshow"></i>
+          <span>PowerPoint</span>
+        </button>
+        <button
+          class="nav-btn"
+          id="nav-youtube"
+          onclick="cambiarPestana('youtube')"
+        >
+          <i class="bx bxl-youtube"></i>
+          <span>YouTube</span>
+        </button>
+        <button
+          class="nav-btn"
+          id="nav-chat"
+          onclick="cambiarPestana('chat')"
+        >
+          <i class="bx bx-chat"></i>
+          <span>Chat</span>
+        </button>
+      </nav>
+      </div>
     </div>
 
     <script>
-        let PIN_GUARDADO = null;
-        let himnoSeleccionado = null;
-        let searchTimeout = null;
+      let PIN_GUARDADO = null;
+      let himnoSeleccionado = null;
+      let searchTimeout = null;
 
-        function mostrarAlerta(mensaje, tipo = 'error') {
-            const alert = document.getElementById('alert');
-            alert.textContent = mensaje;
-            alert.className = `alert alert-${tipo}`;
+      function mostrarAlerta(mensaje, tipo = "error") {
+        const alert = document.getElementById("alert");
+        alert.textContent = mensaje;
+        alert.className = `alert alert-${tipo}`;
+        setTimeout(() => {
+          alert.className = "alert hidden";
+        }, 3000);
+      }
+
+      async function validarPIN() {
+        const pinInput = document.getElementById("pinInput");
+        const pin = pinInput.value.trim();
+
+        if (!pin) {
+          mostrarAlerta("Por favor ingrese el PIN", "error");
+          return;
+        }
+
+        try {
+          const response = await fetch("/validar-pin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ pin }),
+          });
+
+          const data = await response.json();
+
+          if (data.ok) {
+            PIN_GUARDADO = pin;
+
+            // Guardar en sesión
+            localStorage.setItem("saved_pin", pin);
+
+            document.getElementById("pinSection").classList.add("hidden");
+            document.getElementById("controlsSection").classList.add("visible");
+            document.querySelector(".bottom-nav").classList.add("visible");
+            // Mostrar pestaña de inicio por defecto
+            cambiarPestana("inicio");
+            mostrarAlerta("✅ Conectado exitosamente", "success");
+
+            // Iniciar escucha de eventos SSE
+            iniciarEventosSSE();
+          } else {
+            mostrarAlerta("❌ PIN incorrecto", "error");
+            pinInput.value = "";
+          }
+        } catch (error) {
+          mostrarAlerta("❌ Error de conexión", "error");
+        }
+      }
+
+      // Manejo de subida de archivos PPT
+      document.getElementById("ppt-file-input").onchange = async function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!PIN_GUARDADO) {
+          mostrarAlerta("Debe conectarse primero", "error");
+          return;
+        }
+
+        const status = document.getElementById("upload-status");
+        status.textContent = "⏳ Subiendo: " + file.name + "...";
+
+        try {
+          // Enviar como binario directo para no necesitar multer
+          const response = await fetch(
+            `/upload-ppt?pin=${PIN_GUARDADO}&name=${encodeURIComponent(file.name)}`,
+            {
+              method: "POST",
+              body: file,
+              headers: {
+                "Content-Type": "application/octet-stream",
+              },
+            },
+          );
+
+          const data = await response.json();
+
+          if (data.ok) {
+            status.textContent = "✅ Subida completada";
+            mostrarAlerta("✅ PowerPoint subido con éxito", "success");
+            // Limpiar input
+            e.target.value = "";
             setTimeout(() => {
-                alert.className = 'alert hidden';
+              status.textContent = "";
             }, 3000);
+          } else {
+            status.textContent = "❌ Error: " + (data.error || "Desconocido");
+            mostrarAlerta("❌ Error al subir: " + data.error, "error");
+          }
+        } catch (error) {
+          console.error("Error en subida:", error);
+          status.textContent = "❌ Error de conexión";
+          mostrarAlerta("❌ Error de conexión al subir", "error");
+        }
+      };
+
+      // Manejo de subida de archivos VIDEO MP4 e IMÁGENES
+      document.getElementById("video-file-input").onchange = async function (
+        e,
+      ) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!PIN_GUARDADO) {
+          mostrarAlerta("Debe conectarse primero", "error");
+          return;
         }
 
-        async function validarPIN() {
-            const pinInput = document.getElementById('pinInput');
-            const pin = pinInput.value.trim();
+        const status = document.getElementById("upload-video-status");
+        const isImage = file.type.startsWith("image/");
+        const fileType = isImage ? "imagen" : "video";
+        status.textContent = `⏳ Subiendo ${fileType}: ${file.name}...`;
 
-            if (!pin) {
-                mostrarAlerta('Por favor ingrese el PIN', 'error');
-                return;
-            }
-
+        // Lógica de reintento
+        const tryUpload = async (attemptsLeft) => {
             try {
-                const response = await fetch('/validar-pin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ pin })
-                });
-
-                const data = await response.json();
-
-                if (data.ok) {
-                    PIN_GUARDADO = pin;
-
-                    // Guardar en sesión
-                    localStorage.setItem('saved_pin', pin);
-
-                    document.getElementById('pinSection').classList.add('hidden');
-                    document.getElementById('controlsSection').classList.add('visible');
-                    // Mostrar pestaña de inicio por defecto
-                    cambiarPestana('inicio');
-                    mostrarAlerta('✅ Conectado exitosamente', 'success');
-
-                    // Iniciar escucha de eventos SSE
-                    iniciarEventosSSE();
-                } else {
-                    mostrarAlerta('❌ PIN incorrecto', 'error');
-                    pinInput.value = '';
-                }
-            } catch (error) {
-                mostrarAlerta('❌ Error de conexión', 'error');
-            }
-        }
-
-        // Manejo de subida de archivos PPT
-        document.getElementById('ppt-file-input').onchange = async function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (!PIN_GUARDADO) {
-                mostrarAlerta('Debe conectarse primero', 'error');
-                return;
-            }
-
-            const status = document.getElementById('upload-status');
-            status.textContent = '⏳ Subiendo: ' + file.name + '...';
-
-            try {
-                // Enviar como binario directo para no necesitar multer
-                const response = await fetch(`/upload-ppt?pin=${PIN_GUARDADO}&name=${encodeURIComponent(file.name)}`, {
-                    method: 'POST',
-                    body: file,
-                    headers: {
-                        'Content-Type': 'application/octet-stream'
+                const response = await fetch(
+                    `/upload-video?pin=${PIN_GUARDADO}&name=${encodeURIComponent(file.name)}&type=${fileType}`,
+                    {
+                        method: "POST",
+                        body: file,
+                        headers: { "Content-Type": "application/octet-stream" },
                     }
-                });
-
-                const data = await response.json();
-
-                if (data.ok) {
-                    status.textContent = '✅ Subida completada';
-                    mostrarAlerta('✅ PowerPoint subido con éxito', 'success');
-                    // Limpiar input
-                    e.target.value = '';
-                    setTimeout(() => { status.textContent = ''; }, 3000);
-                } else {
-                    status.textContent = '❌ Error: ' + (data.error || 'Desconocido');
-                    mostrarAlerta('❌ Error al subir: ' + data.error, 'error');
+                );
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (err) {
+                if (attemptsLeft > 0) {
+                    console.warn(`Reintentando subida... Quedan ${attemptsLeft}`);
+                    await new Promise(r => setTimeout(r, 1000)); // Esperar 1s
+                    return tryUpload(attemptsLeft - 1);
                 }
-            } catch (error) {
-                console.error('Error en subida:', error);
-                status.textContent = '❌ Error de conexión';
-                mostrarAlerta('❌ Error de conexión al subir', 'error');
+                throw err;
             }
         };
 
-        // Variable para la conexión SSE
-        let eventSource = null;
+        try {
+          const data = await tryUpload(2); // 3 intentos en total
 
-        function iniciarEventosSSE() {
-            if (eventSource) {
-                eventSource.close();
-            }
+          if (data.ok) {
+            status.textContent = `✅ ${fileType.charAt(0).toUpperCase() + fileType.slice(1)} enviado`;
+            mostrarAlerta(
+              `✅ ${fileType === "imagen" ? "Imagen" : "Video"} enviado a producción`,
+              "success",
+            );
+            e.target.value = "";
+            setTimeout(() => {
+              status.textContent = "";
+            }, 3000);
+          } else {
+            status.textContent = "❌ Error: " + (data.error || "Desconocido");
+            mostrarAlerta(
+              `❌ Error al subir ${fileType}: ` + data.error,
+              "error",
+            );
+          }
+        } catch (error) {
+          console.error(`Error en subida de ${fileType}:`, error);
+          status.textContent = "❌ Error de conexión";
+          mostrarAlerta(`❌ Error persistente: verifique su red.`, "error");
+        }
+      };
 
-            eventSource = new EventSource('/events');
+      // Variable para la conexión SSE
+      let eventSource = null;
 
-            eventSource.onmessage = function (event) {
-                const data = JSON.parse(event.data);
-                console.log('[SSE] 📨 Evento recibido:', data.type, data);
-
-                if (data.type === 'connected') {
-                    console.log('🔗 Conectado a eventos en tiempo real');
-                } else if (data.type === 'ppt-status') {
-                    actualizarVistaPPT(data.data);
-                } else if (data.type === 'playback-status') {
-                    console.log('[SSE] 🎵 Actualizando banner con:', data.data);
-                    // Si ya está visible y es el mismo, no re-animamos
-                    actualizarBannerReproduccion(data.data);
-                }
-            };
-
-            eventSource.onerror = function (err) {
-                console.warn('⚠️ Error en conexión de eventos, reintentando...');
-                eventSource.close();
-                // Reintentar conexión en 5 segundos
-                setTimeout(iniciarEventosSSE, 5000);
-            };
+      function iniciarEventosSSE() {
+        if (eventSource) {
+          eventSource.close();
         }
 
-        function actualizarVistaPPT(status) {
-            const currentImg = document.getElementById('ppt-current-img');
-            const placeholder = document.getElementById('ppt-placeholder');
-            const nextImg = document.getElementById('ppt-next-img');
-            const statusText = document.getElementById('ppt-status-text');
+        // Cargar lista de monitores al conectar
+        cargarMonitoresRemotos();
 
-            if (!status) return;
+        // Obtener nombre para identificar la conexión
+        const nombre = localStorage.getItem("chat_username") || "";
+        const urlArgs = nombre ? `?user=${encodeURIComponent(nombre)}` : "";
 
-            // Actualizar texto de estado
-            if (statusText) {
-                statusText.textContent = `Diapositiva ${status.current} / ${status.total}`;
-                statusText.style.background = 'var(--primary)';
-                statusText.style.color = 'white';
+        eventSource = new EventSource("/events" + urlArgs);
+
+        document.getElementById("usersBadge").style.display = "inline-flex";
+
+        // Solicitar estado inicial al conectarse
+        setTimeout(() => {
+          fetch("/estado")
+            .then((r) => r.json())
+            .then((data) => console.log("Estado solicitado:", data))
+            .catch((e) => console.error("Error solicitando estado:", e));
+        }, 500);
+
+        eventSource.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          console.log("[SSE] 📨 Evento recibido:", data.type, data);
+
+          if (data.type === "connected") {
+            console.log("🔗 Conectado a eventos en tiempo real");
+          } else if (data.type === "ppt-status") {
+            actualizarVistaPPT(data.data);
+          } else if (data.type === "playback-status") {
+            // FIX: Si estamos reproduciendo YouTube localmente (flag), 
+            // no dejar que un status "vacío" o "false" del main app nos oculte el banner.
+            // Solo si el status.playing viene true (del main app) lo respetamos,
+            // o si es false, verificamos si 'isPlayingYoutube' es true.
+            
+            if (isPlayingYoutube && !data.data.playing) {
+                console.log("[SSE] Ignorando 'stop' del main app porque YouTube está activo localmente");
+                return; 
             }
+            
+            console.log("[SSE] 🎵 Actualizando banner con:", data.data);
+            actualizarBannerReproduccion(data.data);
+          } else if (data.type === "monitors-update") {
+            console.log("[SSE] 🖥️ Actualización de monitores:", data.data);
+            renderMonitores(data.data.monitores);
+          } else if (data.type === "youtube-results") {
+            const resultados = data.data.resultados || data.data; // Fallback safety
+            console.log("[SSE] 🎬 Resultados YouTube:", resultados);
+            renderYoutubeResults(resultados);
+          } else if (data.type === "chat-message") {
+            recibirMensajeChat(data.data);
+          } else if (data.type === "users-update") {
+             actualizarListaUsuarios(data.data);
+          } else if (data.type === "typing-status") {
+             handleRemoteTyping(data.data);
+          } else if (data.type === "connection-ack") {
+             myClientId = data.data.id;
+             console.log("🆔 Mi ID de cliente:", myClientId);
+          } else if (data.type === "call-status") {
+             handleCallStatus(data.data);
+          } else if (data.type === "signal") {
+             handleSignal(data.data);
+          }
+        };
 
-            // IMAGEN ACTUAL
-            if (currentImg && status.slideUrl) {
-                const urlObj = new URL(status.slideUrl);
-                urlObj.hostname = window.location.hostname;
-                urlObj.port = '3000';
+        eventSource.onerror = function (err) {
+          console.warn("⚠️ Error en conexión de eventos, reintentando...");
+          eventSource.close();
+          // Reintentar conexión en 5 segundos
+          setTimeout(iniciarEventosSSE, 5000);
+        };
+      }
 
-                currentImg.onload = () => {
-                    currentImg.style.display = 'block';
-                    if (placeholder) placeholder.style.display = 'none';
-                };
-                currentImg.src = urlObj.href;
-            } else {
-                if (currentImg) currentImg.style.display = 'none';
-                if (placeholder) placeholder.style.display = 'flex';
-            }
+      function actualizarVistaPPT(status) {
+        const currentImg = document.getElementById("ppt-current-img");
+        const placeholder = document.getElementById("ppt-placeholder");
+        const nextImg = document.getElementById("ppt-next-img");
+        const statusText = document.getElementById("ppt-status-text");
 
-            // IMAGEN SIGUIENTE
-            if (nextImg && status.nextSlideUrl) {
-                const urlObj = new URL(status.nextSlideUrl);
-                urlObj.hostname = window.location.hostname;
-                urlObj.port = '3000';
+        if (!status) return;
 
-                nextImg.src = urlObj.href;
-                nextImg.style.display = 'block';
-            } else if (nextImg) {
-                nextImg.style.display = 'none';
-            }
+        // Actualizar texto de estado
+        if (statusText) {
+          statusText.textContent = `Diapositiva ${status.current} / ${status.total}`;
+          statusText.style.background = "var(--primary)";
+          statusText.style.color = "white";
         }
 
-        function cambiarPestana(pestana) {
-            // Ocultar todas las secciones de contenido
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('visible'));
+        // IMAGEN ACTUAL
+        if (currentImg && status.slideUrl) {
+          const urlObj = new URL(status.slideUrl);
+          urlObj.hostname = window.location.hostname;
+          urlObj.port = "3000";
 
-            // Quitar clase active de todos los botones de navegación
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-
-            // Mostrar la sección seleccionada
-            document.getElementById(`tab-${pestana}`).classList.add('visible');
-
-            // Activar el botón correspondiente
-            document.getElementById(`nav-${pestana}`).classList.add('active');
+          currentImg.onload = () => {
+            currentImg.style.display = "block";
+            if (placeholder) placeholder.style.display = "none";
+          };
+          currentImg.src = urlObj.href;
+        } else {
+          if (currentImg) currentImg.style.display = "none";
+          if (placeholder) placeholder.style.display = "flex";
         }
 
-        async function pptPrev() {
-            await enviarComando('ppt-prev');
+        // IMAGEN SIGUIENTE
+        if (nextImg && status.nextSlideUrl) {
+          const urlObj = new URL(status.nextSlideUrl);
+          urlObj.hostname = window.location.hostname;
+          urlObj.port = "3000";
+
+          nextImg.src = urlObj.href;
+          nextImg.style.display = "block";
+        } else if (nextImg) {
+          nextImg.style.display = "none";
+        }
+      }
+
+      function cambiarPestana(pestana) {
+        // Ocultar todas las secciones de contenido
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((el) => el.classList.remove("visible"));
+
+        // Quitar clase active de todos los botones de navegación
+        document
+          .querySelectorAll(".nav-btn")
+          .forEach((el) => el.classList.remove("active"));
+
+        // Mostrar la sección seleccionada
+        document.getElementById(`tab-${pestana}`).classList.add("visible");
+
+        // Activar el botón correspondiente
+        document.getElementById(`nav-${pestana}`).classList.add("active");
+
+        // Solicitar actualización de estado al cambiar de pestaña
+        fetch("/estado").catch((e) =>
+          console.error("Error al actualizar estado:", e),
+        );
+      }
+
+      async function pptPrev() {
+        await enviarComando("ppt-prev");
+      }
+
+      async function pptNext() {
+        await enviarComando("ppt-next");
+      }
+
+      async function enviarComando(comando, datos = {}) {
+        if (!PIN_GUARDADO) {
+          mostrarAlerta("Debe conectarse primero", "error");
+          return false;
         }
 
-        async function pptNext() {
-            await enviarComando('ppt-next');
+        try {
+          const response = await fetch("/cmd", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              pin: PIN_GUARDADO,
+              command: comando,
+              data: datos,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!data.ok) {
+            mostrarAlerta("Error al enviar comando", "error");
+            return false;
+          }
+          return true;
+        } catch (error) {
+          mostrarAlerta("Error de conexión", "error");
+          return false;
         }
+      }
 
-        async function enviarComando(comando, datos = {}) {
-            if (!PIN_GUARDADO) {
-                mostrarAlerta('Debe conectarse primero', 'error');
-                return false;
-            }
+      // Control de volumen - Actualización visual en tiempo real
+      document
+        .getElementById("volumeSlider")
+        .addEventListener("input", function (e) {
+          const volumen = e.target.value;
+          document.getElementById("volumeValue").textContent = volumen;
 
-            try {
-                const response = await fetch('/cmd', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        pin: PIN_GUARDADO,
-                        command: comando,
-                        data: datos
-                    })
-                });
+          // Cambiar icono según volumen con Boxicons
+          const icon = document.getElementById("volumeIcon");
+          // Remove previous classes
+          icon.textContent = ""; // Limpiar emoji si hubiera
+          icon.className = "bx"; // Base class
 
-                const data = await response.json();
-
-                if (!data.ok) {
-                    mostrarAlerta('Error al enviar comando', 'error');
-                    return false;
-                }
-                return true;
-            } catch (error) {
-                mostrarAlerta('Error de conexión', 'error');
-                return false;
-            }
-        }
-
-        // Control de volumen - Actualización visual en tiempo real
-        document.getElementById('volumeSlider').addEventListener('input', function (e) {
-            const volumen = e.target.value;
-            document.getElementById('volumeValue').textContent = volumen;
-
-            // Cambiar icono según volumen con Boxicons
-            const icon = document.getElementById('volumeIcon');
-            // Remove previous classes
-            icon.textContent = ''; // Limpiar emoji si hubiera
-            icon.className = 'bx'; // Base class
-
-            if (volumen == 0) {
-                icon.classList.add('bx-volume-mute');
-            } else if (volumen < 50) {
-                icon.classList.add('bx-volume-low');
-            } else {
-                icon.classList.add('bx-volume-full');
-            }
+          if (volumen == 0) {
+            icon.classList.add("bx-volume-mute");
+          } else if (volumen < 50) {
+            icon.classList.add("bx-volume-low");
+          } else {
+            icon.classList.add("bx-volume-full");
+          }
         });
 
-        // Enviar comando SOLO cuando se suelta el slider
-        document.getElementById('volumeSlider').addEventListener('change', function (e) {
-            const volumen = e.target.value;
-            console.log(`📤 Enviando comando de volumen: ${volumen}%`);
-            enviarComando('cambiar-volumen', { volumen: parseInt(volumen) });
+      // Enviar comando SOLO cuando se suelta el slider
+      document
+        .getElementById("volumeSlider")
+        .addEventListener("change", function (e) {
+          const volumen = e.target.value;
+          console.log(`📤 Enviando comando de volumen: ${volumen}%`);
+          enviarComando("cambiar-volumen", { volumen: parseInt(volumen) });
         });
 
-        // Búsqueda en tiempo real
-        document.getElementById('searchInput').addEventListener('input', function (e) {
-            clearTimeout(searchTimeout);
-            const query = e.target.value.trim();
+      // Búsqueda en tiempo real
+      document
+        .getElementById("searchInput")
+        .addEventListener("input", function (e) {
+          clearTimeout(searchTimeout);
+          const query = e.target.value.trim();
 
-            if (query.length < 1) {
-                document.getElementById('searchResults').classList.remove('visible');
-                document.getElementById('searchResults').innerHTML = '';
-                himnoSeleccionado = null;
-                document.getElementById('btnReproducir').disabled = true;
-                return;
-            }
+          if (query.length < 1) {
+            document
+              .getElementById("searchResults")
+              .classList.remove("visible");
+            document.getElementById("searchResults").innerHTML = "";
+            himnoSeleccionado = null;
+            document.getElementById("btnReproducir").disabled = true;
+            return;
+          }
 
-            searchTimeout = setTimeout(async () => {
-                await buscarHimnos(query);
-            }, 300);
+          searchTimeout = setTimeout(async () => {
+            await buscarHimnos(query);
+          }, 300);
         });
 
-        async function buscarHimnos(query) {
-            if (!PIN_GUARDADO) return;
+      async function buscarHimnos(query) {
+        if (!PIN_GUARDADO) return;
 
-            try {
-                const response = await fetch('/buscar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        pin: PIN_GUARDADO,
-                        query: query
-                    })
-                });
+        try {
+          const response = await fetch("/buscar", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              pin: PIN_GUARDADO,
+              query: query,
+            }),
+          });
 
-                const data = await response.json();
+          const data = await response.json();
 
-                if (data.ok && data.resultados) {
-                    mostrarResultados(data.resultados);
-                }
-            } catch (error) {
-                console.error('Error en búsqueda:', error);
-            }
+          if (data.ok && data.resultados) {
+            mostrarResultados(data.resultados);
+          }
+        } catch (error) {
+          console.error("Error en búsqueda:", error);
+        }
+      }
+
+      function mostrarResultados(resultados) {
+        const resultsContainer = document.getElementById("searchResults");
+        resultsContainer.innerHTML = "";
+
+        if (resultados.length === 0) {
+          resultsContainer.innerHTML =
+            '<div class="no-results"><i class="bx bx-error-circle"></i> No se encontraron resultados</div>';
+          resultsContainer.classList.add("visible");
+          himnoSeleccionado = null;
+          document.getElementById("btnReproducir").disabled = true;
+          return;
         }
 
-        function mostrarResultados(resultados) {
-            const resultsContainer = document.getElementById('searchResults');
-            resultsContainer.innerHTML = '';
+        // Mostrar todos los resultados
+        resultados.forEach((himno, index) => {
+          const item = document.createElement("div");
+          item.className = "result-item";
 
-            if (resultados.length === 0) {
-                resultsContainer.innerHTML = '<div class="no-results"><i class="bx bx-error-circle"></i> No se encontraron resultados</div>';
-                resultsContainer.classList.add('visible');
-                himnoSeleccionado = null;
-                document.getElementById('btnReproducir').disabled = true;
-                return;
-            }
+          const catLabel = himno.categoria
+            ? `<div style="font-size:10px; opacity:0.6; text-transform:uppercase; letter-spacing:0.5px;">${himno.categoria}</div>`
+            : "";
 
-            // Mostrar todos los resultados
-            resultados.forEach((himno, index) => {
-                const item = document.createElement('div');
-                item.className = 'result-item';
-
-                const catLabel = himno.categoria ?
-                    `<div style="font-size:10px; opacity:0.6; text-transform:uppercase; letter-spacing:0.5px;">${himno.categoria}</div>` : '';
-
-                item.innerHTML = `
+          item.innerHTML = `
                     <div class="result-number-bg">#${himno.numero}</div>
                     <div style="flex:1;">
                         ${catLabel}
-                        <div style="font-weight: 500; font-size: 15px;">${himno.titulo || 'Sin título'}</div>
+                        <div style="font-weight: 500; font-size: 15px;">${himno.titulo || "Sin título"}</div>
                     </div>
                     <i class='bx bx-play-circle' style="font-size: 24px; color: var(--primary); opacity: 0.5;"></i>
                 `;
 
-                item.onclick = () => seleccionarHimno(himno, item);
-                resultsContainer.appendChild(item);
-            });
-
-            resultsContainer.classList.add('visible');
-        }
-
-        function seleccionarHimno(himno, elemento) {
-            // Quitar selección de todos
-            document.querySelectorAll('.result-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-
-            // Seleccionar el clickeado
-            elemento.classList.add('selected');
-
-            // Guardar himno seleccionado
-            himnoSeleccionado = himno;
-
-            // Activar botón de reproducir
-            document.getElementById('btnReproducir').disabled = false;
-
-            console.log('Himno seleccionado:', himnoSeleccionado);
-        }
-
-        async function reproducirSeleccionado() {
-            if (!himnoSeleccionado) {
-                mostrarAlerta('❌ Seleccione un himno de la lista', 'error');
-                return;
-            }
-
-            const exito = await enviarComando('reproducir-himno-numero', {
-                numero: parseInt(himnoSeleccionado.numero),
-                categoria: himnoSeleccionado.categoria
-            });
-
-            if (exito) {
-                mostrarAlerta(`▶️ Reproduciendo: ${himnoSeleccionado.titulo}`, 'success');
-            }
-        }
-
-        async function stopReproduccion() {
-            await enviarComando('stop-reproduccion');
-            mostrarAlerta('⏹️ Detenido', 'success');
-        }
-
-        function desconectar() {
-            PIN_GUARDADO = null;
-            localStorage.removeItem('saved_pin');
-            himnoSeleccionado = null;
-            document.getElementById('pinSection').classList.remove('hidden');
-            document.getElementById('controlsSection').classList.remove('visible');
-            document.getElementById('pinInput').value = '';
-            document.getElementById('searchInput').value = '';
-            document.getElementById('searchResults').classList.remove('visible');
-            document.getElementById('searchResults').innerHTML = '';
-            document.getElementById('btnReproducir').disabled = true;
-            mostrarAlerta('🔓 Desconectado', 'success');
-        }
-
-        // Permitir enviar con Enter
-        document.getElementById('pinInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') validarPIN();
+          item.onclick = () => seleccionarHimno(himno, item);
+          resultsContainer.appendChild(item);
         });
 
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && himnoSeleccionado) reproducirSeleccionado();
+        resultsContainer.classList.add("visible");
+      }
+
+      function seleccionarHimno(himno, elemento) {
+        // Quitar selección de todos
+        document.querySelectorAll(".result-item").forEach((item) => {
+          item.classList.remove("selected");
         });
 
-        let lastPlayingTitle = '';
+        // Seleccionar el clickeado
+        elemento.classList.add("selected");
 
-        function actualizarBannerReproduccion(status) {
-            console.log('[BANNER] 🎬 Actualizando con status:', status);
-            const banner = document.getElementById('playbackBanner');
-            const title = document.getElementById('pbTitle');
-            const sub = document.getElementById('pbSub');
+        // Guardar himno seleccionado
+        himnoSeleccionado = himno;
 
-            if (!banner || !title || !sub) {
-                console.error('[BANNER] ❌ Elementos no encontrados');
-                return;
-            }
+        // Activar botón de reproducir
+        document.getElementById("btnReproducir").disabled = false;
 
-            if (status.playing) {
-                // Si el título cambió, hacemos un pequeño efecto
-                if (status.titulo && status.titulo !== lastPlayingTitle) {
-                    banner.style.transform = 'translateX(-50%) scale(1.05)';
-                    setTimeout(() => {
-                        banner.style.transform = '';
-                    }, 200);
-                    lastPlayingTitle = status.titulo;
-                }
+        console.log("Himno seleccionado:", himnoSeleccionado);
+      }
 
-                console.log('[BANNER] ▶️ Mostrando banner');
-                if (status.titulo) title.textContent = status.titulo;
-                if (status.numero) sub.textContent = `Himno #${status.numero}`;
-                else if (status.subtitulo) sub.textContent = status.subtitulo;
+      async function reproducirSeleccionado() {
+        if (!himnoSeleccionado) {
+          mostrarAlerta("❌ Seleccione un himno de la lista", "error");
+          return;
+        }
 
-                banner.classList.add('visible');
+        const exito = await enviarComando("reproducir-himno-numero", {
+          numero: parseInt(himnoSeleccionado.numero),
+          categoria: himnoSeleccionado.categoria,
+        });
+
+        if (exito) {
+          mostrarAlerta(
+            `▶️ Reproduciendo: ${himnoSeleccionado.titulo}`,
+            "success",
+          );
+        }
+      }
+
+      async function stopReproduccion() {
+        await enviarComando("stop-reproduccion");
+        mostrarAlerta("⏹️ Detenido", "success");
+      }
+
+      function desconectar() {
+        PIN_GUARDADO = null;
+        localStorage.removeItem("saved_pin");
+        himnoSeleccionado = null;
+        document.getElementById("pinSection").classList.remove("hidden");
+        document.getElementById("controlsSection").classList.remove("visible");
+        document.querySelector(".bottom-nav").classList.remove("visible");
+        document.getElementById("pinInput").value = "";
+        document.getElementById("searchInput").value = "";
+        document.getElementById("searchResults").classList.remove("visible");
+        document.getElementById("searchResults").innerHTML = "";
+        document.getElementById("btnReproducir").disabled = true;
+        mostrarAlerta("🔓 Desconectado", "success");
+        // Reset flags
+        isPlayingYoutube = false;
+        actualizarBannerReproduccion({ playing: false });
+      }
+
+      // Permitir enviar con Enter
+      document.getElementById("pinInput").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") validarPIN();
+      });
+
+      document
+        .getElementById("searchInput")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter" && himnoSeleccionado) reproducirSeleccionado();
+        });
+
+      let lastPlayingTitle = "";
+
+      function actualizarBannerReproduccion(status) {
+        console.log("[BANNER] 🎬 Actualizando con status:", status);
+        const banner = document.getElementById("playbackBanner");
+        const title = document.getElementById("pbTitle");
+        const sub = document.getElementById("pbSub");
+        const label = document.getElementById("pbStatusLabel");
+        const icon = document.getElementById("pbIcon");
+
+        if (!banner || !title || !sub) {
+          console.error("[BANNER] ❌ Elementos no encontrados");
+          return;
+        }
+
+        if (status.playing) {
+          // Si el título cambió, hacemos un pequeño efecto
+          if (status.titulo && status.titulo !== lastPlayingTitle) {
+            banner.style.transform = "translateX(-50%) scale(1.05)";
+            setTimeout(() => {
+              banner.style.transform = "";
+            }, 200);
+            lastPlayingTitle = status.titulo;
+          }
+
+          console.log("[BANNER] ▶️ Mostrando banner");
+          if (title && status.titulo) title.textContent = status.titulo;
+          if (sub) {
+            if (status.numero) sub.textContent = `Himno #${status.numero}`;
+            else if (status.subtitulo) sub.textContent = status.subtitulo;
+            else sub.textContent = "";
+          }
+
+          let iconClass = "bx-music";
+
+          if (label) {
+            if (status.tipo === "imagen") {
+              label.textContent = "VISUALIZANDO IMAGEN";
+              iconClass = "bx-image";
+            } else if (status.tipo === "video") {
+              label.textContent = "REPRODUCIENDO VIDEO";
+              iconClass = "bx-movie";
+            } else if (status.tipo === "youtube") {
+              label.textContent = "REPRODUCIENDO YOUTUBE";
+              iconClass = "bx-youtube";
             } else {
-                console.log('[BANNER] ⏹️ Ocultando banner');
-                banner.classList.remove('visible');
-                lastPlayingTitle = '';
+              label.textContent = "REPRODUCIENDO AHORA";
+              iconClass = "bx-music";
             }
+          }
+
+          if (icon) {
+            icon.className = `playback-icon bx ${iconClass}`;
+          }
+
+          banner.classList.add("visible");
+        } else {
+          console.log("[BANNER] ⏹️ Ocultando banner");
+          banner.classList.remove("visible");
+          lastPlayingTitle = "";
         }
+      }
 
-        // Auto-login al cargar
-        window.addEventListener('load', () => {
-            const savedPin = localStorage.getItem('saved_pin');
-            if (savedPin) {
-                document.getElementById('pinInput').value = savedPin;
-                console.log('🔄 Intentando reconexión automática...');
-                validarPIN();
+      // Auto-login al cargar
+      window.addEventListener("load", () => {
+        // Verificar si viene el PIN por URL (QR Code)
+        const urlParams = new URLSearchParams(window.location.search);
+        const pinFromUrl = urlParams.get("pin");
+
+        if (pinFromUrl) {
+          console.log(
+            "📱 PIN detectado en URL (QR), intentando conexión automática...",
+          );
+          document.getElementById("pinInput").value = pinFromUrl;
+          validarPIN();
+        } else {
+          // Si no hay PIN en URL, intentar desde localStorage
+          const savedPin = localStorage.getItem("saved_pin");
+          if (savedPin) {
+            document.getElementById("pinInput").value = savedPin;
+            console.log("🔄 Intentando reconexión automática...");
+            validarPIN();
+          }
+        }
+        
+        // Ensure chat name state is consistent on load
+        verificarNombreChat();
+      });
+      function renderMonitores(monitores) {
+        const container = document.getElementById("contenedor-monitores");
+        const select = document.getElementById("selectMonitores");
+
+        if (monitores && monitores.length > 0) {
+          container.style.display = "flex"; // Ensure it's flex
+
+          // Guardar selección actual si existe
+          const currentVal = select.value;
+
+          select.innerHTML =
+            '<option value="">Monitores</option><option value="-1">❌ Desactivar monitor</option>';
+
+          monitores.forEach((m) => {
+            const option = document.createElement("option");
+            option.value = m.id;
+            option.textContent = `✅ Monitor ${m.id}: ${m.nombre}`;
+            select.appendChild(option);
+          });
+
+          // Restaurar selección o dejar la que estaba
+          if (currentVal) select.value = currentVal;
+
+          // Remover listener anterior para evitar duplicados
+          const newSelect = select.cloneNode(true);
+          select.parentNode.replaceChild(newSelect, select);
+          newSelect.value = select.value; // Mantener valor tras clonar
+
+          newSelect.onchange = () => {
+            const val = newSelect.value;
+            if (val !== "") {
+              cambiarMonitor(val);
             }
-        });
-    </script>
-</body>
+          };
+        } else {
+          // Si monitores vacío, mostrar solo "Desactivar" si lo deseamos, o nada.
+          // Mantener igual que antes
+          // container.style.display = 'flex';
+        }
+      }
 
+      async function cargarMonitoresRemotos() {
+        try {
+          if (!PIN_GUARDADO) return;
+          console.log("🖥️ Cargando monitores remotos...");
+
+          const response = await fetch(`/monitores?pin=${PIN_GUARDADO}`);
+          const data = await response.json();
+
+          if (data.ok) {
+            renderMonitores(data.monitores);
+          }
+        } catch (e) {
+          console.error("Error cargando monitores:", e);
+        }
+      }
+
+      async function cambiarMonitor(id) {
+        if (!PIN_GUARDADO) return;
+
+        mostrarAlerta("🖥️ Cambiando monitor...", "success");
+        try {
+          await fetch("/cambiar-monitor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pin: PIN_GUARDADO, id: id }),
+          });
+        } catch (e) {
+          console.error("Error cambiando monitor:", e);
+          mostrarAlerta("Error al cambiar monitor", "error");
+        }
+      }
+      
+      // ================= YOUTUBE LOGIC =================
+      
+      const inputYoutube = document.getElementById("inputYoutube");
+      const btnBuscarYoutube = document.getElementById("btnBuscarYoutube");
+      const youtubeResults = document.getElementById("youtubeResults");
+      
+      btnBuscarYoutube.addEventListener("click", () => {
+         const query = inputYoutube.value.trim();
+         if(query) {
+            buscarYoutube(query);
+         }
+      });
+      
+      inputYoutube.addEventListener("keypress", (e) => {
+         if(e.key === 'Enter') {
+             const query = inputYoutube.value.trim();
+             if(query) buscarYoutube(query);
+         }
+      });
+
+      async function buscarYoutube(query) {
+         if (!PIN_GUARDADO) return;
+         
+         // Deshabilitar input mientras busca
+         inputYoutube.disabled = true;
+         btnBuscarYoutube.disabled = true;
+         youtubeResults.innerHTML = '<div style="text-align:center; color:white; padding:20px;">🔍 Buscando...</div>';
+         
+         try {
+            const exito = await enviarComando("buscar-youtube", { query });
+            if(!exito) {
+               // Revertir si falló envío
+               inputYoutube.disabled = false;
+               btnBuscarYoutube.disabled = false;
+               youtubeResults.innerHTML = '<div style="text-align:center; color: #ef4444;">Error al enviar búsqueda</div>';
+            }
+         } catch(e) {
+            console.error(e);
+            inputYoutube.disabled = false;
+            btnBuscarYoutube.disabled = false;
+         }
+      }
+
+      function renderYoutubeResults(resultados) {
+         // Habilitar input de nuevo
+         inputYoutube.disabled = false;
+         btnBuscarYoutube.disabled = false;
+         inputYoutube.focus();
+         
+         youtubeResults.innerHTML = "";
+         
+         if (!resultados || resultados.length === 0) {
+            youtubeResults.innerHTML = '<div style="text-align:center; color:white; padding:20px;">No se encontraron videos</div>';
+            return;
+         }
+         
+         resultados.forEach(video => {
+            const item = document.createElement("div");
+            item.className = "result-item";
+            // Estilo específico para video
+            item.style.display = "flex";
+            item.style.gap = "10px";
+            item.style.alignItems = "center";
+            
+             const thumb = video.thumbnail || video.imagePath || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+             
+             item.innerHTML = `
+                <div style="position: relative; width: 120px; height: 68px; flex-shrink: 0; border-radius: 4px; overflow: hidden; background: #000;">
+                   <img src="${thumb}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;">
+                   <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                       <i class='bx bx-play' style="font-size: 20px; color: white;"></i>
+                   </div>
+                </div>
+                <div style="flex:1; overflow:hidden;">
+                   <div style="font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${video.title || video.titulo}</div>
+                   <div style="font-size: 10px; opacity: 0.7;">${video.duration || ''}</div>
+                </div>
+                <i class='bx bx-play-circle' style="font-size: 24px; color: var(--primary); opacity: 0.8;"></i>
+             `;
+             
+             item.onclick = () => {
+                 reproducirYoutube({
+                     id: video.id,
+                     title: video.title || video.titulo,
+                     thumbnail: thumb
+                 });
+             };
+             youtubeResults.appendChild(item);
+         });
+      }
+
+      let isPlayingYoutube = false; // Flag global para mantener banner de YT
+
+      async function reproducirYoutube(video) {
+         mostrarAlerta(`▶️ Solicitando: ${video.title || video.titulo}`, "success");
+         
+         // Activar flag
+         isPlayingYoutube = true;
+
+         // Actualización optimista del banner
+         actualizarBannerReproduccion({
+            playing: true,
+            tipo: 'youtube',
+            titulo: video.title || video.titulo,
+            subtitulo: 'YouTube Video' 
+         });
+
+         await enviarComando("reproducir-youtube", { 
+            id: video.id || video.videoPath,
+            title: video.title || video.titulo,
+            thumbnail: video.thumbnail || video.imagePath
+         });
+      }
+
+      // Modificar stop para limpiar flag de YouTube
+      const _originalStop = stopReproduccion;
+      stopReproduccion = async function() {
+          isPlayingYoutube = false; 
+          await _originalStop();
+          // Forzar ocultar banner
+          actualizarBannerReproduccion({ playing: false });
+      };
+
+      
+      // ==========================================
+      // FUNCIONES NUEVAS PARA CÓDIGO CHAT
+      // ==========================================
+
+      function verificarNombreChat() {
+          const nombre = localStorage.getItem("chat_username");
+          const prompt = document.getElementById("chatNamePrompt");
+          const interface = document.getElementById("chatInterface");
+          const welcome = document.getElementById("chatWelcome");
+
+          if (nombre) {
+              prompt.style.display = "none";
+              interface.style.display = "flex";
+              welcome.innerHTML = `Conectado como <b style="color: var(--primary);">${nombre}</b>`;
+              cargarHistorialChat();
+          } else {
+              prompt.style.display = "flex";
+              interface.style.display = "none";
+          }
+      }
+
+      function guardarNombreChat() {
+          const input = document.getElementById("chatNameInput");
+          const nombre = input.value.trim();
+          
+          if (nombre.length < 2) {
+              mostrarAlerta("Ingresa un nombre válido", "error");
+              return;
+          }
+
+          localStorage.setItem("chat_username", nombre);
+          verificarNombreChat();
+          
+          // RECONEXIÓN CRÍTICA: Reiniciar SSE para enviar el nombre al servidor
+          if (PIN_GUARDADO) {
+              console.log("🔄 Actualizando conexión con nuevo nombre...");
+              iniciarEventosSSE();
+          }
+      }
+
+      async function enviarMensajeChat() {
+          if (!PIN_GUARDADO) {
+              mostrarAlerta("Debes estar conectado", "error");
+              return;
+          }
+
+          const input = document.getElementById("chatMessageInput");
+          const mensaje = input.value.trim();
+          const nombre = localStorage.getItem("chat_username");
+
+          if (!mensaje) return;
+          if (!nombre) {
+              verificarNombreChat(); 
+              return;
+          }
+
+          input.value = ""; // Limpiar inmediato para UX
+          input.focus();
+
+          try {
+              await fetch("/chat", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                      pin: PIN_GUARDADO,
+                      user: nombre,
+                      message: mensaje
+                  })
+              });
+          } catch (e) {
+              console.error("Error enviando mensaje", e);
+              mostrarAlerta("Error al enviar", "error");
+          }
+      }
+
+      function recibirMensajeChat(data) {
+          // Guardar en historial local
+          const historial = JSON.parse(localStorage.getItem("chat_history") || "[]");
+          historial.push(data);
+          
+          // Limitar a los últimos 100 mensajes
+          if (historial.length > 100) {
+              // Eliminar los más antiguos (el principio del array)
+              const overflow = historial.length - 100;
+              historial.splice(0, overflow);
+          }
+
+          localStorage.setItem("chat_history", JSON.stringify(historial));
+          
+          // Renderizar si el tab de chat está activo o visible (siempre renderizamos para tenerlo listo)
+          renderizarMensaje(data);
+          
+          // Scroll al fondo
+          scrollToBottomChat();
+      }
+
+      function scrollToBottomChat() {
+          const container = document.getElementById("chatMessages");
+          if(container) {
+             container.scrollTop = container.scrollHeight;
+          }
+      }
+
+      function cargarHistorialChat() {
+          const historial = JSON.parse(localStorage.getItem("chat_history") || "[]");
+          const container = document.getElementById("chatMessages");
+          container.innerHTML = "";
+          
+          historial.forEach(msg => renderizarMensaje(msg));
+          scrollToBottomChat();
+      }
+
+      function renderizarMensaje(msg) {
+          const container = document.getElementById("chatMessages");
+          if (!container) return;
+
+          const miNombre = localStorage.getItem("chat_username");
+          const esMio = msg.user === miNombre;
+
+          const div = document.createElement("div");
+          div.className = `chat-bubble ${esMio ? "mine" : "others"}`;
+          
+          const dateObj = new Date(msg.timestamp);
+          const time = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+          div.innerHTML = `
+              <span class="chat-user">${esMio ? "Tú" : msg.user}</span>
+              ${msg.message}
+              <span class="chat-time">${time}</span>
+          `;
+          
+          container.appendChild(div);
+      }
+
+      // Enter para enviar en chat
+      document.getElementById("chatMessageInput").addEventListener("keypress", (e) => {
+          if (e.key === "Enter") enviarMensajeChat();
+      });
+
+      // Enter para guardar nombre
+      document.getElementById("chatNameInput").addEventListener("keypress", (e) => {
+          if (e.key === "Enter") guardarNombreChat();
+      });
+      
+      // Auto-check on load (in case we are already on chat tab or switch to it)
+      // We also ensure that if we have a name, we broadcast it to the server immediately upon connection
+      // This is handled by iniciarEventosSSE reading from localStorage.
+
+      // ==========================================
+      // FUNCIONES USUARIOS Y TYPING
+      // ==========================================
+      
+      // ... (actualizarListaUsuarios is fine, leaving it if I don't select it)
+
+
+      function actualizarListaUsuarios(data) {
+          const countEl = document.getElementById("usersCount");
+          const listContainer = document.getElementById("usersListContainer");
+          
+          if(countEl) countEl.textContent = data.count || 0;
+          
+          if(listContainer && data.users) {
+              listContainer.innerHTML = "";
+              data.users.forEach(u => {
+                  const div = document.createElement("div");
+                  div.style.padding = "10px";
+                  div.style.background = "rgba(255,255,255,0.05)";
+                  div.style.borderRadius = "8px";
+                  div.style.display = "flex";
+                  div.style.alignItems = "center";
+                  div.style.gap = "10px";
+                  
+                  // Identificar si soy yo
+                  const miNombre = localStorage.getItem("chat_username");
+                  const esYo = miNombre && u.name === miNombre; // Nota: id matching sería mejor pero por ahora nombre
+                  
+                  div.innerHTML = `
+                    <div style="width:30px; height:30px; background: var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:white;">
+                        ${(u.name || "A")[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight:bold; font-size:14px;">${u.name || "Anónimo"}</div>
+                        ${esYo ? '<div style="font-size:10px; opacity:0.6;">(Tú)</div>' : ''}
+                    </div>
+                  `;
+                  listContainer.appendChild(div);
+              });
+          }
+      }
+
+      function toggleUsersList() {
+          const modal = document.getElementById("usersModal");
+          modal.classList.toggle("visible");
+      }
+
+      // Typing Logic
+      const typingUsers = new Set();
+      let typingTimeout = null;
+      let myTypingTimeout = null;
+
+      // Escuchar input propio
+      document.getElementById("chatMessageInput").addEventListener("input", () => {
+         // Enviar "start typing"
+         enviarTyping(true);
+         
+         clearTimeout(myTypingTimeout);
+         myTypingTimeout = setTimeout(() => {
+             enviarTyping(false);
+         }, 2000); // dejar de escribir tras 2s de inactividad
+      });
+
+      async function enviarTyping(isTyping) {
+         if(!PIN_GUARDADO) return;
+         const user = localStorage.getItem("chat_username");
+         if(!user) return; // Si no tiene nombre, no enviamos typing
+         
+         try {
+             await fetch("/typing", {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({ pin: PIN_GUARDADO, user, isTyping })
+             });
+         } catch(e) { console.error(e); }
+      }
+
+      function handleRemoteTyping(data) {
+          const { user, isTyping } = data;
+          const myName = localStorage.getItem("chat_username");
+          
+          // Ignorar mis propios eventos
+          if (user === myName) return;
+
+          if (isTyping) {
+              typingUsers.add(user);
+          } else {
+              typingUsers.delete(user);
+          }
+          
+          actualizarUI_Typing();
+      }
+
+      function actualizarUI_Typing() {
+          const indicator = document.getElementById("typingIndicator");
+          const textEl = document.getElementById("typingText");
+          
+          if (typingUsers.size === 0) {
+              indicator.classList.remove("visible");
+              return;
+          }
+          
+          indicator.classList.add("visible");
+          
+          const usersArr = Array.from(typingUsers);
+          if (usersArr.length === 1) {
+              textEl.textContent = `${usersArr[0]} está escribiendo...`;
+          } else {
+              textEl.textContent = `Varios están escribiendo...`;
+          }
+      }
+      
+
+
+
+      // ==========================================
+      // WEBRTC AUDIO CALL LOGIC
+      // ==========================================
+      
+      let myClientId = null;
+      let localStream = null;
+      let peerConnections = {}; // targetId -> RTCPeerConnection
+      let isMuted = false;
+      let callActiveGlobal = false;
+      let myselfInCall = false;
+      let callParticipants = [];
+      
+      const rtcConfig = {
+          iceServers: [
+              { urls: "stun:stun.l.google.com:19302" }
+          ]
+      };
+
+      async function handleCallAction() {
+          if (!PIN_GUARDADO) return mostrarAlerta("Conéctate primero", "error");
+          
+          if (myselfInCall) {
+              leaveCall();
+          } else {
+              initCall();
+          }
+      }
+
+      async function initCall() {
+          try {
+              mostrarAlerta("🎤 Iniciando audio (silenciado)...", "success");
+              localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+              
+              // 🔇 COMENSAR SIEMPRE SILENCIADO
+              isMuted = true;
+              localStream.getAudioTracks().forEach(track => track.enabled = false);
+
+              // Actualizar botón de mute visualmente
+              const btnMute = document.getElementById("btnMute");
+              if(btnMute) {
+                  btnMute.innerHTML = "<i class='bx bxs-microphone-off'></i>";
+                  btnMute.style.color = "var(--danger)";
+                  btnMute.style.borderColor = "var(--danger)";
+              }
+
+              // Join signal
+              const user = localStorage.getItem("chat_username") || "Anónimo";
+              const response = await fetch("/call/join", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ pin: PIN_GUARDADO, user, id: myClientId })
+              });
+              
+              const data = await response.json();
+              if (data.ok) {
+                  myselfInCall = true;
+                  updateCallUI();
+                  
+                  // Connect to existing peers
+                  data.peers.forEach(peer => {
+                      createPeerConnection(peer.id, true); // true = initiator
+                  });
+              }
+          } catch (e) {
+              console.error("Error accessing mic or joining:", e);
+              mostrarAlerta("Error al acceder al micrófono", "error");
+          }
+      }
+
+      function leaveCall() {
+          if (localStream) {
+              localStream.getTracks().forEach(track => track.stop());
+              localStream = null;
+          }
+          
+          // Close all connections
+          Object.values(peerConnections).forEach(pc => pc.close());
+          peerConnections = {};
+          
+          myselfInCall = false;
+          
+          // 🔇 RESETEAR ESTADO DE SILENCIO (Para la próxima vez)
+          isMuted = true; // Por seguridad, aunque initCall lo fuerza
+          const btnMute = document.getElementById("btnMute");
+          if(btnMute) {
+             // Restaurar estilo visual por defecto (blanco) aunque al entrar se ponga rojo
+             btnMute.innerHTML = "<i class='bx bxs-microphone'></i>";
+             btnMute.style.color = "white";
+             btnMute.style.borderColor = "white";
+          }
+
+          // Send leave signal
+          fetch("/call/leave", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pin: PIN_GUARDADO, id: myClientId })
+          }).catch(e => console.error(e));
+          
+          updateCallUI();
+      }
+
+      function createPeerConnection(targetId, initiator) {
+          if (peerConnections[targetId]) return;
+          
+          console.log(`🔗 Creando conexión con ${targetId} (${initiator ? 'Iniciador' : 'Respondedor'})`);
+          
+          const pc = new RTCPeerConnection(rtcConfig);
+          peerConnections[targetId] = pc;
+          
+          // Add local tracks
+          if (localStream) {
+              localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+          }
+          
+          // Handle ICE candidates
+          pc.onicecandidate = (event) => {
+              if (event.candidate) {
+                  sendSignal(targetId, "candidate", event.candidate);
+              }
+          };
+          
+          // Handle remote stream
+          pc.ontrack = (event) => {
+              console.log("🔊 Recibido audio remoto de", targetId);
+              const remoteAudio = new Audio();
+              remoteAudio.srcObject = event.streams[0];
+              remoteAudio.autoplay = true;
+              remoteAudio.play().catch(e => console.error("Error playback", e));
+              // Store audio reference if needed to mute specifically
+          };
+          
+          if (initiator) {
+              pc.createOffer().then(offer => {
+                  return pc.setLocalDescription(offer);
+              }).then(() => {
+                  sendSignal(targetId, "offer", pc.localDescription);
+              }).catch(e => console.error("Error creating offer", e));
+          }
+          
+          return pc;
+      }
+
+      async function handleSignal(data) {
+          const { senderId, type, data: signalData } = data;
+          
+          if (!myselfInCall && type === "offer") {
+             // Optional: Auto-answer or ignore?
+             // Since we are mesh, we only handle if we intend to be in call.
+             // If I initiated join, myselfInCall is true.
+             // If someone joins LATER, they send offer. So I must be in call loop.
+             if (!localStream) return; // Ignore if I'm not in call logic
+          }
+          
+          let pc = peerConnections[senderId];
+          if (!pc) {
+              // If receiving offer, I am not initiator
+              pc = createPeerConnection(senderId, false);
+          }
+          
+          try {
+              if (type === "offer") {
+                  await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+                  const answer = await pc.createAnswer();
+                  await pc.setLocalDescription(answer);
+                  sendSignal(senderId, "answer", pc.localDescription);
+              } else if (type === "answer") {
+                  await pc.setRemoteDescription(new RTCSessionDescription(signalData));
+              } else if (type === "candidate") {
+                  await pc.addIceCandidate(new RTCIceCandidate(signalData));
+              }
+          } catch (e) {
+              console.error("Error handling signal", e);
+          }
+      }
+
+      function sendSignal(targetId, type, data) {
+          fetch("/signal", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                  pin: PIN_GUARDADO, 
+                  targetId, 
+                  type, 
+                  data, 
+                  senderId: myClientId 
+              })
+          }).catch(e => console.error("Signal error", e));
+      }
+
+      function handleCallStatus(data) {
+          callActiveGlobal = data.active;
+          callParticipants = data.participants || [];
+          updateCallUI();
+      }
+
+      function updateCallUI() {
+          const btn = document.getElementById("btnCallAction");
+          const ui = document.getElementById("activeCallUI");
+          const list = document.getElementById("callParticipantsList");
+          
+          if (myselfInCall) {
+              btn.innerHTML = "<i class='bx bxs-phone-off'></i> Salir de llamada";
+              btn.className = "btn-modern btn-danger";
+              ui.style.display = "block";
+              
+              // Render participants
+              list.innerHTML = "";
+              
+              // Me badge
+              const meBadge = document.createElement("div");
+              meBadge.style = "background: rgba(16, 185, 129, 0.2); padding:5px 10px; border-radius:20px; color:var(--success); font-size:11px; white-space:nowrap; border:1px solid rgba(16, 185, 129, 0.4); display:flex; align-items:center; gap:5px;";
+              meBadge.innerHTML = `<i class='bx bxs-user'></i> Tú ${isMuted ? '<i class="bx bxs-microphone-off"></i>' : ''}`;
+              list.appendChild(meBadge);
+              
+              // Others
+              const others = callParticipants.filter(p => p.id !== myClientId);
+              others.forEach(p => {
+                  const badge = document.createElement("div");
+                  badge.style = "background: rgba(255, 255, 255, 0.1); padding:5px 10px; border-radius:20px; color:white; font-size:11px; white-space:nowrap; border:1px solid rgba(255,255,255,0.2); display:flex; align-items:center; gap:5px;";
+                  badge.innerHTML = `<i class='bx bxs-user-voice'></i> ${p.name}`;
+                  list.appendChild(badge);
+              });
+
+          } else {
+              if (callActiveGlobal) {
+                  btn.innerHTML = "<i class='bx bxs-phone-incoming'></i> Unirse a llamada";
+                  btn.className = "btn-modern btn-success"; // Green
+                  btn.style.background = "#10b981";
+              } else {
+                  btn.innerHTML = "<i class='bx bxs-phone-call'></i> Iniciar llamada grupal";
+                  btn.className = "btn-modern btn-primary";
+                  btn.style.background = ""; // Reset
+              }
+              ui.style.display = "none";
+          }
+      }
+
+      function toggleMute() {
+          if (localStream) {
+              isMuted = !isMuted;
+              localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+              
+              const btn = document.getElementById("btnMute");
+              if (isMuted) {
+                  btn.innerHTML = "<i class='bx bxs-microphone-off'></i>";
+                  btn.style.color = "var(--danger)";
+                  btn.style.borderColor = "var(--danger)";
+              } else {
+                  btn.innerHTML = "<i class='bx bxs-microphone'></i>";
+                  btn.style.color = "white";
+                  btn.style.borderColor = "white";
+              }
+              updateCallUI();
+          }
+      }
+
+      // Initial check
+      updateCallUI();
+
+    </script>
+  </body>
 </html>

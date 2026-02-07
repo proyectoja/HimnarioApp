@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { BrowserWindow } = require("electron");
 
 let mainWindow = null;
 let buffer = [];
@@ -22,11 +22,7 @@ function log(msg) {
   console.log(line);
 
   try {
-    if (
-      mainWindow &&
-      mainWindow.webContents &&
-      !mainWindow.isDestroyed()
-    ) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send("log-message", line);
     } else {
       buffer.push(line);
@@ -38,23 +34,31 @@ function log(msg) {
 
 function enviarArchivoDescargado(payload) {
   try {
-    if (mainWindow && mainWindow.webContents && !mainWindow.isDestroyed()) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send("archivo-descargado", payload);
     }
   } catch (err) {
-    console.error("Error enviando archivo-descargado:", err);
+    // Silently ignore if window is being destroyed
+  }
+}
+
+function enviarProgresoDescarga(payload) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+      mainWindow.webContents.send("download-progress", payload);
+    }
+  } catch (err) {
+    // Silently ignore
   }
 }
 
 function sendShowLogs() {
   isLogVisible = true;
   try {
-    if (mainWindow && mainWindow.webContents && !mainWindow.isDestroyed()) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
       mainWindow.webContents.send("show-logs-container");
     }
-  } catch (err) {
-    console.error("Error enviando show-logs-container:", err);
-  }
+  } catch (err) {}
 }
 
 function sendHideLogs() {
@@ -83,7 +87,7 @@ function flushBuffer() {
     }
 
     // Enviar logs
-    buffer.forEach(m => {
+    buffer.forEach((m) => {
       if (!mainWindow.isDestroyed()) {
         mainWindow.webContents.send("log-message", m);
       }
@@ -100,5 +104,6 @@ module.exports = {
   flushBuffer,
   enviarArchivoDescargado,
   sendShowLogs,
-  sendHideLogs
+  sendHideLogs,
+  enviarProgresoDescarga,
 };

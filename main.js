@@ -13,6 +13,8 @@ const si = require("systeminformation");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+// --------------------------------------------------------------------------------
+
 const {
   setMainWindow,
   flushBuffer,
@@ -79,7 +81,7 @@ function createWindow() {
   // Cambiar el título una vez que el contenido esté completamente cargado
   win.webContents.on("did-finish-load", () => {
     win.setTitle(
-      `PROYECTO JA | Himnario Adventista Pro - v${app.getVersion()}`
+      `PROYECTO JA | Himnario Adventista Pro - v${app.getVersion()}`,
     );
     win.webContents.executeJavaScript(`
       window.__APP_VERSION__ = "${app.getVersion()}";
@@ -133,6 +135,13 @@ function createWindow() {
     if (win && !win.isDestroyed()) {
       win.show();
       win.focus();
+
+      // 🚀 AHORA SÍ: Revisar actualizaciones una vez que todo cargó
+      // Esperamos un pequeño momento para asegurar que la UI ya se pintó
+      setTimeout(() => {
+        log("[MAIN] Iniciando búsqueda de actualizaciones...");
+        autoUpdater.checkForUpdates();
+      }, 2000);
     }
   });
 
@@ -293,7 +302,7 @@ async function ejecutarVerificacion() {
 
     if (reinicio) {
       log(
-        "[MAIN] Archivos faltantes. Mostrando logs, reiniciando categorías..."
+        "[MAIN] Archivos faltantes. Mostrando logs, reiniciando categorías...",
       );
 
       // Esperar 3 segundos para que el usuario vea el mensaje final, luego ocultar logs
@@ -375,7 +384,7 @@ function abrirVentanaSecundaria(monitorIndex) {
     if (playerWindow && !playerWindow.isDestroyed()) {
       // Avisar al renderer principal que la ventana fue cerrada
       const win = BrowserWindow.getAllWindows().find(
-        (w) => w.title !== "Ventana Secundaria"
+        (w) => w.title !== "Ventana Secundaria",
       );
       if (win) win.webContents.send("ventana-cerrada");
     }
@@ -395,14 +404,23 @@ ipcMain.on("enviar-a-ventana", (event, data) => {
   }
 });
 
+// ✅ Canal para enviar resultados de YouTube al control remoto
+ipcMain.on("youtube-results-to-remote", (event, data) => {
+  if (global.enviarEventoControlRemoto) {
+    global.enviarEventoControlRemoto("youtube-results", data);
+  }
+});
+
 // ✅ Mostrar monitores
 async function mostrarMonitores() {
   const displays = await si.graphics();
-  return displays.displays.map((d, i) => ({
-    id: i,
-    nombre: d.model.replace(/[^\x20-\x7E]/g, ""),
-    principal: d.main,
-  }));
+  return displays.displays
+    .map((d, i) => ({
+      id: i,
+      nombre: d.model.replace(/[^\x20-\x7E]/g, ""),
+      principal: d.main,
+    }))
+    .filter((d) => !d.principal);
 }
 
 // IPC
@@ -419,7 +437,7 @@ ipcMain.handle("obtener-estado-control-remoto", async () => {
   if (global.controlRemotoEstado && global.controlRemotoEstado.activo) {
     console.log(
       "📡 Solicitando estado del control remoto:",
-      global.controlRemotoEstado
+      global.controlRemotoEstado,
     );
     return global.controlRemotoEstado;
   }
@@ -475,7 +493,7 @@ ipcMain.on("ppt:update-remote", (event, data) => {
 //ACTUALIZACIONES DE LA APP - SISTEMA MEJORADO
 const updateStatusPath = path.join(
   app.getPath("userData"),
-  "update-status.json"
+  "update-status.json",
 );
 
 // Estado de la actualización
@@ -560,7 +578,7 @@ autoUpdater.on("update-not-available", () => {
 // Progreso de descarga
 autoUpdater.on("download-progress", (progressObj) => {
   const logMessage = `Descarga en progreso: ${Math.round(
-    progressObj.percent
+    progressObj.percent,
   )}% - ${(progressObj.transferred / 1048576).toFixed(2)}MB de ${(
     progressObj.total / 1048576
   ).toFixed(2)}MB`;
@@ -660,7 +678,9 @@ ipcMain.on("install-update-now", () => {
 
 app.whenReady().then(() => {
   // Revisar actualizaciones con el sistema mejorado
-  autoUpdater.checkForUpdates();
+  // SE MOVIÓ A "app-ready" para evitar errores al inicio
+  // autoUpdater.checkForUpdates();
+
   ejecutarVerificacion(); // ✅ ahora con lógica de reinicio/cierre de logs
   console.log("Monitores disponibles:");
   mostrarMonitores();
@@ -716,14 +736,14 @@ function getPowerPointPath() {
       "Microsoft Office",
       "root",
       "Office16",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
       "Program Files",
       "Microsoft Office",
       "Office16",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
@@ -731,15 +751,15 @@ function getPowerPointPath() {
       "Microsoft Office 15",
       "root",
       "office15",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
       "Program Files",
       "Microsoft Office",
       "Office15",
-      "POWERPNT.EXE"
-    )
+      "POWERPNT.EXE",
+    ),
   );
 
   // 2. Office 2013/2016 (32-bit)
@@ -750,14 +770,14 @@ function getPowerPointPath() {
       "Microsoft Office",
       "root",
       "Office16",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
       "Program Files (x86)",
       "Microsoft Office",
       "Office16",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
@@ -765,29 +785,29 @@ function getPowerPointPath() {
       "Microsoft Office",
       "root",
       "Office15",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
       "Program Files (x86)",
       "Microsoft Office",
       "Office15",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
       "Program Files (x86)",
       "Microsoft Office",
       "Office14",
-      "POWERPNT.EXE"
+      "POWERPNT.EXE",
     ),
     path.join(
       "C:",
       "Program Files (x86)",
       "Microsoft Office",
       "Office12",
-      "POWERPNT.EXE"
-    )
+      "POWERPNT.EXE",
+    ),
   );
 
   // 3. Buscar en PATH del sistema
@@ -803,14 +823,14 @@ function getPowerPointPath() {
   const localAppData = process.env.LOCALAPPDATA || "";
   if (localAppData) {
     possiblePaths.push(
-      path.join(localAppData, "Microsoft", "Office", "POWERPNT.EXE")
+      path.join(localAppData, "Microsoft", "Office", "POWERPNT.EXE"),
     );
   }
 
   console.log(
     "[PPT] Buscando PowerPoint en",
     possiblePaths.length,
-    "posibles rutas..."
+    "posibles rutas...",
   );
 
   for (const possiblePath of possiblePaths) {
@@ -850,20 +870,20 @@ function getSofficePath() {
       "Program Files (x86)",
       "LibreOffice",
       "program",
-      "soffice.exe"
+      "soffice.exe",
     ),
     path.join(
       process.env.PROGRAMFILES || "C:\\Program Files",
       "LibreOffice",
       "program",
-      "soffice.exe"
+      "soffice.exe",
     ),
     path.join(
       process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)",
       "LibreOffice",
       "program",
-      "soffice.exe"
-    )
+      "soffice.exe",
+    ),
   );
 
   // 2. Buscar en PATH del sistema
@@ -884,8 +904,8 @@ function getSofficePath() {
         "Programs",
         "LibreOffice",
         "program",
-        "soffice.exe"
-      )
+        "soffice.exe",
+      ),
     );
   }
 
@@ -894,14 +914,14 @@ function getSofficePath() {
     // C: a Z:
     const driveLetter = String.fromCharCode(drive);
     possiblePaths.push(
-      path.join(driveLetter + ":", "LibreOffice", "program", "soffice.exe")
+      path.join(driveLetter + ":", "LibreOffice", "program", "soffice.exe"),
     );
   }
 
   // 5. Desarrollo y embebido (última opción)
   possiblePaths.push(
     path.join(__dirname, "assets", "libreoffice", "program", "soffice.exe"),
-    path.join(process.resourcesPath, "libreoffice", "program", "soffice.exe")
+    path.join(process.resourcesPath, "libreoffice", "program", "soffice.exe"),
   );
 
   console.log("[PPT] Buscando en", possiblePaths.length, "posibles rutas...");
@@ -921,7 +941,7 @@ function getSofficePath() {
           console.log(
             "[PPT] Archivo encontrado pero no parece válido (tamaño:",
             stats.size,
-            "bytes)"
+            "bytes)",
           );
         }
       }
@@ -1082,7 +1102,7 @@ WScript.Echo "SUCCESS"
         if (error) {
           console.error("[PPT] Error ejecutando PowerPoint:", error.message);
           return reject(
-            new Error(`Error ejecutando PowerPoint: ${error.message}`)
+            new Error(`Error ejecutando PowerPoint: ${error.message}`),
           );
         }
 
@@ -1103,7 +1123,7 @@ WScript.Echo "SUCCESS"
           } else if (line.includes("ERROR_OPEN:")) {
             const errorMsg = line.split("ERROR_OPEN:")[1];
             return reject(
-              new Error(`PowerPoint no pudo abrir el archivo: ${errorMsg}`)
+              new Error(`PowerPoint no pudo abrir el archivo: ${errorMsg}`),
             );
           }
         }
@@ -1113,7 +1133,7 @@ WScript.Echo "SUCCESS"
         }
 
         console.log(
-          `[PPT] PowerPoint exportó ${exportedSlides.length} de ${totalSlides} diapositivas`
+          `[PPT] PowerPoint exportó ${exportedSlides.length} de ${totalSlides} diapositivas`,
         );
 
         // Ordenar las diapositivas por número
@@ -1126,7 +1146,7 @@ WScript.Echo "SUCCESS"
 
         console.log("[PPT] Archivos PNG generados por PowerPoint:", pngFiles);
         resolve(pngFiles);
-      }
+      },
     );
   });
 }
@@ -1186,7 +1206,7 @@ function pptToPdf(pptPath, outDir) {
 
             // Buscar cualquier archivo PDF
             const pdfFiles = files.filter((f) =>
-              f.toLowerCase().endsWith(".pdf")
+              f.toLowerCase().endsWith(".pdf"),
             );
 
             if (pdfFiles.length > 0) {
@@ -1195,17 +1215,17 @@ function pptToPdf(pptPath, outDir) {
             } else {
               reject(
                 new Error(
-                  "No se generó el archivo PDF. LibreOffice no produjo ningún archivo."
-                )
+                  "No se generó el archivo PDF. LibreOffice no produjo ningún archivo.",
+                ),
               );
             }
           } catch (err) {
             reject(
-              new Error(`Error al verificar archivos PDF: ${err.message}`)
+              new Error(`Error al verificar archivos PDF: ${err.message}`),
             );
           }
         }, 2000);
-      }
+      },
     );
   });
 }
@@ -1327,7 +1347,7 @@ async function pdfToImagesLibreOfficeFallback(pdfPath, outDir) {
             reject(new Error(`Error al procesar imágenes: ${err.message}`));
           }
         }, 3000);
-      }
+      },
     );
   });
 }
@@ -1380,10 +1400,10 @@ async function convertPPTToImages(pptPath) {
           .sort((a, b) => {
             // Ordenar por número de diapositiva (slide_001.png, slide_002.png, etc.)
             const numA = parseInt(
-              a.match(/slide_(\d+)/)?.[1] || a.match(/(\d+)/)?.[1] || 0
+              a.match(/slide_(\d+)/)?.[1] || a.match(/(\d+)/)?.[1] || 0,
             );
             const numB = parseInt(
-              b.match(/slide_(\d+)/)?.[1] || b.match(/(\d+)/)?.[1] || 0
+              b.match(/slide_(\d+)/)?.[1] || b.match(/(\d+)/)?.[1] || 0,
             );
             return numA - numB;
           });
@@ -1443,10 +1463,10 @@ async function convertPPTToImages(pptPath) {
         // Ordenar los archivos por número (slide_001.png, slide_002.png, etc.)
         const sortedPngFiles = pngFiles.sort((a, b) => {
           const numA = parseInt(
-            a.match(/slide_(\d+)/)?.[1] || a.match(/(\d+)/)?.[1] || 0
+            a.match(/slide_(\d+)/)?.[1] || a.match(/(\d+)/)?.[1] || 0,
           );
           const numB = parseInt(
-            b.match(/slide_(\d+)/)?.[1] || b.match(/(\d+)/)?.[1] || 0
+            b.match(/slide_(\d+)/)?.[1] || b.match(/(\d+)/)?.[1] || 0,
           );
           return numA - numB;
         });
@@ -1462,7 +1482,7 @@ async function convertPPTToImages(pptPath) {
           "Conversión completada con PowerPoint",
           pngFiles.length,
           pngFiles.length,
-          true
+          true,
         );
         console.log("[PPT] URLs finales (PowerPoint):", slides);
         return slides;
@@ -1551,7 +1571,7 @@ async function convertPPTToImages(pptPath) {
       "Conversión completada con LibreOffice",
       pngFiles.length,
       pngFiles.length,
-      true
+      true,
     );
     console.log("[PPT] URLs finales:", slides);
     return slides;
@@ -1643,7 +1663,7 @@ Posibles causas:
       // Si el usuario hace clic en "Instalar PowerPoint"
       if (showInstallButtons && response.response === 0) {
         shell.openExternal(
-          "https://www.microsoft.com/microsoft-365/powerpoint"
+          "https://www.microsoft.com/microsoft-365/powerpoint",
         );
         console.log("[PPT] Abriendo enlace de Microsoft Office...");
       }
@@ -1653,8 +1673,67 @@ Posibles causas:
         console.log("[PPT] Abriendo enlace de descarga de LibreOffice...");
       }
     }
+  }
+});
 
-    return [];
+// Reiniciar servidor remoto
+ipcMain.handle("reset-remote-connection", async () => {
+  try {
+    console.log("[CONTROL REMOTO] 🔄 Reiniciando conexión remota...");
+
+    // Obtener módulo actual y cerrar servidor si existe
+    // Nota: remoteServer no es una variable global en main.js, debemos usar la función del módulo o depender
+    // de que al eliminar del caché y requerir de nuevo se maneje correctamente, pero lo ideal es cerrarlo explícitamente.
+    try {
+      const currentModule = require("./controlRemoto");
+      const server = currentModule.getServerInstance
+        ? currentModule.getServerInstance()
+        : null;
+      if (server) {
+        server.close();
+        console.log("[CONTROL REMOTO] Servidor antiguo cerrado");
+      }
+    } catch (e) {
+      console.warn(
+        "[CONTROL REMOTO] No se pudo cerrar servidor anterior (quizás no estaba activo):",
+        e.message,
+      );
+    }
+
+    // IMPORTANTE: Eliminar la caché del módulo para forzar un nuevo PIN
+    const modulePath = require.resolve("./controlRemoto");
+    delete require.cache[modulePath];
+
+    // Recargar módulo
+    const {
+      startRemoteServer: start,
+      getRemoteStatus,
+    } = require("./controlRemoto");
+
+    // Reiniciar
+    start(mainWindow, app);
+
+    // Obtener el nuevo estado para enviarlo de vuelta
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const estado = getRemoteStatus();
+        if (estado && estado.activo) {
+          console.log(
+            "[CONTROL REMOTO] ✅ Reiniciado correctamente. Nuevo PIN:",
+            estado.pin,
+          );
+          resolve({ success: true, pin: estado.pin, url: estado.url });
+        } else {
+          resolve({
+            success: false,
+            error: "No se pudo obtener el nuevo estado",
+          });
+        }
+      }, 500);
+    });
+  } catch (error) {
+    console.error("[CONTROL REMOTO] ❌ Error reiniciando:", error);
+    return { success: false, error: error.message };
   }
 });
 
@@ -1692,7 +1771,7 @@ ipcMain.handle("ppt:get-slide", async (event, slideIndex) => {
   const tempDir = path.join(
     os.tmpdir(),
     "ppt-cache",
-    Object.keys(global.pptConversionSlides)[0] || ""
+    Object.keys(global.pptConversionSlides)[0] || "",
   );
   const slideFile = global.pptConversionSlides[slideIndex];
   const slidePath = path.join(tempDir, slideFile);
@@ -1716,6 +1795,27 @@ ipcMain.on("update-playback-status", (event, status) => {
   }
 });
 
+// ✅ MONITOREO EN TIEMPO REAL DE PANTALLAS (Display Hot-Plug)
+const updateMonitorsRemote = async () => {
+  if (global.enviarEventoControlRemoto) {
+    try {
+      console.log(
+        "[MONITORES] Cambios detectados en pantallas, actualizando remotos...",
+      );
+      const monitores = await mostrarMonitores();
+      global.enviarEventoControlRemoto("monitors-update", { monitores });
+    } catch (err) {
+      console.error("Error updating monitors via SSE:", err);
+    }
+  }
+};
+
+app.whenReady().then(() => {
+  screen.on("display-added", updateMonitorsRemote);
+  screen.on("display-removed", updateMonitorsRemote);
+  screen.on("display-metrics-changed", updateMonitorsRemote);
+});
+
 /* -------------------------------------------------
    ENVIAR PROGRESO
 ------------------------------------------------- */
@@ -1732,6 +1832,14 @@ function sendProgress(message, current = null, total = null, done = false) {
 }
 
 //npm run release -> comando importante para actualizaciones.
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+// FUNCIONALIDAD DE ASISTENTE DE VOZ ELIMINADA POR SOLICITUD DEL USUARIO
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 /**
  * Comprobar dependencias desactualizadas

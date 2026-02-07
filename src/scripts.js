@@ -88,6 +88,41 @@ if (window.electronAPI && window.electronAPI.onLog) {
       }
     });
   }
+
+  // MANEJO DE PROGRESO DE DESCARGA TOTAL
+  if (window.electronAPI.onDownloadProgress) {
+    window.electronAPI.onDownloadProgress((data) => {
+      const contenedorBarra = document.getElementById("contenedor-barra-logs");
+      if (contenedorBarra) {
+        // Inicializar estructura de la barra si está vacío
+        if (contenedorBarra.innerHTML.trim() === "") {
+          contenedorBarra.innerHTML = `
+            <div id="barra-progreso-descarga" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0066ff, #00ccff); transition: width 0.3s ease; box-shadow: 0 0 10px rgba(0,102,255,0.4);"></div>
+            <div id="texto-progreso-descarga" style="position: absolute; width: 100%; top: 0; text-align: center; font-size: 13px; color: white; font-weight: bold; line-height: 25px; text-shadow: 1px 1px 2px rgba(0,0,0,0.9); pointer-events: none;">0%</div>
+          `;
+        }
+
+        // Asegurarse de que el contenedor de la barra sea visible
+        if (contenedorBarra.style.display !== "block") {
+          contenedorBarra.style.display = "block";
+        }
+
+        const barra = document.getElementById("barra-progreso-descarga");
+        const texto = document.getElementById("texto-progreso-descarga");
+        if (barra && texto) {
+          // Asegurar un mínimo de 2% para que se vea la barra si hay progreso
+          const width =
+            data.porcentaje > 0 && data.porcentaje < 2 ? 2 : data.porcentaje;
+          barra.style.width = `${width}%`;
+
+          let infoArchivos = `${data.completados}/${data.total} archivos`;
+          let infoCarpetas = `${data.carpetasCompletadas}/${data.totalCarpetas} carpetas`;
+          texto.textContent = `${data.porcentaje}% (${infoArchivos} — ${infoCarpetas})`;
+        }
+      }
+    });
+  }
+} else {
   console.error("[ERROR] preload.js no inyectado");
 }
 
@@ -591,16 +626,120 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
   // Actualizar URL y PIN del control remoto
   if (datosExtra.url) {
     infoUrl.textContent = `Control remoto corriendo en: ${datosExtra.url}`;
+
+    // Generar QR y mostrarlo
+    const imgQr = document.getElementById("img-qr-remoto");
+    const containerQr = document.getElementById("contenedor-qr-remoto");
+
+    if (
+      imgQr &&
+      containerQr &&
+      window.electronAPI &&
+      window.electronAPI.generateQRCodeDataURL
+    ) {
+      // Agregar PIN a la URL para autoconexión
+      const urlConPin = datosExtra.pin
+        ? `${datosExtra.url}?pin=${datosExtra.pin}`
+        : datosExtra.url;
+
+      window.electronAPI
+        .generateQRCodeDataURL(urlConPin)
+        .then((url) => {
+          imgQr.src = url;
+          containerQr.style.display = "block";
+        })
+        .catch((err) => {
+          console.error("Error generando QR:", err);
+          containerQr.style.display = "none";
+        });
+    }
   } else if (!esPremiumGlobal) {
     infoUrl.innerHTML =
       "🔒 <span style='opacity:0.7'>Control remoto: Solo Premium</span>";
+
+    // Ocultar QR si no es premium
+    const containerQr = document.getElementById("contenedor-qr-remoto");
+    if (containerQr) containerQr.style.display = "none";
   }
 
   if (datosExtra.pin) {
     infoPin.textContent = `Pin del control remoto: ${datosExtra.pin}`;
+
+    // Mostrar botón de reinicio si hay PIN
+    const btnReset = document.getElementById("boton-resetear-conexion");
+    if (btnReset) {
+      btnReset.style.display = "block";
+      // Estilos elegantes
+      btnReset.style.background = "linear-gradient(45deg, #d32f2f, #b71c1c)";
+      btnReset.style.color = "white";
+      btnReset.style.border = "none";
+      btnReset.style.padding = "10px 15px";
+      btnReset.style.borderRadius = "20px";
+      btnReset.style.cursor = "pointer";
+      btnReset.style.fontSize = "13px";
+      btnReset.style.width = "100%";
+      btnReset.style.marginTop = "15px";
+      btnReset.style.fontWeight = "bold";
+      btnReset.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)";
+      btnReset.style.transition = "all 0.3s ease";
+
+      // Efecto hover
+      btnReset.onmouseover = () => {
+        btnReset.style.transform = "translateY(-2px)";
+        btnReset.style.boxShadow = "0 6px 10px rgba(0,0,0,0.3)";
+      };
+      btnReset.onmouseout = () => {
+        btnReset.style.transform = "translateY(0)";
+        btnReset.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)";
+      };
+
+      btnReset.onclick = async () => {
+        if (
+          confirm(
+            "⚠️ ¿Resetear conexión remota?\n\nEsto desconectará todos los dispositivos actuales y generará un nuevo PIN de seguridad.",
+          )
+        ) {
+          // Guardar estado original
+          const textoOriginal = "Resetear conexión";
+          btnReset.disabled = true;
+          btnReset.innerHTML = "⌛ Reseteando...";
+          const bgOriginal = btnReset.style.background; // Guardamos el gradiente
+          btnReset.style.background = "#666"; // Color gris mientras carga
+
+          try {
+            const result = await window.electronAPI.resetRemoteConnection();
+            if (result.success) {
+              // Actualizar UI con nuevos datos
+              actualizarInformacionUsuarioMenu({
+                url: result.url,
+                pin: result.pin,
+              });
+              alert(
+                "✅ Conexión reseteada exitosamente.\n\nNuevo PIN generado.",
+              );
+            } else {
+              alert("Error al resetear: " + (result.error || "Desconocido"));
+            }
+          } catch (e) {
+            console.error(e);
+            alert("Error de comunicación al resetear");
+          } finally {
+            // Restaurar estado SIEMPRE
+            btnReset.textContent = textoOriginal;
+            btnReset.disabled = false;
+            btnReset.style.background =
+              "linear-gradient(45deg, #d32f2f, #b71c1c)";
+          }
+        }
+      };
+    }
   } else if (!esPremiumGlobal) {
     infoPin.innerHTML =
       "🔒 <span style='opacity:0.7'>Pin: Actualiza para desbloquear</span>";
+
+    // Ocultar botón de reinicio si no es premium
+    const btnReset = document.getElementById("boton-resetear-conexion");
+    if (btnReset) btnReset.style.display = "none";
   }
 }
 
@@ -960,7 +1099,7 @@ botonPremium.addEventListener("click", function () {
 
     const precioAnual = document.createElement("div");
     precioAnual.innerHTML =
-      "<span style='text-decoration: line-through; opacity: 0.6; font-size: 14px;'>$115.00</span> <span style='font-size: 22px; font-weight: bold;'>$107,88</span> <span style='font-size: 12px;'>/ año</span>";
+      "<span style='text-decoration: line-through; opacity: 0.6; font-size: 14px;'>$149.00</span> <span style='font-size: 22px; font-weight: bold;'>$107,88</span> <span style='font-size: 12px;'>/ año</span>";
     precioAnual.style.marginBottom = "10px";
     contenedorAnual.appendChild(precioAnual);
 
@@ -1580,8 +1719,15 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
   img.dataset.originalSrc = imagePath;
   img.src = imagePath;
 
-  img.alt = titulo;
+  //img.alt = titulo;
   img.loading = "lazy";
+
+  // Manejador de errores para cargar imagen de fallback si la portada no existe o da error
+  img.onerror = function () {
+    // Usar imagen de fallback desde la carpeta imagenes
+    this.src = "imagenes/portada-fallback.png";
+    this.onerror = null; // Evitar bucle infinito si la imagen de fallback también falla
+  };
 
   // título
   const h3 = document.createElement("h3");
@@ -2090,6 +2236,10 @@ const botonPowerPoint = document.getElementById("botonPowerPoint");
 const ventanaPowerPoint = document.getElementById("contenedor-power-point");
 const botonProgramacion = document.getElementById("botonProgramacion");
 const ventanaProgramacion = document.getElementById("contenedor-programacion");
+const botonManual = document.getElementById("botonManualUsuario");
+const ventanaManual = document.getElementById("contenedor-manual-usuario");
+const botonPelis = document.getElementById("botonPelis");
+const ventanaPelis = document.getElementById("contenedor-peliculas");
 
 /*toggleContainer.addEventListener("click", () => {
   toggleContainer.classList.toggle("active");
@@ -2134,6 +2284,8 @@ botonProgramacion.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     ventanaProgramacion.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
@@ -2142,6 +2294,8 @@ botonProgramacion.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2155,6 +2309,8 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     himnarioContainer.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
@@ -2163,6 +2319,8 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2177,6 +2335,8 @@ botonBiblia.addEventListener("click", function () {
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -2184,6 +2344,8 @@ botonBiblia.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2198,6 +2360,8 @@ botonHimnosPro.addEventListener("click", function () {
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -2205,6 +2369,8 @@ botonHimnosPro.addEventListener("click", function () {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2219,6 +2385,8 @@ botonYoutube.addEventListener("click", function () {
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -2226,9 +2394,53 @@ botonYoutube.addEventListener("click", function () {
     ventanaBiblia.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
+
+botonPelis.addEventListener("click", function () {
+  const displayActual = getComputedStyle(ventanaPelis).display;
+
+  if (displayActual === "none") {
+    ventanaHimnosPro.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "flex";
+    document.getElementById("contenedor-contador").style.display = "none";
+
+    // Mostramos el pop-up al entrar
+    abrirModalPelis();
+  } else {
+    ventanaHimnosPro.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
+    himnarioContainer.style.display = "grid";
+  }
+});
+
+function abrirModalPelis() {
+  const modal = document.getElementById("modal-mensaje-peliculas");
+  if (modal) {
+    modal.style.display = "flex";
+  }
+}
+
+function cerrarModalPelis() {
+  const modal = document.getElementById("modal-mensaje-peliculas");
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
 
 //Función para cerrar ventana secundaria
 function cerrarVentanaReproductor() {
@@ -2245,6 +2457,7 @@ function cerrarVentanaReproductor() {
   ventanaYouTube.style.display = "none";
   ventanaPowerPoint.style.display = "none";
   ventanaProgramacion.style.display = "none";
+  ventanaPelis.style.display = "none";
   himnarioContainer.style.display = "grid";
 }
 
@@ -2299,6 +2512,9 @@ function exitFullscreen() {
   }
 }
 
+// Exponer buscarVideos globalmente para el asistente
+window.buscarVideos = buscarVideos;
+
 //FUNCIÓN BOTON DEL CHAT
 const botonChat = document.getElementById("botonChat");
 const contenedorChat = document.getElementById("contenedor-chat");
@@ -2339,6 +2555,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -2353,6 +2571,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -2366,6 +2586,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -2379,6 +2601,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -2392,6 +2616,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -2405,6 +2631,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -2417,6 +2645,9 @@ async function mostrarCategoria(categoria) {
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -2428,6 +2659,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
@@ -2451,6 +2684,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
@@ -2471,6 +2706,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos4.length; i++) {
       const numero = titulos4[i].match(/\d{3}/)[0];
@@ -2491,6 +2728,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos5.length; i++) {
       const numero = titulos5[i].match(/\d{3}/)[0];
@@ -2511,6 +2750,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
@@ -2531,6 +2772,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
@@ -2551,6 +2794,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
@@ -2571,6 +2816,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
@@ -2877,6 +3124,8 @@ async function mostrarCategoria(categoria) {
     ventanaYouTube.style.display = "none";
     ventanaPowerPoint.style.display = "none";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3235,13 +3484,30 @@ async function buscarVideosCore(
 
       if (!premiumCategoria) videos = videos.slice(0, 8);
 
+      // ENVIAR RESULTADOS AL CONTROL REMOTO (JSON)
+      if (window.electronAPI && window.electronAPI.sendYoutubeResults) {
+        const resultadosRemotos = videos.map((v) => ({
+          id: v.id,
+          title: v.title,
+          thumbnail: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,
+          videoPath: v.id,
+          imagePath: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,
+          categoria: "youtube",
+          duration: v.duration,
+          views: v.views,
+        }));
+        window.electronAPI.sendYoutubeResults({
+          resultados: resultadosRemotos,
+        });
+      }
+
       for (let video of videos) {
         const div = document.createElement("div");
         div.className = "vid";
         div.innerHTML = `
           <iframe width="100%" height="200" src="https://www.youtube.com/embed/${
             video.id
-          }?rel=0" frameborder="0" allowfullscreen loading="lazy" style="pointer-events: none;"></iframe>
+          }?rel=0&origin=${window.location.origin}" frameborder="0" allowfullscreen loading="lazy" style="pointer-events: none;"></iframe>
           <h3>${video.title}</h3>
           <p style="color: white;font-size: 12px; font-family: Arial, Helvetica, sans-serif; font-weight: bold;">
             ${
@@ -3300,6 +3566,22 @@ async function buscarVideosCore(
     if (videoIdMatch) {
       let videoId = videoIdMatch[1];
       let img = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+      // ENVIAR A REMOTO (Unico resultado)
+      if (window.electronAPI && window.electronAPI.sendYoutubeResults) {
+        const res = [
+          {
+            id: videoId,
+            title: "Video de YouTube",
+            thumbnail: img,
+            videoPath: videoId,
+            imagePath: img,
+            categoria: "youtube",
+          },
+        ];
+        window.electronAPI.sendYoutubeResults({ resultados: res });
+      }
+
       resultsContainer.innerHTML = `
         <div id="contenedor-embed" style="pointer-events: none;">
           <iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}?mute=1" frameborder="0" allowfullscreen></iframe>
@@ -3501,20 +3783,22 @@ function youtubeClappr(auxUrlOnce, poster, lista) {
 }
 
 //FUNSIÓN PARA VIDEOS LOCALES ESTANDAR
-function videosLocalesEstandar(url, poster) {
+function videosLocalesEstandar(url, poster, contextData = null) {
   audioHimno.pause();
   // Limpiar el contenedor de video antes de cargar uno nuevo
   videoPlayerContainer.innerHTML = "";
   videoPlayerContainer.appendChild(closePlayerButton);
   closePlayerButton.style.display = "flex";
+
   // Crear el reproductor Clappr
+  // Nota: No usamos 'events' en el constructor para evitar problemas de 'this' y closure
   player = new Clappr.Player({
     source: url,
     parentId: "#videoPlayerContainer",
     width: "100%",
     height: "100vh",
     preload: "auto",
-    autoPlay: true,
+    autoPlay: true, // AutoPlay activado
     volume: 100,
     poster: poster,
     //hideMediaControl: true,
@@ -3527,12 +3811,56 @@ function videosLocalesEstandar(url, poster) {
   // Mostrar el contenedor del reproductor
   videoPlayerContainer.style.display = "flex";
 
-  // Escuchar cuando el video termine
+  // --- LÓGICA DE PROGRESO Y VISTO ---
+  let hasSeeked = false;
+
+  // 1. Al iniciar la reproducción (PLAY), restaurar el tiempo si existe
+  player.on(Clappr.Events.PLAYER_PLAY, function () {
+    if (!hasSeeked && contextData && contextData.id) {
+      const savedTime = localStorage.getItem(`progreso_${contextData.id}`);
+      if (savedTime && parseFloat(savedTime) > 0) {
+        console.log(`⏪ Restaurando video ${contextData.id} a ${savedTime}s`);
+        player.seek(parseFloat(savedTime));
+      }
+      hasSeeked = true; // Evitar saltos repetidos
+    }
+  });
+
+  // 2. Guardar progreso durante la reproducción
+  player.on(Clappr.Events.PLAYER_TIMEUPDATE, function (progress) {
+    if (contextData && contextData.id) {
+      // Guardar cada 5 segundos aprox
+      if (progress.current > 0 && Math.floor(progress.current) % 5 === 0) {
+        localStorage.setItem(`progreso_${contextData.id}`, progress.current);
+      }
+
+      // Marcar como visto si supera el 90%
+      if (progress.total > 0 && progress.current / progress.total > 0.9) {
+        const watchedKey = `watched_${contextData.id}`;
+        // Verificar si ya estaba marcado para no spammear el evento
+        if (localStorage.getItem(watchedKey) !== "true") {
+          localStorage.setItem(watchedKey, "true");
+          console.log(`✅ Video ${contextData.id} marcado como visto`);
+
+          // Disparar evento para actualizar UI
+          const event = new CustomEvent("videoWatched", {
+            detail: { id: contextData.id },
+          });
+          document.dispatchEvent(event);
+        }
+      }
+    }
+  });
+
+  // 3. Limpiar recursos al terminar
   player.on(Clappr.Events.PLAYER_ENDED, function () {
+    if (contextData && contextData.id) {
+      localStorage.removeItem(`progreso_${contextData.id}`);
+    }
     ocultarReproductor();
   });
 }
-function videosLocalesPro(auxUrlOnce, poster) {
+function videosLocalesPro(auxUrlOnce, poster, lista = null) {
   audioHimno.pause();
   enviarDatos({
     videoPath: auxUrlOnce,
@@ -3540,7 +3868,7 @@ function videosLocalesPro(auxUrlOnce, poster) {
     versiculo: null,
     libroAux: null,
     estilosAux: null,
-    lista: null,
+    lista: lista,
     fondoBody: null,
     imagen: null,
     waterMark: waterMark,
@@ -4677,6 +5005,8 @@ function activarModoNormal() {
   ventanaHimnosPro.style.display = "none";
   ventanaPowerPoint.style.display = "none";
   ventanaProgramacion.style.display = "none";
+  ventanaManual.style.display = "none";
+  ventanaPelis.style.display = "none";
   himnarioContainer.style.display = "grid";
 }
 
@@ -4791,11 +5121,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-02-06",
+    titulo: "Más de 10 actualizaciones se implementaron, tanto en funciones nuevas como en el control remoto",
+    mensaje: "1- Se mejoró el sistema de actualizaciones, ahora las actualizaciones tienen un tiempo de espera antes de checar si hay alguna actualización. 2- Se implementó la funcionalidad que ahora puedes conectar automáticamente sin poner pin con solo escanear un código QR con tu cámara de tu dispositivo. 3- En el control remoto ahora se pueden cargar tanto videos como imágenes desde tu dispositivo, desde tu celular puedes cargar un video o imagen tipo: el presentador no pudo o no le dio chance de pasar el video al hermano, él mismo lo puede colocar, o bien; en el departamento de anuncios, el director desea subir la imagen del anuncio/anuncios desde su celular. Acepta solo mp4. 4- Se agregó el selector de monitores ahora integrado en el control remoto, ahora puedes conectar la pantalla o monitor desde el control remoto. 5- Se agregó la búscqueda de YouTube desde el control remoto. 6- Se implementó un nuevo botón de manual de usuario donde podrás encontrar lo más importante del software y algunos pasos que te pueden ayudar, además, hay un botón que puedes tocar y se abrirá un pdf donde aparecerá un manual básico extra que guiarás un poco mejor con más efecto visual de cómo funciona el software y algunos pasos a seguir. 7- Se agregó un nuevo botón para ver películas para toda la comunidad, recordarles que es totalmente gratis, si las películas no dan o algo por el estilo, no hacer comentarios tipo: no sirve esa aplicación... muy mala... | La opción de películas es gratuita para toda la comunidad. 8- En el control remoto se agregó una nueva opción de CHAT potente, dónde se pueden comunicar en tiempo real con los diferentes técnicos de algún evento grande, especial, seminarios o predicas grandes o gigantes; esto servirá para comunicarse entre los diferente agentes técnicos. 9- En esa misma opción de chat del control remoto, se agregó la funcionalidad de realizar llamadas grupales entre técnicos, podrán comunicarse en tiempo real a través de una llamada de audio para mejorar la comunicación entre equipo, técnicos de cabina, técnicos de cámara, técnicos de tarima, etc. Recordar que en el navegador tienen que activar la opción de ir al sitio de todas formas para darle permisos al micrófono. 10- Se agregó un contador de usuarios conectados en tiempo real en el control remoto. Además en la llamada de audio también aparecerán los que están conectados a la llamada.",
+    version: "1.0.103",
+    tipo: "Función nueva",
   },
   {
     fecha: "2026-01-23",
@@ -6982,6 +7312,8 @@ function pptNext() {
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
     console.log(
       "[PPT] Contenedor activado automáticamente para navegación siguiente",
@@ -7021,6 +7353,8 @@ function pptPrev() {
     himnarioContainer.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
     console.log(
       "[PPT] Contenedor activado automáticamente para navegación anterior",
@@ -7093,6 +7427,8 @@ function loadPowerPoint(slidesArray, presentationId = null) {
       himnarioContainer.style.display = "none";
       ventanaPowerPoint.style.display = "flex";
       ventanaProgramacion.style.display = "none";
+      ventanaManual.style.display = "none";
+      ventanaPelis.style.display = "none";
       document.getElementById("contenedor-contador").style.display = "none";
       console.log("[PPT] Contenedor de PowerPoint activado automáticamente");
     }
@@ -8976,3 +9312,373 @@ if (document.readyState === "loading") {
 } else {
   inicializarProgramacion();
 }
+
+// =======================================================
+// MANEJO DE COMANDOS REMOTOS ADICIONALES
+// =======================================================
+
+if (window.electronAPI && window.electronAPI.onRemoteCommand) {
+  window.electronAPI.onRemoteCommand((data) => {
+    // console.log("Comando remoto recibido:", data); // Descomentar para debug
+    const { command, data: cmdData } = data;
+
+    if (command === "cambiar-monitor") {
+      const monitorId = cmdData.id;
+      console.log("🖥️ [REMOTO] Cambiando monitor a:", monitorId);
+
+      // Usar la API expuesta para abrir la ventana
+      window.electronAPI.abrirVentanaSecundaria(monitorId);
+
+      // Sincronizar el selector de la UI principal
+      const select = document.getElementById("selectMonitores");
+      if (select) {
+        select.value = monitorId;
+      }
+
+      // Replicar lógica de cambio de modo (Pro/Normal)
+      const esPremium = localStorage.getItem("premium") === "true";
+
+      if (monitorId === -1 || isNaN(monitorId)) {
+        // Desactivar
+        if (typeof activarModoNormal === "function") activarModoNormal();
+      } else {
+        // Activar según premium
+        if (esPremium) {
+          if (typeof activarModoPro === "function") activarModoPro();
+        } else {
+          if (typeof activarModoNormal === "function") activarModoNormal();
+        }
+      }
+    } else if (command === "buscar-youtube") {
+      const query = cmdData.query;
+      console.log("🎬 [REMOTO] Buscando en YouTube (UI):", query);
+
+      const input = document.getElementById("busqueda-youtube");
+      const btn = document.getElementById("buscar-youtube-boton");
+
+      if (input && btn) {
+        // Intentar abrir la pestaña de YouTube si no está activa
+        // Buscamos botones comunes
+        const navBtn =
+          document.getElementById("botonYoutube") ||
+          document.querySelector(".botonYoutube");
+        if (navBtn) {
+          // Chequear si la ventana de YouTube ya está visible para evitar cerrarla (toggle)
+          const ventanaYT = document.getElementById("ventanaYouTube");
+          let yaVisible = false;
+
+          if (ventanaYT) {
+            const style = window.getComputedStyle(ventanaYT);
+            if (style.display !== "none" && style.visibility !== "hidden") {
+              yaVisible = true;
+            }
+          } else {
+            // Fallback: verificar clases en el botón
+            if (
+              navBtn.classList.contains("active") ||
+              navBtn.classList.contains("seleccionado")
+            ) {
+              yaVisible = true;
+            }
+          }
+
+          if (!yaVisible) {
+            navBtn.click();
+          }
+        }
+
+        // Pequeño delay para asegurar que el contenedor esté listo antes de buscar
+        setTimeout(() => {
+          input.value = query;
+          btn.click();
+        }, 100);
+      } else {
+        console.error(
+          "[REMOTO] No se encontraron elementos de búsqueda YouTube en la UI",
+        );
+      }
+    } else if (command === "reproducir-youtube") {
+      console.log("🎬 [REMOTO] Reproduciendo YouTube:", cmdData);
+
+      const videoData = {
+        numero: "YT",
+        titulo: `YOUTUBE: ${cmdData.title}`,
+        categoria: "youtube",
+        videoPath: cmdData.id,
+        imagePath: cmdData.thumbnail,
+      };
+
+      const lista = [videoData];
+
+      // Verificar si existe la función estándar (usada internamente en buscarVideosCore)
+      if (typeof youtubeClapprEstandar === "function") {
+        youtubeClapprEstandar(cmdData.id, cmdData.thumbnail, lista);
+      }
+      // Si estamos en modo PRO con monitor, podría usarse la otra
+      else if (
+        typeof youtubeClappr === "function" &&
+        typeof esMonitorActivo === "function" &&
+        esMonitorActivo()
+      ) {
+        youtubeClappr(cmdData.id, cmdData.thumbnail, lista);
+      } else {
+        console.error(
+          "[REMOTO] No se encontró función para reproducir YouTube",
+        );
+      }
+    }
+  });
+}
+
+// =======================================================
+// LÓGICA MANUAL DE USUARIO
+// =======================================================
+
+async function cargarManual() {
+  if (!ventanaManual) return;
+
+  // Evitar recargar si ya tiene contenido, salvo que esté vacío
+  if (ventanaManual.innerHTML.trim().length > 100) return;
+
+  try {
+    // Intentamos cargar el manual. Si no existe, usamos un contenido por defecto
+    let text = "";
+    try {
+      const response = await fetch("MANUAL.md");
+      if (response.ok) {
+        text = await response.text();
+      } else {
+        throw new Error("Archivo no encontrado");
+      }
+    } catch (err) {
+      text = `# Manual de Usuario
+            
+## Introducción
+Bienvenido a **Himnario Pro**, la solución definitiva para la gestión multimedia en iglesias.
+
+## Características
+- **Búsqueda Avanzada**: Encuentra himnos rápidamente.
+- **Control Remoto**: Gestiona todo desde tu móvil.
+- **Biblia Integrada**: Múltiples versiones disponibles.
+
+## Primeros Pasos
+1. Abre la aplicación.
+2. Selecciona un himno.
+3. ¡Proyecta!
+
+## Solución de Problemas
+Si tienes dudas, contacta a soporte.
+`;
+    }
+
+    // Parser Markdown Simple
+    const lines = text.split("\n");
+    let htmlContent = `<div class="manual-content" id="manualContentArea">`;
+    let sidebarContent = `<div class="manual-sidebar">
+                            <div class="manual-title">Manual de Usuario</div>
+                            <div class="manual-toc-link active" onclick="scrollToManualSection('intro', this)">Inicio</div>`;
+
+    let inList = false;
+    const slugify = (text) => text.toLowerCase().replace(/[^\w]+/g, "-");
+
+    lines.forEach((line, index) => {
+      line = line.trim();
+
+      if (line.startsWith("# ")) {
+        const title = line.substring(2);
+        htmlContent += `<h1 id="intro">${title}</h1>`;
+        // Botón elegante para abrir manual PDF extra
+        htmlContent += `
+          <div style="width:100%; display:flex; justify-content:center; margin-bottom: 20px;">
+            <button onclick="abrirVisorPdf()" class="btn-manual-extra">
+              <i class="fa-solid fa-file-pdf"></i> Abrir manual extra
+            </button>
+          </div>
+        `;
+      } else if (line.startsWith("## ")) {
+        const title = line.substring(3);
+        const id = slugify(title) || "sec-" + index;
+        htmlContent += `<h2 id="${id}">${title}</h2>`;
+        sidebarContent += `<a class="manual-toc-link" onclick="scrollToManualSection('${id}', this)">${title}</a>`;
+      } else if (line.startsWith("### ")) {
+        const title = line.substring(4);
+        htmlContent += `<h3>${title}</h3>`;
+        sidebarContent += `<div class="manual-toc-sub">${title}</div>`;
+      } else if (line.startsWith("- ")) {
+        if (!inList) {
+          htmlContent += "<ul>";
+          inList = true;
+        }
+        const content = line
+          .substring(2)
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+        htmlContent += `<li>${content}</li>`;
+      } else if (line.startsWith("![")) {
+        // Soporte para imágenes
+        const imgMatch = line.match(/!\[(.*?)\]\((.*?)\)/);
+        if (imgMatch) {
+          htmlContent += `<div style="text-align:center; margin: 10px 0;">
+                            <img src="${imgMatch[2]}" alt="${imgMatch[1]}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                          </div>`;
+        }
+      } else if (line.length > 0) {
+        if (inList) {
+          htmlContent += "</ul>";
+          inList = false;
+        }
+        // Soporte para negrita y también imágenes en línea si las hubiera
+        let content = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+        // Renderizar imagenes en línea también si es necesario (aunque el bloque de arriba cubre el caso común)
+        content = content.replace(
+          /!\[(.*?)\]\((.*?)\)/g,
+          '<img src="$2" alt="$1" style="max-width:100%; vertical-align:middle;">',
+        );
+
+        htmlContent += `<p>${content}</p>`;
+      } else {
+        if (inList) {
+          htmlContent += "</ul>";
+          inList = false;
+        }
+      }
+    });
+
+    if (inList) {
+      htmlContent += "</ul>";
+    }
+    htmlContent += `</div>`;
+    sidebarContent += `</div>`;
+
+    ventanaManual.innerHTML = sidebarContent + htmlContent;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// Función global para scroll
+window.scrollToManualSection = function (id, element) {
+  const el = document.getElementById(id);
+  const container = document.getElementById("manualContentArea");
+
+  if (el && container) {
+    // Scroll DENTRO del contenedor, no toda la página
+    const offsetTop = el.offsetTop - container.offsetTop;
+    container.scrollTo({
+      top: offsetTop - 20, // 20px de margen superior
+      behavior: "smooth",
+    });
+  }
+
+  // Update active state
+  if (element) {
+    document
+      .querySelectorAll(".manual-toc-link")
+      .forEach((a) => a.classList.remove("active"));
+    element.classList.add("active");
+  }
+};
+
+if (botonManual) {
+  botonManual.addEventListener("click", function () {
+    const displayActual = getComputedStyle(ventanaManual).display;
+
+    if (displayActual === "none") {
+      ventanaHimnosPro.style.display = "none";
+      ventanaBiblia.style.display = "none";
+      ventanaYouTube.style.display = "none";
+      himnarioContainer.style.display = "none";
+      ventanaPowerPoint.style.display = "none";
+      ventanaProgramacion.style.display = "none";
+      ventanaManual.style.display = "flex";
+      ventanaPelis.style.display = "none";
+      cargarManual();
+      document.getElementById("contenedor-contador").style.display = "none";
+    } else {
+      ventanaHimnosPro.style.display = "none";
+      ventanaBiblia.style.display = "none";
+      ventanaYouTube.style.display = "none";
+      ventanaPowerPoint.style.display = "none";
+      ventanaProgramacion.style.display = "none";
+      ventanaManual.style.display = "none";
+      ventanaPelis.style.display = "none";
+      himnarioContainer.style.display = "grid";
+    }
+  });
+}
+
+// =======================================================
+// VISOR PDF MANUAL EXTRA
+// =======================================================
+function abrirVisorPdf() {
+  // Crear modal si no existe en el DOM
+  let modal = document.getElementById('modal-manual-pdf');
+
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-manual-pdf';
+    modal.className = 'modal-pdf-overlay';
+    
+    // Contenido del modal
+    modal.innerHTML = `
+      <div class="modal-pdf-content">
+        <div class="modal-pdf-header">
+          <div class="modal-pdf-title">
+            <i class="fa-solid fa-book-open"></i> Visor de Manual Extra
+          </div>
+          <button onclick="cerrarVisorPdf()" class="modal-pdf-close" title="Cerrar">
+             <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        
+        <div class="modal-pdf-body">
+           <iframe src="manual/manual.pdf" allowfullscreen></iframe>
+           
+           <div class="pdf-error-fallback" id="pdf-error-fallback" style="display:none; padding:40px; text-align:center;">
+              <i class="fa-solid fa-circle-exclamation" style="font-size:40px; color:#e74c3c; margin-bottom:15px;"></i>
+              <h3>No se encontró el manual PDF</h3>
+              
+           </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const iframe = modal.querySelector('iframe');
+    const fallback = modal.querySelector('#pdf-error-fallback');
+
+    // Intentar detectar error de carga (limitado para iframes locales pero útil)
+    iframe.onload = function() {
+        // Si carga ok
+    };
+    iframe.onerror = function() {
+        iframe.style.display = 'none';
+        fallback.style.display = 'block';
+    };
+  }
+  
+  // Mostrar modal con animación
+  modal.style.display = 'flex';
+  setTimeout(() => {
+    modal.classList.add('visible');
+  }, 10);
+}
+
+function cerrarVisorPdf() {
+  const modal = document.getElementById('modal-manual-pdf');
+  if (modal) {
+    modal.classList.remove('visible');
+    setTimeout(() => {
+      modal.style.display = 'none';
+      // Reset iframe src to stop playing if video/audio inside PDF (unlikely but good practice)
+      const iframe = modal.querySelector('iframe');
+      if(iframe) {
+          const src = iframe.src;
+          iframe.src = '';
+          iframe.src = src;
+      }
+    }, 300);
+  }
+}
+

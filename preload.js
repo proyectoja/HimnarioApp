@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 const fs = require("fs");
+const QRCode = require("qrcode");
 
 window.addEventListener("error", (evt) => {
   try {
@@ -44,6 +45,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   obtenerMonitores: () => ipcRenderer.invoke("obtener-monitores"),
   abrirVentanaSecundaria: (monitorIndex) =>
     ipcRenderer.send("abrir-ventana", monitorIndex),
+  sendYoutubeResults: (data) =>
+    ipcRenderer.send("youtube-results-to-remote", data),
   onVentanaCerrada: (callback) => ipcRenderer.on("ventana-cerrada", callback),
   onMonitoresActualizados: (callback) =>
     ipcRenderer.on("monitores-actualizados", callback),
@@ -58,6 +61,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
       } catch (err) {
         console.error("Error en onArchivoDescargado:", err);
       }
+    });
+  },
+  onDownloadProgress: (callback) => {
+    ipcRenderer.on("download-progress", (_, data) => {
+      if (typeof callback === "function") callback(data);
     });
   },
 
@@ -88,6 +96,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("remote-command", (_, data) => callback(data)),
   onRemoteGetEstado: (callback) =>
     ipcRenderer.on("remote-get-estado", callback),
+  resetRemoteConnection: () => ipcRenderer.invoke("reset-remote-connection"),
 
   // Control de volumen del sistema
   obtenerVolumen: () => ipcRenderer.invoke("obtener-volumen"),
@@ -114,6 +123,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // Identificador de Hardware
   getMachineId: () => ipcRenderer.invoke("get-machine-id"),
+
+  // Generar QR
+  generateQRCodeDataURL: (text) => QRCode.toDataURL(text),
 
   // Notificación de estado de reproducción
   updatePlaybackStatus: (status) =>

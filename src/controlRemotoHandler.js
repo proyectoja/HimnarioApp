@@ -31,7 +31,7 @@ if (window.electronAPI && window.electronAPI.onControlRemotoIniciado) {
         const esPremiumAhora = await window.electronAPI.getPremiumStatus();
         console.log(
           "🔐 Estado premium al mostrar notificación:",
-          esPremiumAhora
+          esPremiumAhora,
         );
 
         if (esPremiumAhora) {
@@ -76,25 +76,25 @@ if (window.electronAPI && window.electronAPI.obtenerEstadoControlRemoto) {
             const esPremiumAhora = await window.electronAPI.getPremiumStatus();
             console.log(
               "🔐 Estado premium al mostrar notificación:",
-              esPremiumAhora
+              esPremiumAhora,
             );
 
             if (esPremiumAhora) {
               mostrarNotificacionControlRemoto(estado.url, estado.pin);
             } else {
               console.log(
-                "⚠️ Usuario ya no es premium, notificación cancelada"
+                "⚠️ Usuario ya no es premium, notificación cancelada",
               );
             }
           }, 3000);
         } else {
           console.log(
-            "⚠️ Control remoto disponible solo para usuarios premium"
+            "⚠️ Control remoto disponible solo para usuarios premium",
           );
         }
       } else {
         console.log(
-          "⏳ Control remoto aún no está activo, esperando evento..."
+          "⏳ Control remoto aún no está activo, esperando evento...",
         );
       }
     })
@@ -117,7 +117,7 @@ function mostrarNotificacionControlRemoto(url, pin) {
       position: fixed;
       top: 20px;
       right: 20px;
-      background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+      background: brown;
       color: white;
       padding: 15px 20px;
       border-radius: 10px;
@@ -135,6 +135,12 @@ function mostrarNotificacionControlRemoto(url, pin) {
         <button id="cerrar-notif-control" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px;">×</button>
       </div>
       <p style="margin: 5px 0; font-size: 14px;">Conéctate desde tu celular:</p>
+      
+      <!-- QR Code Section -->
+      <div style="background: white; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center;">
+         <img id="img-qr-notif" style="width: 120px; height: 120px; display: block; margin: 0 auto;" />
+      </div>
+
       <p style="margin: 5px 0; font-size: 16px; font-weight: bold; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 5px; word-break: break-all;">${url}</p>
       <p style="margin: 5px 0; font-size: 12px; opacity: 0.9;">🔐 PIN: <strong style="font-size: 20px; letter-spacing: 2px;">${pin}</strong></p>
       <button id="copiar-url-control" style="
@@ -151,6 +157,20 @@ function mostrarNotificacionControlRemoto(url, pin) {
     `;
 
     document.body.appendChild(notif);
+
+    // Generar QR para la notificación
+    if (window.electronAPI && window.electronAPI.generateQRCodeDataURL) {
+      // Agregar PIN a la URL para autoconexión
+      const urlConPin = pin ? `${url}?pin=${pin}` : url;
+
+      window.electronAPI
+        .generateQRCodeDataURL(urlConPin)
+        .then((qrUrl) => {
+          const img = document.getElementById("img-qr-notif");
+          if (img) img.src = qrUrl;
+        })
+        .catch((err) => console.error("Error generando QR notificación:", err));
+    }
 
     // Botón para cerrar
     document
@@ -176,13 +196,13 @@ function mostrarNotificacionControlRemoto(url, pin) {
         });
       });
 
-    // Auto-cerrar después de 15 segundos
+    // Auto-cerrar después de 60 segundos (antes era 10 min, mejor menos para no estorbar tanto si ya escanearon)
     setTimeout(() => {
       if (notif && notif.parentNode) {
         notif.style.animation = "slideOut 0.5s ease";
         setTimeout(() => notif.remove(), 500);
       }
-    }, 600000);
+    }, 60000);
   }
 
   // Agregar animaciones CSS
@@ -226,6 +246,75 @@ if (window.electronAPI && window.electronAPI.onRemoteCommand) {
   });
 }
 
+// Escuchar solicitud de estado inicial
+if (window.electronAPI && window.electronAPI.onRemoteGetEstado) {
+  window.electronAPI.onRemoteGetEstado(() => {
+    console.log("📱 Solicitud de estado completa recibida desde remoto");
+
+    // 1. Enviar estado de PowerPoint
+    if (typeof syncSecondaryWindow === "function") {
+      console.log("🔄 Sincronizando estado PPT...");
+      syncSecondaryWindow();
+    }
+
+    // 2. Enviar estado de Reproducción Multimedia
+    if (window.electronAPI.updatePlaybackStatus) {
+      // Determinar si hay algo reproduciéndose
+      let isPlaying = false;
+      let title = "";
+      let number = null;
+      let type = "unknown";
+
+      // Chequear reproductor de video/youtube
+      if (
+        (typeof player !== "undefined" && player && !player.paused) ||
+        (typeof playerYouTube !== "undefined" &&
+          playerYouTube &&
+          playerYouTube.getPlayerState &&
+          playerYouTube.getPlayerState() === 1)
+      ) {
+        isPlaying = true;
+        type = "video";
+        // Intentar obtener título de alguna variable global si existe
+        if (typeof currentHimnoPlaying !== "undefined" && currentHimnoPlaying) {
+          title = currentHimnoPlaying.titulo;
+          number = currentHimnoPlaying.numero;
+        } else {
+          title = "Video en reproducción";
+        }
+      }
+
+      // Chequear visor de imagen remota
+      const viewer = document.getElementById("remote-image-viewer");
+      if (viewer && viewer.style.display !== "none") {
+        isPlaying = true;
+        type = "imagen";
+        title = "Imagen proyectada";
+        // Intentar sacar el nombre del archivo si es posible, aunque sea un hack
+        const img = viewer.querySelector("img");
+        if (img && img.src) {
+          const parts = img.src.split("/");
+          const filename = parts[parts.length - 1];
+          // Decodificar remotos names
+          if (filename.startsWith("remoto_")) {
+            // Intento de limpiar el nombre
+            title = "Imagen Remota";
+          }
+        }
+      }
+
+      console.log("🔄 Enviando estado de reproducción:", { isPlaying, title });
+
+      window.electronAPI.updatePlaybackStatus({
+        playing: isPlaying,
+        tipo: type,
+        titulo: title,
+        numero: number,
+      });
+    }
+  });
+}
+
 // Función para procesar comandos remotos
 function procesarComandoRemoto(comando, datos) {
   switch (comando) {
@@ -255,7 +344,7 @@ function procesarComandoRemoto(comando, datos) {
           window.resultadosBusqueda = resultados.slice(0, 20); // Máximo 20 resultados
         } else {
           console.warn(
-            "⚠️ El array todosLosHimnosLista no está disponible aún"
+            "⚠️ El array todosLosHimnosLista no está disponible aún",
           );
           window.resultadosBusqueda = [];
         }
@@ -372,7 +461,7 @@ function procesarComandoRemoto(comando, datos) {
                       ) {
                         console.log(
                           "[REMOTE-PLAYBACK] 📡 Notificando:",
-                          tituloCompleto
+                          tituloCompleto,
                         );
                         window.electronAPI.updatePlaybackStatus({
                           playing: true,
@@ -387,7 +476,7 @@ function procesarComandoRemoto(comando, datos) {
                   break;
                 } else {
                   console.warn(
-                    "⚠️ No se encontró la imagen dentro del contenedor"
+                    "⚠️ No se encontró la imagen dentro del contenedor",
                   );
                 }
               }
@@ -396,14 +485,14 @@ function procesarComandoRemoto(comando, datos) {
 
           if (!himnoEncontrado) {
             console.warn(
-              `⚠️ No se encontró el himno #${datos.numero}, intentando búsqueda sin padding...`
+              `⚠️ No se encontró el himno #${datos.numero}, intentando búsqueda sin padding...`,
             );
             // Intentar buscar sin padding
             for (let element of himnoElements) {
               const h3 = element.querySelector("h3");
               if (h3 && h3.textContent.includes(String(datos.numero))) {
                 console.log(
-                  `✅ ¡Himno encontrado (sin padding)! Título: ${h3.textContent}`
+                  `✅ ¡Himno encontrado (sin padding)! Título: ${h3.textContent}`,
                 );
                 const img = element.querySelector("img");
                 if (img) {
@@ -430,11 +519,11 @@ function procesarComandoRemoto(comando, datos) {
 
           if (!himnoEncontrado) {
             console.error(
-              `❌ No se pudo encontrar el himno #${datos.numero} en el DOM`
+              `❌ No se pudo encontrar el himno #${datos.numero} en el DOM`,
             );
           } else {
             console.log(
-              `🎉 Himno #${datos.numero} cargado, reproducción iniciando...`
+              `🎉 Himno #${datos.numero} cargado, reproducción iniciando...`,
             );
 
             // Notificar estado de reproducción al control remoto
@@ -444,7 +533,7 @@ function procesarComandoRemoto(comando, datos) {
                 window.electronAPI.updatePlaybackStatus
               ) {
                 console.log(
-                  "[REMOTE-PLAYBACK] 📡 Notificando reproducción al control remoto"
+                  "[REMOTE-PLAYBACK] 📡 Notificando reproducción al control remoto",
                 );
                 window.electronAPI.updatePlaybackStatus({
                   playing: true,
@@ -469,7 +558,28 @@ function procesarComandoRemoto(comando, datos) {
       break;
 
     case "stop-reproduccion":
-      // Stop (cerrar el reproductor)
+      // 1. Cerrar Visor de Imagen Local (si existe)
+      if (typeof cerrarVisorImagen === "function") {
+        cerrarVisorImagen();
+      }
+
+      // 2. Si estamos en Modo PRO (Monitor Activo), Resetear Pantalla Secundaria
+      if (typeof esMonitorActivo === "function" && esMonitorActivo()) {
+        console.log(
+          "🖥️ Reseteando pantalla secundaria a fondo predeterminado...",
+        );
+        if (typeof enviarDatos === "function") {
+          enviarDatos({
+            videoPath: "", // Limpiar Video
+            imagePath: "", // Limpiar Imagen
+            fondoBody: "", // Limpiar Fondo custom
+            resetToDefault: true, // Bandera explícita para resetear
+            comando: "limpiar-todo",
+          });
+        }
+      }
+
+      // 3. Detener Reproductores de Video (Local)
       if (typeof ocultarReproductor === "function") {
         ocultarReproductor();
       } else {
@@ -477,24 +587,33 @@ function procesarComandoRemoto(comando, datos) {
         if (closeBtn) {
           closeBtn.click();
         } else if (typeof player !== "undefined" && player) {
-          player.pause();
-          player.currentTime = 0;
+          try {
+            player.pause();
+            player.currentTime = 0; // Opcional: reiniciar
+          } catch (e) {
+            console.error(e);
+          }
         } else if (typeof playerYouTube !== "undefined" && playerYouTube) {
-          playerYouTube.stopVideo();
+          try {
+            playerYouTube.stopVideo();
+          } catch (e) {
+            console.error(e);
+          }
         }
 
         // Sincronizar con ventana secundaria si ocultarReproductor no lo hizo
+        // (Esto es redundante si ya enviamos el reset arriba, pero válido por seguridad)
         if (typeof enviarDatos === "function") {
           enviarDatos({ stop: true });
         }
+      }
 
-        // Notificar al control remoto que la reproducción se detuvo
-        if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
-          console.log(
-            "[REMOTE-PLAYBACK] ⏹️ Notificando detención de reproducción"
-          );
-          window.electronAPI.updatePlaybackStatus({ playing: false });
-        }
+      // 4. Notificar al control remoto
+      if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+        console.log(
+          "[REMOTE-PLAYBACK] ⏹️ Notificando detención de reproducción",
+        );
+        window.electronAPI.updatePlaybackStatus({ playing: false });
       }
       break;
 
@@ -555,6 +674,7 @@ function procesarComandoRemoto(comando, datos) {
       }
       break;
 
+    case "stop-reproduccion":
     case "detener":
       // Detener reproducción
       if (typeof ocultarReproductor === "function") {
@@ -572,6 +692,9 @@ function procesarComandoRemoto(comando, datos) {
           enviarDatos({ stop: true });
         }
       }
+
+      // Cerrar también el visor de imagen
+      cerrarVisorImagen();
       break;
 
     case "ir-a-himno":
@@ -680,7 +803,7 @@ function procesarComandoRemoto(comando, datos) {
     case "ppt-prev":
       // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
       const ventanaPowerPoint = document.getElementById(
-        "contenedor-power-point"
+        "contenedor-power-point",
       );
       if (
         ventanaPowerPoint &&
@@ -689,7 +812,7 @@ function procesarComandoRemoto(comando, datos) {
         // Activar el contenedor de PowerPoint automáticamente
         const ventanaBiblia = document.getElementById("contenedor-biblia");
         const ventanaHimnosPro = document.getElementById(
-          "contenedor-himnos-personalizados"
+          "contenedor-himnos-personalizados",
         );
         const ventanaYouTube = document.getElementById("contenedor-youtube");
         const himnarioContainer = document.getElementById("himnario");
@@ -701,7 +824,7 @@ function procesarComandoRemoto(comando, datos) {
         ventanaPowerPoint.style.display = "flex";
         document.getElementById("contenedor-contador").style.display = "none";
         console.log(
-          "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación"
+          "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación",
         );
       }
 
@@ -716,7 +839,7 @@ function procesarComandoRemoto(comando, datos) {
     case "ppt-next":
       // Verificar si el contenedor de PowerPoint está activo, si no, activarlo
       const ventanaPowerPoint2 = document.getElementById(
-        "contenedor-power-point"
+        "contenedor-power-point",
       );
       if (
         ventanaPowerPoint2 &&
@@ -725,7 +848,7 @@ function procesarComandoRemoto(comando, datos) {
         // Activar el contenedor de PowerPoint automáticamente
         const ventanaBiblia = document.getElementById("contenedor-biblia");
         const ventanaHimnosPro = document.getElementById(
-          "contenedor-himnos-personalizados"
+          "contenedor-himnos-personalizados",
         );
         const ventanaYouTube = document.getElementById("contenedor-youtube");
         const himnarioContainer = document.getElementById("himnario");
@@ -737,7 +860,7 @@ function procesarComandoRemoto(comando, datos) {
         ventanaPowerPoint2.style.display = "flex";
         document.getElementById("contenedor-contador").style.display = "none";
         console.log(
-          "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación"
+          "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente para navegación",
         );
       }
 
@@ -755,11 +878,11 @@ function procesarComandoRemoto(comando, datos) {
 
         // 1. Activar automáticamente el contenedor de PowerPoint
         const ventanaPowerPoint = document.getElementById(
-          "contenedor-power-point"
+          "contenedor-power-point",
         );
         const ventanaBiblia = document.getElementById("contenedor-biblia");
         const ventanaHimnosPro = document.getElementById(
-          "contenedor-himnos-personalizados"
+          "contenedor-himnos-personalizados",
         );
         const ventanaYouTube = document.getElementById("contenedor-youtube");
         const himnarioContainer = document.getElementById("himnario");
@@ -772,7 +895,7 @@ function procesarComandoRemoto(comando, datos) {
           ventanaPowerPoint.style.display = "flex";
           document.getElementById("contenedor-contador").style.display = "none";
           console.log(
-            "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente"
+            "[CONTROL REMOTO] Contenedor de PowerPoint activado automáticamente",
           );
         }
 
@@ -805,8 +928,184 @@ function procesarComandoRemoto(comando, datos) {
       }
       break;
 
+    case "cargar-imagen-remoto":
+    case "cargar-video-remoto":
+      if (datos && datos.filePath) {
+        // Mejorar detección: es imagen si el comando lo dice O si la extensión es de imagen
+        const esExtensionImagen = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(
+          datos.fileName || datos.filePath,
+        );
+        const isImage = comando === "cargar-imagen-remoto" || esExtensionImagen;
+        const tipoArchivo = isImage ? "Imagen" : "Video";
+
+        console.log(
+          `🎥 Cargando ${tipoArchivo} desde remoto: ${datos.fileName}`,
+        );
+
+        const normalizedPath = datos.filePath.replace(/\\/g, "/");
+        const fileUrl = `file://${encodeURI(normalizedPath).replace(/#/g, "%23").replace(/\?/g, "%3F")}`;
+
+        if (
+          typeof videosLocalesPro === "function" &&
+          typeof videosLocalesEstandar === "function"
+        ) {
+          let usarPro = false;
+
+          if (typeof esMonitorActivo === "function" && esMonitorActivo()) {
+            usarPro = true;
+          }
+          if (typeof botonPRO !== "undefined" && botonPRO) {
+            usarPro = true;
+          }
+
+          const ventanaYouTube = document.getElementById("contenedor-youtube");
+          if (ventanaYouTube) ventanaYouTube.style.display = "none";
+
+          if (usarPro) {
+            console.log(
+              `📺 Proyectando ${tipoArchivo} Remoto en Segunda Pantalla (Modo PRO)`,
+            );
+
+            if (isImage) {
+              if (typeof enviarDatos === "function") {
+                enviarDatos({
+                  videoPath: null,
+                  imagePath: null,
+                  versiculo: null,
+                  libroAux: null,
+                  estilosAux: null,
+                  lista: null,
+                  fondoBody: fileUrl,
+                  imagen: null,
+                  waterMark: null,
+                });
+              }
+            } else {
+              videosLocalesPro(fileUrl, "");
+            }
+
+            if (typeof mostrarAlertaFloat === "function")
+              mostrarAlertaFloat(
+                `Visualizando ${tipoArchivo}: ` + datos.fileName,
+              );
+          } else {
+            console.log(
+              `💻 Mostrando ${tipoArchivo} Remoto Localmente (Modo Estándar)`,
+            );
+
+            if (isImage) {
+              // 🤫 Pausa silenciosa de reproductores de video para evitar eventos 'ended'
+              if (typeof player !== "undefined" && player) {
+                // Intentar remover listeners o simplemente pausar
+                // Si pausamos, no salta ended.
+                player.pause();
+                // Forzar display none al contenedor de video para que no se vea debajo
+                if (typeof videoPlayerContainer !== "undefined")
+                  videoPlayerContainer.style.display = "none";
+              }
+              if (typeof playerYouTube !== "undefined" && playerYouTube) {
+                if (typeof playerYouTube.pauseVideo === "function")
+                  playerYouTube.pauseVideo();
+                // Ocultar contenedor youtube
+                const ytContainer =
+                  document.getElementById("contenedor-youtube");
+                if (ytContainer) ytContainer.style.display = "none";
+              }
+              if (typeof audioHimno !== "undefined") {
+                audioHimno.pause();
+              }
+
+              const viewerId = "remote-image-viewer";
+              let viewer = document.getElementById(viewerId);
+
+              if (!viewer) {
+                viewer = document.createElement("div");
+                viewer.id = viewerId;
+                viewer.style.cssText = `
+                       position: fixed;
+                       top: 0;
+                       left: 0;
+                       width: 100vw;
+                       height: 100vh;
+                       background-color: black;
+                       z-index: 9999;
+                       display: flex;
+                       justify-content: center;
+                       align-items: center;
+                   `;
+
+                // Imagen
+                const img = document.createElement("img");
+                img.id = "remote-image-content";
+                img.style.cssText =
+                  "max-width: 100%; max-height: 100%; object-fit: contain;";
+                viewer.appendChild(img);
+
+                // Botón cerrar
+                const closeBtn = document.createElement("button");
+                closeBtn.innerHTML = "×";
+                closeBtn.style.cssText = `
+                       position: absolute;
+                       top: 20px;
+                       right: 20px;
+                       background: rgba(0,0,0,0.5);
+                       color: white;
+                       border: 2px solid white;
+                       border-radius: 50%;
+                       width: 40px;
+                       height: 40px;
+                       font-size: 24px;
+                       cursor: pointer;
+                       display: flex;
+                       justify-content: center;
+                       align-items: center;
+                   `;
+                closeBtn.onclick = cerrarVisorImagen;
+                viewer.appendChild(closeBtn);
+
+                document.body.appendChild(viewer);
+              }
+
+              const imgElement = viewer.querySelector("img");
+              if (imgElement) imgElement.src = fileUrl;
+              viewer.style.display = "flex";
+            } else {
+              // Asegurar que el visor de imagen esté cerrado si vamos a ver video
+              cerrarVisorImagen();
+              videosLocalesEstandar(fileUrl, "");
+            }
+          }
+
+          // Actualizar estado de reproducción para el control remoto
+          setTimeout(() => {
+            if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+              window.electronAPI.updatePlaybackStatus({
+                playing: true,
+                tipo: isImage ? "imagen" : "video",
+                titulo: datos.fileName,
+                numero: null,
+              });
+            }
+          }, 1000);
+        } else {
+          console.error("❌ Funciones de reproducción no encontradas");
+        }
+      }
+      break;
+
     default:
       console.warn(`Comando no reconocido: ${comando}`);
+  }
+}
+
+function cerrarVisorImagen() {
+  const viewer = document.getElementById("remote-image-viewer");
+  if (viewer) {
+    viewer.style.display = "none";
+    // Notificar que se cerró
+    if (window.electronAPI && window.electronAPI.updatePlaybackStatus) {
+      window.electronAPI.updatePlaybackStatus({ playing: false });
+    }
   }
 }
 

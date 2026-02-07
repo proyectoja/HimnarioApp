@@ -1,0 +1,3017 @@
+.contenedor-peliculas .jw-rightclick.jw-reset {
+  display: none !important;
+}
+
+.contenedor-peliculas .contenedor-principal {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background-color: transparent;
+  z-index: 1;
+  background-color: black;
+}
+
+/* ESTILOS MODAL POP-UP PELICULAS */
+.modal-pelis-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-pelis-content {
+  background: #1a1a1a;
+  border: 2px solid #2a5298;
+  border-radius: 15px;
+  width: 500px; /* Aumentado ligeramente para mejor lectura */
+  max-width: 90%;
+  max-height: 85vh; /* Evita que se salga de la pantalla verticalmente */
+  padding: 0;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.7);
+  animation: scaleUp 0.3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-pelis-header {
+  background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  position: relative;
+  flex-shrink: 0; /* No se encoge */
+}
+
+.modal-pelis-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+}
+
+.modal-pelis-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.modal-pelis-close:hover {
+  opacity: 1;
+}
+
+.modal-pelis-body {
+  padding: 25px 30px;
+  color: #eee;
+  font-size: 16px;
+  line-height: 1.6;
+  text-align: center;
+  font-family: "Segoe UI", sans-serif;
+  overflow-y: auto;
+  overflow-x: hidden; /* Evita el scroll horizontal */
+  word-wrap: break-word; /* Rompe palabras largas si es necesario */
+  overflow-wrap: break-word;
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-pelis-body p {
+  margin: 0;
+  width: 100%;
+  white-space: normal; /* Asegura que el texto fluya hacia abajo */
+}
+
+.modal-pelis-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-pelis-body::-webkit-scrollbar-thumb {
+  background: #2a5298;
+  border-radius: 10px;
+}
+
+.modal-pelis-footer {
+  padding: 15px 20px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-pelis-btn {
+  background: #2a5298;
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.modal-pelis-btn:hover {
+  background: #3b6ab5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleUp {
+  to {
+    transform: scale(1);
+  }
+}
+
+.contenedor-peliculas .contenedor-principal .contenedor-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(30%, 1fr));
+  gap: 5px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overflow-y: auto;
+  z-index: 2;
+  background-color: rgb(0, 0, 0);
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  .contenedor-lista::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  .contenedor-lista::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  .contenedor-lista::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  .contenedor-lista
+  .contenedor-video {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  width: 100%;
+  min-width: 92px;
+  height: 100%;
+  max-height: 500px;
+  z-index: 3;
+  background-color: rgb(0, 0, 0);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.contenedor-peliculas .contenedor-lista .contenedor-video:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 📌 Para pantallas grandes (Full HD y superiores) */
+/* @media (min-width: 1920px) { ... } */
+
+/* 📌 Para pantallas de laptop (1366px - 1600px) */
+/* @media (max-width: 1600px) { ... } */
+
+/* 📌 Para tablets (768px - 1024px) */
+/* @media (min-width: 1024px) { ... } */
+
+/* 📌 Para teléfonos grandes (480px - 768px) */
+/* @media (min-width: 768px) { ... } */
+
+/* 📌 Para teléfonos pequeños (menos de 480px) */
+@media (min-width: 480px) {
+  .contenedor-peliculas .contenedor-principal .contenedor-lista {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+/* @media (max-width: 100px) { ... } */
+
+.contenedor-peliculas .contenedor-video img {
+  width: 100%;
+  height: auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  object-fit: contain;
+  background-color: white;
+}
+
+.contenedor-peliculas .contenedor-video h3 {
+  margin: 10px;
+  margin-top: auto;
+  padding: 0;
+  font-size: 18px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: normal;
+  white-space: normal;
+  word-wrap: break-word;
+  color: white;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contenedor-peliculas .contenedor-video h2 {
+  margin: 5px;
+  padding: 0;
+  font-size: 14px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: normal;
+  white-space: normal;
+  word-wrap: break-word;
+  color: white;
+}
+
+.contenedor-peliculas .contenedor-video .contenedor-calidad {
+  display: flex;
+  position: absolute;
+  right: 0;
+  padding: 2px;
+  margin-top: 3px;
+  margin-right: 3px;
+  border: 1px solid rgb(255, 255, 0);
+  background-color: black;
+  color: white;
+  font-size: 10px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 1px;
+  color: yellow;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 0 0 10px rgb(255, 255, 255);
+}
+
+.contenedor-peliculas .etiqueta1 {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: auto;
+  color: white;
+  font-size: 16px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-style: italic;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+}
+
+.contenedor-peliculas .contenedor-lateral-derecho {
+  display: flex;
+  position: absolute;
+  flex-direction: column;
+  top: 0;
+  right: 0;
+  width: 0px;
+  height: 100%;
+  justify-content: start;
+  align-items: center;
+  overflow: hidden;
+  overflow-y: auto;
+  background-color: black;
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
+
+  z-index: 9999;
+}
+
+.contenedor-peliculas .contenedor-lateral-derecho::-webkit-scrollbar {
+  width: 8px;
+}
+
+.contenedor-peliculas .contenedor-lateral-derecho::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contenedor-peliculas .contenedor-lateral-derecho::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.contenedor-peliculas .contenedor-estreno {
+  display: flex;
+  position: absolute;
+  top: 25px;
+  right: 0;
+  padding: 2px;
+  margin-top: 3px;
+  margin-right: 3px;
+  border: 1px solid red;
+  background-color: black;
+  color: white;
+  font-size: 8px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 1px;
+  color: red;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 0 0 10px white;
+}
+.contenedor-peliculas .contenedor-serie {
+  display: flex;
+  position: absolute;
+  top: 50px;
+  right: 0;
+  padding: 2px;
+  margin-top: 3px;
+  margin-right: 3px;
+  border: 1px solid red;
+  background-color: black;
+  color: white;
+  font-size: 8px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 1px;
+  color: red;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 0 0 10px white;
+}
+
+.contenedor-peliculas .contenedor-buscador {
+  display: flex;
+  position: absolute;
+  overflow: hidden;
+  left: 10px;
+  bottom: 60px;
+  width: 25%;
+  height: 35px;
+  justify-content: center;
+  background-color: transparent;
+  z-index: 4;
+}
+
+.contenedor-peliculas #buscar {
+  display: flex;
+  position: relative;
+  background-color: black;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 1rem;
+  padding: 10px;
+  font-size: 20px;
+  margin: auto;
+  width: 100%;
+  max-width: 90%;
+  height: 100%;
+  color: white;
+  text-align: center;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.contenedor-peliculas #contenedorJWPLAYER {
+  display: none;
+  position: absolute;
+  flex-direction: column;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: calc(100% - 60px);
+  overflow: hidden;
+  overflow-y: auto;
+  top: 0;
+  left: 0;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 16px;
+  text-shadow: 0 0 10px black;
+}
+
+.contenedor-peliculas #contenedorJWPLAYER::-webkit-scrollbar {
+  width: 8px;
+}
+
+.contenedor-peliculas #contenedorJWPLAYER::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contenedor-peliculas #contenedorJWPLAYER::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+/*
+.contenedor-peliculas #player {
+  height: auto;
+}*/
+
+.contenedor-peliculas .jw-icon-pip {
+  display: none !important;
+}
+
+.contenedor-peliculas #titulo-pop {
+  display: block; /* Changed from flex to block for standard text flow */
+  position: relative;
+  font-size: 24px;
+  font-weight: bold;
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word; /* Ensure long words play nice */
+  line-height: 1.2;
+}
+
+.contenedor-peliculas #descripcion-pop {
+  display: block; /* Changed from flex to block */
+  position: relative;
+  font-style: italic;
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+.contenedor-peliculas #metadata-pop {
+  display: flex;
+  position: relative;
+  padding: 20px;
+}
+
+.contenedor-peliculas #generos-pop {
+  display: flex;
+  position: relative;
+  padding: 20px;
+}
+
+.contenedor-peliculas #cerrar-pop {
+  display: flex;
+  position: relative;
+  margin: 10px;
+  padding: 10px;
+  background-color: #0066ff;
+  border-radius: 1rem;
+  border: 1px solid rgb(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 20px;
+  text-shadow: 0 0 10px black;
+  box-shadow: inset 0 0 10px black;
+}
+
+.contenedor-peliculas #anuncio-container1 {
+  display: flex;
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  width: 100%;
+  min-width: 320px;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  bottom: 50px;
+  left: 0;
+  overflow: hidden;
+}
+
+.contenedor-peliculas #anuncio-container2 {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-width: 468px;
+  height: 100%;
+  min-height: 60px;
+  max-height: 60px;
+  justify-content: center;
+  align-items: center;
+}
+
+.contenedor-peliculas #audios-pop {
+  display: flex;
+  position: relative;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  width: 100%;
+  min-height: 75px;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+}
+
+.contenedor-peliculas #audios-pop img {
+  width: 70px;
+  height: 70px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.contenedor-peliculas .contenedor-principal #contenedorFiltros {
+  display: flex;
+  position: relative;
+  flex-direction: row;
+  justify-content: start;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background-color: black;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorFiltros::-webkit-scrollbar {
+  height: 8px;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorFiltros::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorFiltros::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.contenedor-peliculas .contenedor-principal #contenedorFiltros .boton-genero {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: auto;
+  cursor: pointer;
+  font-size: 22px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: bold;
+  border-radius: 1rem;
+  padding: 10px;
+  text-overflow: ellipsis;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  text-wrap: nowrap;
+  border: 0px;
+  background-color: #0066ff;
+  color: white;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.contenedor-peliculas .boton-genero:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.contenedor-peliculas #comentarios-pop {
+  display: flex;
+  position: relative;
+  margin: 10px;
+  padding: 10px;
+  background-color: transparent;
+  border-radius: 1rem;
+  border: 1px solid rgb(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 16px;
+  text-shadow: 0 0 10px rgb(255, 255, 255);
+  box-shadow: inset 0 0 10px black;
+}
+
+.contenedor-peliculas #disqus_thread {
+  margin: 30px;
+  padding: 10px;
+  width: 100%;
+  height: auto;
+  background-color: transparent;
+  border-radius: 1rem;
+  border: 1px solid rgb(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 10px black;
+}
+
+.contenedor-peliculas #contenedorIconosAudios {
+  display: flex;
+  flex-direction: column;
+  top: 0;
+  left: 0;
+  position: absolute;
+  overflow: hidden;
+  width: 20%;
+  height: auto;
+  background-color: transparent;
+}
+
+.contenedor-peliculas #iconoAudio {
+  background-color: transparent;
+  width: 100%;
+  height: 100%;
+}
+
+.contenedor-peliculas .contenedor-principal #contenedorEspecial {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  width: 100%;
+  height: 400px;
+  gap: 5px;
+  background-color: transparent;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecial::-webkit-scrollbar {
+  height: 8px;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecial::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecial::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecial
+  .contenedor-video-recientes {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  width: 230px;
+  height: 100%;
+  z-index: 3;
+  background-color: rgb(0, 0, 0);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecial
+  .contenedor-video-recientes
+  .contenedor-calidad {
+  display: flex;
+  position: absolute;
+  right: 0;
+  padding: 2px;
+  margin-top: 3px;
+  margin-right: 3px;
+  border: 1px solid rgb(255, 255, 0);
+  background-color: black;
+  color: white;
+  font-size: 10px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 1px;
+  color: yellow;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 0 0 10px rgb(255, 255, 255);
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  .contenedor-video-cartel-especial
+  .contenedor-video-recientes
+  h3 {
+  color: white;
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 5px;
+  margin-right: 5px;
+  width: 90%;
+  height: 100%;
+  text-align: center;
+}
+
+.contenedor-principal .contenedor-lista .etiquetaListaDePeliculas,
+.contenedor-peliculas .etiquetaRecienAgregadas {
+  grid-column: 1 / -1;
+  color: white;
+  text-align: center;
+  text-wrap: nowrap;
+  font-size: 24px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  padding: 0;
+  margin: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.contenedor-peliculas #contenedorVotar {
+  display: none !important;
+  position: relative;
+  flex-direction: row;
+  width: auto;
+  padding: 10px;
+  height: auto;
+  justify-content: center;
+  align-items: center;
+  margin: 0%;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgb(255, 255, 255, 0.5);
+  border-radius: 1rem;
+  background-color: black;
+}
+
+#contenedorLike,
+.contenedor-peliculas #contenedorDislike {
+  display: flex;
+  position: relative;
+  width: auto;
+  height: auto;
+  padding: 0%;
+  margin: 0%;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+}
+
+#contenedorLike img,
+.contenedor-peliculas #contenedorDislike img {
+  display: flex;
+  position: relative;
+  width: 50px;
+  height: auto;
+  cursor: pointer;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 0%;
+  margin: 0%;
+}
+
+.contenedor-peliculas #vistas {
+  display: flex;
+  position: relative;
+  width: auto;
+  height: auto;
+  padding: 10px;
+  font-size: 20px;
+  color: white;
+  border: 1px solid rgb(255, 255, 255, 0.5);
+  border-radius: 1rem;
+  margin-bottom: 20px;
+  margin-top: 20px;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+}
+
+.contenedor-peliculas #linea {
+  width: 1px;
+  height: 100%;
+  background-color: rgb(255, 255, 255, 0.5);
+  margin-left: 10px;
+  margin-right: 10px;
+}
+#textLike,
+.contenedor-peliculas #textDislike {
+  margin-left: 10px;
+}
+
+.contenedor-peliculas #contenedorJWPLAYER #logoMovie24 {
+  display: flex;
+  position: relative;
+  width: 50%;
+  height: 100%;
+}
+
+.contenedor-peliculas #next-message {
+  margin: 10px 0;
+  color: #aaa;
+  font-size: 16px;
+}
+.contenedor-peliculas .shelf {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  overflow-x: auto;
+  gap: 10px;
+  width: 100%;
+  min-height: 200px;
+  margin: 0;
+  padding: 0;
+  border: 1px dashed transparent;
+  box-sizing: border-box;
+}
+
+.contenedor-peliculas .shelf::-webkit-scrollbar {
+  height: 8px;
+}
+
+.contenedor-peliculas .shelf::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contenedor-peliculas .shelf::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.contenedor-peliculas .shelf-item {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: pointer;
+  width: 200px;
+  height: auto;
+  text-align: center;
+  flex-shrink: 0;
+  border: 1px dashed transparent;
+}
+.contenedor-peliculas .shelf-item img {
+  display: flex;
+  position: relative;
+  width: 100%;
+  min-height: 100px;
+  height: auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  object-fit: cover;
+  transition: 1s;
+}
+.contenedor-peliculas .shelf-item:hover img {
+  border-color: #0af;
+}
+.contenedor-peliculas .title {
+  font-size: 14px;
+  margin-top: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word; /* Ensure long words break */
+  width: 100%;
+  line-height: 1.2;
+  padding: 0 5px; /* Add some padding to prevent edge touching */
+  box-sizing: border-box;
+}
+
+.contenedor-peliculas .watched-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  background-color: #00a8e1;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+.contenedor-peliculas #more-label {
+  display: flex;
+  position: relative;
+  width: 90%;
+  height: auto;
+  text-align: left;
+}
+
+/*Contenedor series estilos*/
+.contenedor-peliculas .contenedor-principal #contenedorEspecialSeries {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  width: 100%;
+  height: 400px;
+  gap: 5px;
+  background-color: transparent;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecialSeries::-webkit-scrollbar {
+  height: 8px;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecialSeries::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecialSeries::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecialSeries
+  .contenedor-video-series {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  width: 230px;
+  height: auto;
+  z-index: 3;
+  background-color: rgb(0, 0, 0);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.contenedor-peliculas
+  .contenedor-principal
+  #contenedorEspecialSeries
+  .contenedor-video-series
+  .contenedor-calidad {
+  display: flex;
+  position: absolute;
+  right: 0;
+  padding: 2px;
+  margin-top: 3px;
+  margin-right: 3px;
+  border: 1px solid rgb(255, 255, 0);
+  background-color: black;
+  color: white;
+  font-size: 10px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 1px;
+  color: yellow;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 0 0 10px rgb(255, 255, 255);
+}
+
+.contenedor-peliculas
+  .contenedor-principal
+  .contenedor-video-cartel-especial-series
+  .contenedor-video-series
+  h3 {
+  color: white;
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 5px;
+  padding-right: 5px;
+  width: 100%;
+  text-align: center;
+}
+
+.contenedor-principal .contenedor-lista .etiquetaListaDeSeries,
+.contenedor-peliculas .etiquetaSeries {
+  grid-column: 1 / -1;
+  color: white;
+  text-align: center;
+  text-wrap: nowrap;
+  font-size: 24px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  padding: 0;
+  margin: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.contenedor-peliculas #player {
+  display: flex;
+  position: relative;
+  margin: auto;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+/* ===== ESTILOS PRIME VIDEO ===== */
+
+.contenedor-peliculas .movie-info {
+  padding: 30px;
+  color: white;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.9));
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.contenedor-peliculas .movie-header {
+  margin-bottom: 20px;
+}
+
+.contenedor-peliculas .title-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.contenedor-peliculas .movie-info h1 {
+  font-size: 2.5em;
+  margin: 0;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.contenedor-peliculas .prime-badge {
+  background: linear-gradient(135deg, #00a8e1, #0066ff);
+  color: white;
+  padding: 5px 14px;
+  border-radius: 3px;
+  font-size: 0.7em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 168, 225, 0.4);
+  align-self: flex-start;
+}
+
+.contenedor-peliculas .movie-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.contenedor-peliculas .secondary-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-play,
+.contenedor-peliculas .btn-download {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 140px;
+  font-family: inherit;
+}
+
+.contenedor-peliculas .btn-icon {
+  background-color: rgba(42, 42, 42, 0.8);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-icon span:first-child,
+.contenedor-peliculas .btn-icon i:first-child {
+  font-size: 1.2em;
+}
+
+.contenedor-peliculas .btn-icon i {
+  font-size: 1.1em;
+}
+
+.contenedor-peliculas .stat-count {
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  min-width: 25px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.contenedor-peliculas .btn-play {
+  background-color: #00a8e1;
+  color: white;
+}
+
+.contenedor-peliculas .btn-play:hover {
+  background-color: #0088c7;
+  transform: scale(1.03);
+}
+
+.contenedor-peliculas .btn-download {
+  background-color: #00a8e1;
+  color: white;
+  border: none;
+}
+
+.contenedor-peliculas .btn-download:hover {
+  background-color: #0088c7;
+  transform: scale(1.03);
+}
+
+.contenedor-peliculas .btn-icon:hover {
+  background-color: rgba(42, 42, 42, 1);
+  transform: scale(1.05);
+}
+
+.contenedor-peliculas .btn-icon:active {
+  transform: scale(0.95);
+}
+
+.contenedor-peliculas .movie-details {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  font-size: 0.95em;
+  color: #ddd;
+  flex-wrap: wrap;
+}
+
+.contenedor-peliculas .movie-description {
+  font-size: 1em;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  max-width: 900px;
+  color: #ccc;
+}
+
+.contenedor-peliculas .movie-stats {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.contenedor-peliculas .views {
+  font-size: 0.95em;
+  color: #aaa;
+  background-color: transparent;
+  border: none;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Popup de calidades */
+.contenedor-peliculas .popup-calidades {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+.contenedor-peliculas .popup-contenido {
+  background-color: #1a1a1a;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+  color: white;
+  text-align: center;
+}
+
+.contenedor-peliculas .lista-calidades {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.contenedor-peliculas .calidad-btn {
+  background-color: #00a8e1;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.contenedor-peliculas .calidad-btn:hover {
+  background-color: #008bb9;
+}
+
+.contenedor-peliculas .cerrar-popup {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+/* Iconos */
+.play-icon,
+.contenedor-peliculas .download-icon {
+  font-size: 1.2em;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+  .contenedor-peliculas .movie-actions {
+    justify-content: center;
+  }
+
+  .contenedor-peliculas .secondary-actions {
+    justify-content: center;
+  }
+
+  .btn-play,
+  .contenedor-peliculas .btn-download {
+    padding: 12px 20px;
+    font-size: 1em;
+  }
+
+  .contenedor-peliculas .btn-icon {
+    padding: 8px 12px;
+    font-size: 0.85em;
+  }
+
+  .contenedor-peliculas .btn-icon .btn-label {
+    display: none;
+  }
+
+  .contenedor-peliculas .movie-info h1 {
+    font-size: 1.8em;
+  }
+
+  .contenedor-peliculas .title-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .contenedor-peliculas .movie-info {
+    padding: 20px;
+  }
+}
+
+.contenedor-peliculas .sin-opciones {
+  color: #ccc;
+  padding: 20px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Estilos para el player cuando tiene video */
+.contenedor-peliculas #player.video-active {
+  background-image: none !important;
+}
+
+.contenedor-peliculas #player .video-js {
+  width: 100%;
+  height: 400px;
+}
+
+/* Asegurar que el iframe de YouTube se vea bien */
+.contenedor-peliculas #player iframe {
+  width: 100%;
+  height: 400px;
+  border: none;
+}
+
+/* Estilos para contenedores especiales de scroll horizontal */
+#contenedorEspecial,
+.contenedor-peliculas #contenedorEspecialSeries {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  gap: 10px;
+  padding: 10px 0;
+  width: 100%;
+  min-height: 220px;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Ocultar barra de scroll pero permitir scroll */
+#contenedorEspecial::-webkit-scrollbar,
+.contenedor-peliculas #contenedorEspecialSeries::-webkit-scrollbar {
+  height: 8px;
+}
+
+#contenedorEspecial::-webkit-scrollbar-thumb,
+.contenedor-peliculas #contenedorEspecialSeries::-webkit-scrollbar-thumb {
+  background: #00a8e1;
+  border-radius: 4px;
+}
+
+/* ===== ESTILOS PARA TÍTULOS DE SECCIÓN ===== */
+.contenedor-peliculas .section-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 30px 0 15px 0;
+  padding: 0 20px;
+  background: linear-gradient(90deg, rgba(0, 168, 225, 0.2), transparent);
+  border-left: 4px solid #00a8e1;
+  padding-left: 16px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.contenedor-peliculas .section-title:first-of-type {
+  margin-top: 10px;
+}
+
+/* ===== ESTILOS PARA CONTENEDOR GRID ===== */
+.contenedor-peliculas .contenedor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+  padding: 10px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .contenedor-peliculas .contenedor-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  .contenedor-peliculas .section-title {
+    font-size: 20px;
+    margin: 20px 0 10px 0;
+    padding-left: 12px;
+  }
+}
+
+/* ===== ESTILOS PARA ICONO DE VISTO EN CAPÍTULOS ===== */
+.contenedor-peliculas .watched-icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 168, 225, 0.95);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  animation: fadeInCheck 0.3s ease-in-out;
+}
+
+.contenedor-peliculas .watched-icon i {
+  color: white;
+  font-size: 18px;
+}
+
+@keyframes fadeInCheck {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===== PRIME VIDEO STYLE IMPLEMENTATION ===== */
+
+:root {
+  --card-w: 920px;
+  --card-radius: 20px;
+  --glass-bg: rgba(10, 14, 20, 0.85);
+  --accent-a: #00a8e1;
+  --accent-b: #00d1ff;
+  --accent-c: #3f7cff;
+  --muted: rgba(255, 255, 255, 0.85);
+  --card-margin: 30px;
+}
+
+/* Apply background to the modal container instead of body */
+#contenedorJWPLAYER {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(30, 40, 60, 0.3), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(20, 30, 50, 0.2), transparent 40%),
+    linear-gradient(180deg, #0c1a2a 0%, #05101a 100%);
+  font-family: "Amazon Ember", "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--muted);
+  display: none; /* Ensure it is hidden by default */
+  justify-content: center; /* Center the card */
+  align-items: center;
+  padding: 20px; /* Add padding for small screens */
+  box-sizing: border-box;
+  overflow: hidden !important; /* Prevent scroll on the overlay itself */
+
+  /* Modal Overlay Styles */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+}
+
+.prime-popup {
+  width: var(--card-w);
+  border-radius: var(--card-radius);
+  position: relative;
+  padding: 0;
+  background: var(--glass-bg);
+  box-shadow:
+    0 20px 40px rgba(2, 6, 10, 0.8),
+    0 4px 12px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px) saturate(160%);
+  overflow: hidden; /* Prevent horizontal scroll */
+  margin: auto; /* Center in flex container */
+  max-height: 95vh; /* Ensure it fits on screen */
+  display: flex;
+  flex-direction: column;
+}
+
+.prime-popup::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(0, 168, 225, 0.08) 0%,
+      rgba(0, 209, 255, 0.04) 100%
+    ),
+    radial-gradient(
+      circle at 20% 80%,
+      rgba(63, 124, 255, 0.1) 0%,
+      transparent 50%
+    );
+  box-shadow:
+    inset 0 0 60px rgba(0, 168, 225, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 0;
+  border-radius: var(--card-radius);
+}
+
+.background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(20px) brightness(0.7) saturate(1.2);
+  opacity: 0.4;
+  z-index: -1;
+  transform: scale(1.1);
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 420px;
+  overflow: hidden; /* Hide overflow on wrapper */
+  flex: 1;
+}
+
+.poster-container {
+  flex: 0 0 40%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poster-image {
+  width: 100%;
+  height: 100%;
+  background-image: var(--desktop-poster); /* Default to desktop image */
+  background-size: cover;
+  background-position: center center;
+  filter: saturate(115%) contrast(1.05);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+.poster-image::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0; /* Changed to cover full width/height if needed, or adjust width logic */
+  width: 100%; /* Ensure it covers width if it's a full overlay, or keep as side gradient but ensure height matches */
+  height: 100%; /* Explicitly set height */
+  background: linear-gradient(to right, transparent, rgba(10, 14, 20, 0.9));
+  z-index: 1;
+  pointer-events: none; /* Prevent blocking interactions */
+}
+
+.poster-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10, 14, 20, 0.9) 0%,
+    transparent 30%
+  );
+  z-index: 0;
+}
+
+.movie-title {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  font-size: 42px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  z-index: 2;
+  line-height: 1;
+  letter-spacing: -1px;
+  padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.info-container {
+  flex: 1; /* Allow it to take remaining space */
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto; /* Scroll only this container */
+  overflow-x: hidden;
+  max-height: 100%; /* Fit within parent */
+
+  /* Scrollbar styles */
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-a) transparent;
+}
+
+.info-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.info-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.info-container::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.prime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 20px rgba(0, 168, 225, 0.3);
+  width: fit-content;
+  position: relative;
+  overflow: hidden;
+}
+
+.prime-badge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transition: left 0.7s;
+}
+
+.prime-badge:hover::before {
+  left: 100%;
+}
+
+.title-main {
+  font-size: 36px;
+  margin: 0 0 12px 0;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.meta-info {
+  font-size: 15px;
+  opacity: 0.85;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-info span {
+  display: inline-block;
+  height: 4px;
+  width: 4px;
+  border-radius: 50%;
+  background: var(--accent-b);
+}
+
+.action-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+  width: 100%; /* Full width of parent */
+  box-sizing: border-box;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  flex: 1; /* Fill available space in the row */
+  max-width: 300px; /* Prevent becoming too wide on large screens */
+}
+
+/* Efecto de luz horizontal que rebota en botones Play y Download */
+.btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+}
+
+@keyframes horizontalLight {
+  0%,
+  100% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+}
+
+.btn-play {
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  color: #fff;
+  box-shadow:
+    0 8px 24px rgba(0, 168, 225, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  min-width: 180px;
+  position: relative;
+}
+
+.btn-play::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--accent-a),
+    var(--accent-b),
+    var(--accent-a)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.btn-play i {
+  transform: translateY(1px);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
+  z-index: 1;
+}
+
+.btn-download {
+  display: none;
+  background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  min-width: 140px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.btn-download::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.3)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  opacity: 0.7;
+}
+
+@keyframes borderRotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 168, 225, 0.5);
+}
+
+.btn-download:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.interaction-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  width: 100%; /* Full width */
+  box-sizing: border-box;
+}
+
+.interaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  color: #e8eef6;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 120px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Efecto de luz circular secuencial en botones de interacción */
+.interaction-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  opacity: 0;
+}
+
+.interaction-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.count {
+  opacity: 0.85;
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  z-index: 1;
+}
+
+.desc {
+  margin-bottom: 20px;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.9;
+  color: rgba(230, 230, 230, 0.95);
+}
+
+.views {
+  font-size: 14px;
+  opacity: 0.75;
+  margin-top: 0;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+/* Override original #vistas styles */
+#contenedorJWPLAYER #vistas {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  justify-content: flex-start !important;
+  color: var(--muted) !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+}
+
+.views::before {
+  content: "\f06e"; /* FontAwesome eye icon */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  color: var(--accent-b);
+  margin-right: 5px;
+}
+
+/* Efectos de luz giratoria en el fondo */
+.light-effect {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 168, 225, 0.15) 0%,
+    transparent 70%
+  );
+  filter: blur(20px);
+  z-index: 1;
+  animation: rotateLight 15s linear infinite;
+  pointer-events: none;
+}
+
+.light-effect:nth-child(1) {
+  top: -100px;
+  right: -100px;
+  background: radial-gradient(
+    circle,
+    rgba(63, 124, 255, 0.1) 0%,
+    transparent 70%
+  );
+}
+
+.light-effect:nth-child(2) {
+  bottom: -80px;
+  left: -80px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 209, 255, 0.1) 0%,
+    transparent 70%
+  );
+}
+
+@keyframes rotateLight {
+  0% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+  100% {
+    transform: rotate(360deg) translate(0, 0);
+  }
+}
+
+/* ===== ESTILOS PARA PLAYER-WRAPPER Y SERIES CONTROLS ===== */
+
+/* Player wrapper - embedded in poster container */
+#player-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: black;
+  position: relative;
+}
+
+/* Video player container */
+#player {
+  width: 100%;
+  flex: 1;
+  position: relative;
+  min-height: 0; /* Important for flex */
+  background: black;
+}
+
+/* Series controls container */
+#series-controls {
+  display: none;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.9);
+  width: 100%;
+  min-height: 200px;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative; /* Ensure z-index works */
+  z-index: 10; /* Bring above other content */
+}
+
+/* More episodes label */
+#more-label {
+  margin: 10px 15px 5px 15px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  display: none;
+}
+
+/* Shelf - horizontal scroll container for episodes */
+.shelf,
+#shelf {
+  display: none;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px 15px;
+  gap: 12px;
+  flex-direction: row;
+  align-items: flex-start;
+
+  /* Scrollbar styles */
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-a) rgba(255, 255, 255, 0.1);
+}
+
+.shelf::-webkit-scrollbar,
+#shelf::-webkit-scrollbar {
+  height: 8px;
+}
+
+.shelf::-webkit-scrollbar-track,
+#shelf::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.shelf::-webkit-scrollbar-thumb,
+#shelf::-webkit-scrollbar-thumb {
+  background: var(--accent-a);
+  border-radius: 4px;
+}
+
+.shelf::-webkit-scrollbar-thumb:hover,
+#shelf::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-b);
+}
+
+/* Episode items in shelf */
+.shelf > div,
+#shelf > div {
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.shelf > div:hover,
+#shelf > div:hover {
+  transform: scale(1.05);
+}
+
+/* Next episode message */
+#next-message {
+  display: none;
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  z-index: 15;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  max-width: 300px;
+  backdrop-filter: blur(10px);
+}
+
+/* Close player button */
+#close-player {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+  cursor: pointer;
+  color: white;
+  font-size: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+#close-player:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  :root {
+    --card-w: 760px;
+    --card-margin: 20px;
+  }
+  .title-main {
+    font-size: 32px;
+  }
+  .movie-title {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .prime-popup {
+    width: 100%;
+    margin: 15px auto;
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+  .content {
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    overflow: visible;
+    position: relative; /* Ensure stacking context */
+  }
+  .poster-container {
+    flex: 0 0 auto; /* Allow dynamic sizing */
+    min-height: 300px;
+    height: auto; /* Allow growth */
+    width: 100%;
+    overflow: visible; /* Ensure content isn't clipped */
+  }
+  .poster-image {
+    background-position: center 25%;
+    background-image: var(--mobile-poster); /* Switch to mobile poster */
+    min-height: 300px; /* Ensure poster has height when visible */
+  }
+
+  /* Player wrapper mobile adjustments */
+  #player-wrapper {
+    min-height: 300px;
+    height: auto; /* Allow growth */
+  }
+
+  /* Ensure player fits properly */
+  #player {
+    min-height: 200px;
+  }
+
+  #more-label {
+    font-size: 14px;
+    margin: 8px 10px 4px 10px;
+  }
+
+  .shelf,
+  #shelf {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  /* Next message positioning */
+  #next-message {
+    bottom: 60px;
+    left: 10px;
+    font-size: 12px;
+    padding: 8px 12px;
+    max-width: 200px;
+  }
+
+  /* Close button mobile */
+  #close-player {
+    top: 8px;
+    right: 8px;
+    font-size: 18px;
+    padding: 6px 10px;
+  }
+
+  .info-container {
+    padding: 24px;
+    box-sizing: border-box;
+    position: relative; /* Ensure stacking context */
+    z-index: 5; /* Lower than series controls */
+  }
+  .action-row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  /* Reorganización de los botones de interacción en móviles */
+  .interaction-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .interaction-btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Agrupación específica de botones en móviles */
+  .mobile-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .mobile-group .interaction-btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .prime-popup {
+    border-radius: 16px;
+    margin: 10px;
+    max-height: 97vh;
+  }
+  .poster-container {
+    flex: 0 0 auto;
+    min-height: 250px;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Player adjustments for small screens */
+  #player-wrapper {
+    min-height: 250px;
+    height: auto;
+  }
+
+  #player {
+    min-height: 180px;
+  }
+
+  /* Series controls compact view */
+  #series-controls {
+    max-height: 180px;
+  }
+
+  #more-label {
+    font-size: 13px;
+    margin: 6px 8px 3px 8px;
+  }
+
+  .shelf,
+  #shelf {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  #next-message {
+    bottom: 50px;
+    left: 8px;
+    font-size: 11px;
+    padding: 6px 10px;
+    max-width: 180px;
+  }
+
+  #close-player {
+    top: 6px;
+    right: 6px;
+    font-size: 16px;
+    padding: 5px 8px;
+  }
+
+  .movie-title {
+    font-size: 32px;
+    bottom: 15px;
+    left: 15px;
+  }
+  .info-container {
+    padding: 20px;
+  }
+  .title-main {
+    font-size: 28px;
+  }
+  .action-row {
+    flex-direction: column;
+  }
+  .btn {
+    width: 100%;
+  }
+}
+
+/* ===== ESTILOS PARA PROGRESO DE DESCARGA ===== */
+
+/* Contenedor del progreso de descarga */
+.download-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Batería contenedora */
+.download-battery {
+  position: relative;
+  width: 150px;
+  height: 30px;
+  border: 3px solid #00d9ff;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  box-shadow:
+    0 0 10px rgba(0, 217, 255, 0.5),
+    inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Terminal de la batería */
+.download-battery::after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 14px;
+  background-color: #00d9ff;
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 5px rgba(0, 217, 255, 0.7);
+}
+
+/* Líquido de carga (efecto lava) */
+.battery-liquid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #00ff88 0%,
+    #00d9ff 25%,
+    #0099ff 50%,
+    #00d9ff 75%,
+    #00ff88 100%
+  );
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+/* Onda líquida animada */
+.liquid-wave {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 50%
+  );
+  animation: wave-animation 2s ease-in-out infinite;
+}
+
+/* Efecto de burbujas en el líquido */
+.battery-liquid::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.1) 2px,
+    rgba(255, 255, 255, 0.1) 4px
+  );
+  animation: bubble-rise 1.5s linear infinite;
+}
+
+/* Brillo en el líquido */
+.battery-liquid::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Porcentaje de descarga */
+.download-percent {
+  font-size: 18px;
+  font-weight: bold;
+  color: #00ff88;
+  text-shadow:
+    0 0 10px rgba(0, 255, 136, 0.8),
+    0 0 20px rgba(0, 217, 255, 0.6);
+  font-family: "Courier New", monospace;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Estado de descarga del botón */
+.btn-download.downloading {
+  background: linear-gradient(135deg, #001a33, #003366);
+  border-color: #00d9ff;
+  cursor: not-allowed;
+  box-shadow:
+    0 0 20px rgba(0, 217, 255, 0.5),
+    inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Animación de onda */
+@keyframes wave-animation {
+  0%,
+  100% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+  25% {
+    transform: rotate(5deg) translate(-5px, 2px);
+  }
+  50% {
+    transform: rotate(0deg) translate(0, 5px);
+  }
+  75% {
+    transform: rotate(-5deg) translate(5px, 2px);
+  }
+}
+
+/* Animación de burbujas subiendo */
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Animación de brillo deslizante */
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  50%,
+  100% {
+    left: 100%;
+  }
+}
+
+/* Pulsación  del porcentaje */
+@keyframes pulse-text {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.download-percent {
+  animation: pulse-text 1.5s ease-in-out infinite;
+}
+
+/* ===== ESTILOS BARRA DE NAVEGACIÓN INFERIOR ===== */
+.contenedor-peliculas .bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-item:hover {
+  color: #ccc;
+}
+
+.nav-item.active {
+  color: #00d9ff;
+}
+
+.nav-item i {
+  margin-bottom: 2px;
+}
+
+/* Ajustar el contenedor principal para que no quede tapado por la barra */
+.view-section {
+  width: 100%;
+  height: 100%; /* Restar altura de la barra */
+  overflow-y: auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: black;
+  padding-bottom: 0; /* Ya no es necesario el padding extra si ajustamos el height */
+}
+
+.view-section.active {
+  display: block !important;
+  z-index: 5;
+}
+
+/* ===== ESTILOS VISTA LISTAS ===== */
+.lists-container,
+.downloads-container {
+  padding: 20px;
+  color: white;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.view-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+}
+
+.list-section {
+  margin-bottom: 30px;
+}
+
+.list-section h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.list-section h3 i {
+  color: #00d9ff;
+}
+
+.horizontal-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 15px;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  /* scrollbar-color: #00d9ff transparent; */ /* Removed as per instruction */
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Removed existing .horizontal-scroll::-webkit-scrollbar-thumb:hover as per instruction */
+
+.movie-card-mini {
+  min-width: 120px;
+  width: 120px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.movie-card-mini:hover {
+  transform: scale(1.05);
+}
+
+.movie-card-mini img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.movie-card-mini .title {
+  font-size: 12px;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ddd;
+}
+
+.empty-msg {
+  color: #666;
+  font-style: italic;
+  padding: 20px;
+  text-align: center;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+/* ===== ESTILOS VISTA DESCARGAS ===== */
+.downloads-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.download-item {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 8px;
+  gap: 15px;
+}
+
+.download-item img {
+  width: 60px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.download-info {
+  flex: 1;
+}
+
+.download-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+}
+
+.download-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.download-status {
+  color: #00ff88;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.download-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 5px;
+}
+
+.btn-icon:hover {
+  color: #00d9ff;
+}
+
+.btn-delete:hover {
+  color: #ff4444;
+}
+
+/* Tipografía moderna - Agregar al INICIO del archivo */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+.contenedor-peliculas {
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+}
+
+/* === ESTILOS PARA BOTONES DE ELIMINAR === */
+
+/* Header de las listas con botón de eliminar todo */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  margin-bottom: 15px;
+}
+
+.list-header h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+/* Botón "Eliminar todo" */
+.btn-clear-list {
+  background: rgba(255, 59, 48, 0.15);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  color: #ff3b30;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-family: "Inter", sans-serif;
+}
+
+.btn-clear-list:hover {
+  background: rgba(255, 59, 48, 0.25);
+  border-color: #ff3b30;
+  transform: translateY(-1px);
+}
+
+.btn-clear-list i {
+  margin-right: 6px;
+}
+
+/* Botón de eliminar individual en watchlist */
+.movie-card-mini {
+  position: relative;
+}
+
+.btn-remove-from-list {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.movie-card-mini:hover .btn-remove-from-list {
+  opacity: 1;
+}
+
+.btn-remove-from-list:hover {
+  background: rgba(255, 59, 48, 0.9);
+  transform: scale(1.1);
+}
+
+/* === AJUSTE DE CONTENEDORES === */
+
+#contenedorEspecial::-webkit-scrollbar,
+#contenedorEspecialSeries::-webkit-scrollbar {
+  height: 8px;
+}
+
+#contenedorEspecial::-webkit-scrollbar-track,
+#contenedorEspecialSeries::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+#contenedorEspecial::-webkit-scrollbar-thumb,
+#contenedorEspecialSeries::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+#contenedorEspecial::-webkit-scrollbar-thumb:hover,
+#contenedorEspecialSeries::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Mejorar tipografía general de botones de navegación */
+.bottom-nav {
+  font-family: "Inter", sans-serif;
+}
+
+.nav-item {
+  font-weight: 500;
+}
+
+/* Tipografía para vista de listas */
+.lists-container h1 {
+  font-weight: 700;
+  font-family: "Inter", sans-serif;
+}
+
+.list-section h2 {
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+}
+
+.empty-msg {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+}
+
+/* Tipografía para tarjetas de películas */
+.movie-card-mini .title {
+  font-family: "Inter", sans-serif;
+  font-weight: 500;
+}
+
+.download-info h4 {
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+}
+
+.download-status {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+}
+/* ===== MENÚ LATERAL DE NAVEGACIÓN (SIDE NAV) ===== */
+.contenedor-peliculas {
+  display: flex;
+  flex-direction: row; /* Cambiar a row para layout horizontal */
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background-color: brown;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-sizing: border-box;
+  margin-right: 5px;
+}
+
+.contenedor-peliculas .side-nav {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 70px;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.95);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 0;
+  gap: 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  z-index: 10;
+}
+
+.contenedor-peliculas .side-nav .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 0;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.3s ease;
+}
+
+.contenedor-peliculas .side-nav .nav-item i {
+  font-size: 24px;
+}
+
+.contenedor-peliculas .side-nav .nav-item .nav-label {
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.contenedor-peliculas .side-nav .nav-item:hover {
+  color: #ccc;
+}
+
+.contenedor-peliculas .side-nav .nav-item.active {
+  color: #00d9ff;
+}
+
+/* CONTENIDO PRINCIPAL */
+.contenedor-peliculas .main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: transparent;
+  position: relative;
+  min-width: 0; /* Importante para que el contenido no empuje el menú */
+}
+
+.downloads-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.downloads-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.downloads-list::-webkit-scrollbar-thumb {
+  background-color: var(--accent-a);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Scrollbar para el side-nav */
+.contenedor-peliculas .side-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.contenedor-peliculas .side-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.contenedor-peliculas .side-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive: Ocultar labels en pantallas pequeñas */
+@media (max-width: 768px) {
+  .contenedor-peliculas .side-nav {
+    min-width: 60px;
+    max-width: 60px;
+  }
+
+  .contenedor-peliculas .side-nav .nav-label {
+    display: none;
+  }
+
+  .contenedor-peliculas .side-nav .nav-item {
+    padding: 15px 5px;
+  }
+}
