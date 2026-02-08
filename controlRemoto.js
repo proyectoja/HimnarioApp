@@ -9,9 +9,11 @@ const fs = require("fs");
 const si = require("systeminformation"); // Para obtener info de monitores
 const https = require("https");
 const selfsigned = require("selfsigned");
+const { app } = require("electron");
 
 let mainWindow = null;
-let app = null;
+// let app = null; // Conflict with electron app variable name, so we rename express app variable locally or use a different name for the import
+let expressApp = null;
 let remoteServer = null;
 
 function getLocalIP() {
@@ -80,7 +82,7 @@ async function iniciarControlRemoto(win) {
   }
 
   mainWindow = win;
-  app = express();
+  expressApp = express();
   const PORT = 3555;
 
   // Generar PIN aleatorio de 6 dígitos
@@ -117,11 +119,11 @@ async function iniciarControlRemoto(win) {
     }
   });
 
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
+  expressApp.use(bodyParser.json());
+  expressApp.use(bodyParser.urlencoded({ extended: true }));
 
   // Habilitar CORS para evitar problemas de conexión en algunos navegadores móviles
-  app.use((req, res, next) => {
+  expressApp.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type");
@@ -129,15 +131,15 @@ async function iniciarControlRemoto(win) {
   });
 
   // Servir iconos para la interfaz remota
-  app.use("/iconos", express.static(path.join(__dirname, "src/iconos")));
+  expressApp.use("/iconos", express.static(path.join(__dirname, "src/iconos")));
 
   // Página del panel de control
-  app.get("/", (req, res) => {
+  expressApp.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "control-remoto.html"));
   });
 
   // Endpoint para validar PIN
-  app.post("/validar-pin", (req, res) => {
+  expressApp.post("/validar-pin", (req, res) => {
     const { pin } = req.body;
     if (pin === PIN) {
       res.json({ ok: true });
@@ -147,7 +149,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Endpoint para comandos
-  app.post("/cmd", (req, res) => {
+  expressApp.post("/cmd", (req, res) => {
     const { pin, command, data } = req.body;
 
     if (pin !== PIN) {
@@ -166,7 +168,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Endpoint para subir PowerPoint desde el celular
-  app.post("/upload-ppt", (req, res) => {
+  expressApp.post("/upload-ppt", (req, res) => {
     const { pin, name } = req.query;
 
     if (pin !== PIN) {
@@ -222,7 +224,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Endpoint para subir Video MP4 desde el celular
-  app.post("/upload-video", (req, res) => {
+  expressApp.post("/upload-video", (req, res) => {
     const { pin, name } = req.query;
 
     if (pin !== PIN) {
@@ -313,7 +315,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Endpoint para búsqueda de himnos
-  app.post("/buscar", (req, res) => {
+  expressApp.post("/buscar", (req, res) => {
     const { pin, query } = req.body;
 
     if (pin !== PIN) {
@@ -502,7 +504,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Endpoint para obtener monitores disponibles
-  app.get("/monitores", async (req, res) => {
+  expressApp.get("/monitores", async (req, res) => {
     try {
       if (req.query.pin !== PIN) {
         return res.status(403).json({ ok: false, error: "PIN incorrecto" });
@@ -525,7 +527,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Endpoint para enviar mensajes de chat
-  app.post("/chat", (req, res) => {
+  expressApp.post("/chat", (req, res) => {
     const { pin, user, message } = req.body;
 
     if (pin !== PIN) {
@@ -552,7 +554,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Endpoint para cambiar monitor
-  app.post("/cambiar-monitor", (req, res) => {
+  expressApp.post("/cambiar-monitor", (req, res) => {
     const { pin, id } = req.body;
 
     if (pin !== PIN) {
@@ -576,7 +578,7 @@ async function iniciarControlRemoto(win) {
   // Para enviar actualizaciones en tiempo real al control remoto
   // ========== SERVER-SENT EVENTS (SSE) ==========
   // Para enviar actualizaciones en tiempo real al control remoto
-  app.get("/events", (req, res) => {
+  expressApp.get("/events", (req, res) => {
     // Configurar cabeceras para SSE
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -652,7 +654,7 @@ async function iniciarControlRemoto(win) {
   // ========== AUDIO CALL SIGNALING ==========
   global.callParticipants = []; // { id, name }
 
-  app.post("/call/join", (req, res) => {
+  expressApp.post("/call/join", (req, res) => {
     const { pin, user, id } = req.body;
     if (pin !== PIN) return res.status(403).json({ error: "PIN incorrecto" });
 
@@ -672,7 +674,7 @@ async function iniciarControlRemoto(win) {
     res.json({ ok: true, peers: others });
   });
 
-  app.post("/call/leave", (req, res) => {
+  expressApp.post("/call/leave", (req, res) => {
     const { pin, id } = req.body;
     if (pin !== PIN) return res.status(403).json({ error: "PIN incorrecto" });
 
@@ -698,7 +700,7 @@ async function iniciarControlRemoto(win) {
     }
   }
 
-  app.post("/signal", (req, res) => {
+  expressApp.post("/signal", (req, res) => {
     const { pin, targetId, type, data, senderId } = req.body;
     if (pin !== PIN) return res.status(403).json({ error: "PIN incorrecto" });
 
@@ -737,7 +739,7 @@ async function iniciarControlRemoto(win) {
   }
 
   // Endpoint para notificar "Escribiendo..."
-  app.post("/typing", (req, res) => {
+  expressApp.post("/typing", (req, res) => {
     const { pin, user, isTyping } = req.body;
 
     if (pin !== PIN) {
@@ -779,7 +781,7 @@ async function iniciarControlRemoto(win) {
   };
 
   // Endpoint para obtener el estado actual de la aplicación
-  app.get("/estado", (req, res) => {
+  expressApp.get("/estado", (req, res) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("remote-get-estado");
 
@@ -796,7 +798,7 @@ async function iniciarControlRemoto(win) {
   });
 
   // Generar o cargar certificados SSL
-  const certPath = path.join(__dirname, "src", "certs");
+  const certPath = path.join(app.getPath("userData"), "certs");
   if (!fs.existsSync(certPath)) {
     fs.mkdirSync(certPath, { recursive: true });
   }
@@ -831,7 +833,7 @@ async function iniciarControlRemoto(win) {
     } catch (err) {
       console.error("❌ Error generando certificados SSL:", err);
       // Fallback a HTTP si falla SSL
-      remoteServer = app.listen(PORT, "0.0.0.0", () => {
+      remoteServer = expressApp.listen(PORT, "0.0.0.0", () => {
         const localIP = getLocalIP();
         console.warn(
           `⚠️ Iniciando en modo HTTP por fallo en SSL: http://${localIP}:${PORT}`,
@@ -850,7 +852,7 @@ async function iniciarControlRemoto(win) {
   }
 
   try {
-    const serverInstance = https.createServer(certOptions, app);
+    const serverInstance = https.createServer(certOptions, expressApp);
 
     serverInstance.on("error", (e) => {
       if (e.code === "EADDRINUSE") {

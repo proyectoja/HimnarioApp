@@ -40,6 +40,9 @@ videosHimnosJA/
 videosHimnosNacionales/
 videosHimnosPianoPista/
 
+# Certificados SSL locales
+src/certs/
+
 
 
 
