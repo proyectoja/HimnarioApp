@@ -12,7 +12,7 @@
     "release-draft": "electron-builder --publish onTagOrDraft",
     "release-local": "electron-builder --publish never",
     "prerelease": "npm version patch -m \"Versión %s\"",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "electron-builder install-app-deps && patch-package",
     "deploy": "npm version patch --no-git-tag-version && git add . && (git commit -m \"Auto bump\" || true) && git push"
   },
   "keywords": [],
@@ -33,6 +33,7 @@
       }
     ],
     "files": [
+      "patches/**",
       "src/**/*",
       "!src/prueba/**",
       "!src/audios*/**",
@@ -137,7 +138,8 @@
   },
   "devDependencies": {
     "electron": "^33.2.1",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "patch-package": "^8.0.1"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",

@@ -5114,11 +5114,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-02-12",
+    titulo: "Correción instalación en Linux, parche de instalación",
+    mensaje: "Se corrigió el error que daba en la instalación en sistemas Linux. Recordar, que si no tienes conocimientos ténicos en Linux, preguntar en el chat del Software (Solo por allí responderemos más seguido), esto para evitar que sus sistema operativo por algún comando mal hecho borre su sistema por el parche de seguridad que tiene el software. Próximamente se estára trabajando en conexión bíblica. Gracias al hermano Agustin Hernandez por la correción en Linux.",
+    version: "1.0.105",
+    tipo: "Correción",
   },
   {
     fecha: "2026-02-06",
