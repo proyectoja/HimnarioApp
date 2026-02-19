@@ -253,8 +253,9 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-  if (app.isReady() && BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) {
+    // Esperar a que la app esté lista antes de crear ventana
+    app.whenReady().then(() => createWindow());
   }
 });
 

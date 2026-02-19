@@ -1716,8 +1716,10 @@ function crearHimno(titulo, videoPath, imagePath, lista, duracion) {
 
   // Imagen de portada
   const img = document.createElement("img");
-  img.dataset.originalSrc = imagePath;
-  img.src = imagePath;
+  // Asegurar protocolo file:// para evitar fallos en Mac
+  const rutaImg = typeof formalizarRuta === 'function' ? formalizarRuta(imagePath) : imagePath;
+  img.dataset.originalSrc = rutaImg;
+  img.src = rutaImg;
 
   //img.alt = titulo;
   img.loading = "lazy";
