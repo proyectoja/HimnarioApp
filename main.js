@@ -185,23 +185,29 @@ ipcMain.on("get-paths-sync", (event) => {
 
 // 🔐 Variable para almacenar el estado premium del usuario
 let esPremiumGlobal = false;
+let planTipoGlobal = "gratis";
 
 // 🔐 IPC para recibir el estado premium desde el renderer
-ipcMain.on("set-premium-status", (event, esPremium) => {
-  console.log(`[PREMIUM] Estado premium actualizado: ${esPremium}`);
+ipcMain.on("set-premium-status", (event, data) => {
+  // Aceptar tanto formato antiguo (boolean) como nuevo (objeto con planTipo)
+  const esPremium = typeof data === "boolean" ? data : data.esPremium;
+  const planTipo = typeof data === "object" && data.planTipo ? data.planTipo : (esPremium ? "premium" : "gratis");
+  
+  console.log(`[PREMIUM] Estado actualizado - esPremium: ${esPremium}, planTipo: ${planTipo}`);
   esPremiumGlobal = esPremium;
+  planTipoGlobal = planTipo;
 
-  // Control remoto solo para usuarios premium
-  if (esPremium && win && !win.isDestroyed()) {
+  // Control remoto SOLO para usuarios con plan PREMIUM (no básico)
+  if (planTipo === "premium" && win && !win.isDestroyed()) {
     // Si es premium y el control remoto no está activo, iniciarlo
     if (!global.controlRemotoEstado || !global.controlRemotoEstado.activo) {
       console.log("[CONTROL REMOTO] Iniciando para usuario premium...");
       iniciarControlRemoto(win);
     }
   } else {
-    // Si no es premium y el control remoto está activo, detenerlo
+    // Si no es premium o es básico y el control remoto está activo, detenerlo
     if (global.controlRemotoEstado && global.controlRemotoEstado.activo) {
-      console.log("[CONTROL REMOTO] Deteniendo - usuario no premium");
+      console.log(`[CONTROL REMOTO] Deteniendo - planTipo: ${planTipo}`);
       detenerControlRemoto();
     }
   }

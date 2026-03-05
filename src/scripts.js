@@ -197,6 +197,9 @@ async function inicializarAplicacion() {
       loader.style.display = "none";
     }
 
+    // 🔘 Actualizar estado de botones
+    actualizarEstadoBotones();
+
     // 6️⃣ Mostrar introducción (comentado original)
     //console.log('[INIT] ✓ Mostrando introducción...');
     //mostrarIntro();
@@ -457,6 +460,11 @@ async function validarPremium() {
   const stripeId = localStorage.getItem("stripeSubscriptionId");
   const machineId = await getMachineId();
 
+  // Inicializar planTipo si no existe
+  if (!localStorage.getItem("planTipo")) {
+    localStorage.setItem("planTipo", "gratis");
+  }
+
   console.log("Validando Premium...", {
     promoCode,
     paypalId,
@@ -503,9 +511,29 @@ async function validarPremium() {
       const data = await res.json();
 
       if (data.premium === true) {
-        localStorage.setItem("premium", "true");
+        const planTipoActual = localStorage.getItem("planTipo");
+        
+        // 🔥 Determinar tipo de plan basado en plan_id devuelto por el servidor
+        let planTipoNuevo = "premium"; // Por defecto premium
+        if (data.plan_id) {
+          // IDs de planes básicos
+          const planesBasicos = [
+            "P-40E25374WC496032ENB62ANQ", // Básico Mensual
+            "P-4P300126BF854730HNE4GATY"   // Básico Anual
+          ];
+          planTipoNuevo = planesBasicos.includes(data.plan_id) ? "basico" : "premium";
+        }
+        
+        // Si ya hay un planTipo almacenado localmente, respetarlo (no sobrescribir)
+        if (planTipoActual === "basico" || planTipoActual === "premium") {
+          planTipoNuevo = planTipoActual;
+        }
+        
+        const esPremium = planTipoNuevo === "premium";
+        localStorage.setItem("premium", esPremium ? "true" : "false");
+        localStorage.setItem("planTipo", planTipoNuevo);
         localStorage.setItem("lastValidationDate", Date.now().toString());
-        aplicarEstadoPremium(true);
+        aplicarEstadoPremium(esPremium);
         return; // Salir si ya validó
       }
     } catch (err) {
@@ -525,27 +553,45 @@ async function validarPremium() {
       const data = await res.json();
 
       if (data.premium === true) {
-        localStorage.setItem("premium", "true");
-        localStorage.setItem("lastValidationDate", Date.now().toString());
-        aplicarEstadoPremium(true);
-        return;
+        const planTipoActual = localStorage.getItem("planTipo");
+        
+        // Si ya hay un planTipo establecido (básico o premium), respetarlo
+        if (planTipoActual === "basico") {
+          // Es básico, mantenerlo como básico (no cambiar a premium)
+          localStorage.setItem("premium", "false");
+          localStorage.setItem("lastValidationDate", Date.now().toString());
+          aplicarEstadoPremium(false);
+          return;
+        } else {
+          // Es premium o no hay planTipo, asignar como premium
+          localStorage.setItem("premium", "true");
+          localStorage.setItem("planTipo", "premium");
+          localStorage.setItem("lastValidationDate", Date.now().toString());
+          aplicarEstadoPremium(true);
+          return;
+        }
       }
     } catch (err) {
       console.error("❌ Error al verificar Stripe:", err);
     }
   }
 
-  // Si llegamos aquí, ninguna validación funcionó
-  // Verificar periodo de gracia (7 días)
+  // Si llegamos aqui, ninguna validacion funciono
+  // Verificar periodo de gracia (7 dias) SOLO si hace poco tuvimos conexion
   const lastValidation = localStorage.getItem("lastValidationDate");
   if (lastValidation && (promoCode || paypalId || stripeId)) {
     const daysDiff =
       (Date.now() - parseInt(lastValidation)) / (1000 * 60 * 60 * 24);
+    
+    // Solo aplicar periodo de gracia si tiene registro de ultima validacion reciente (menos de 7 dias)
     if (daysDiff < 7) {
+      console.log(
+        `[PREMIUM] Periodo de gracia activo. Dias desde ultima validacion: ${Math.floor(daysDiff)}`
+      );
       alert(
-        `[PREMIUM] Modo offline (Sin conexión a internet): Periodo de gracia activo (${
+        `[PREMIUM] Modo offline: Periodo de gracia activo (${
           7 - Math.floor(daysDiff)
-        } días restantes.)`,
+        } dias restantes).`
       );
       aplicarEstadoPremium(true);
       return;
@@ -555,22 +601,179 @@ async function validarPremium() {
   localStorage.setItem("premium", "false");
   aplicarEstadoPremium(false);
 }
+
+/**
+ * Actualiza el texto del botón premium según el plan activo
+ */
+function actualizarTextoPlanBoton() {
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  const botonPremiumH1 = document.querySelector("#botonPremium h1");
+  
+  if (botonPremiumH1) {
+    if (planTipo === "premium") {
+      botonPremiumH1.textContent = "PREMIUM";
+    } else if (planTipo === "basico") {
+      botonPremiumH1.textContent = "BÁSICO";
+    } else {
+      botonPremiumH1.textContent = "GRATIS";
+    }
+  }
+}
+
+/**
+ * Actualiza el estado de los botones según el plan del usuario
+ * - Biblia e Himnos Personalizados: Solo Premium
+ * - YouTube, PowerPoint, Programador: Básico y Premium (deshabilitados para Gratis)
+ */
+function actualizarEstadoBotones() {
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  console.log("[BOTONES] Actualizando estado de botones - Plan:", planTipo);
+
+  // Elementos de botones
+  const botonBibliaEl = document.getElementById("botonBiblia");
+  const botonHimnosProEl = document.getElementById("botonHimnosPro");
+  const botonYoutubeEl = document.getElementById("botonYoutube");
+  const botonPowerPointEl = document.getElementById("botonPowerPoint");
+  const botonProgramacionEl = document.getElementById("botonProgramacion");
+
+  console.log("[BOTONES] Elementos encontrados:", {
+    biblia: !!botonBibliaEl,
+    himnosPro: !!botonHimnosProEl,
+    youtube: !!botonYoutubeEl,
+    powerPoint: !!botonPowerPointEl,
+    programacion: !!botonProgramacionEl
+  });
+
+  // 🔒 BIBLIA - Solo Premium
+  if (botonBibliaEl) {
+    console.log("[BOTONES] Procesando Biblia...");
+    if (planTipo === "premium") {
+      botonBibliaEl.disabled = false;
+      botonBibliaEl.style.opacity = "1";
+      botonBibliaEl.style.pointerEvents = "auto";
+      botonBibliaEl.style.cursor = "pointer";
+      botonBibliaEl.style.filter = "none";
+      botonBibliaEl.title = "Biblia para Proyectar";
+    } else {
+      botonBibliaEl.disabled = true;
+      botonBibliaEl.style.opacity = "0.9";
+      botonBibliaEl.style.pointerEvents = "none";
+      botonBibliaEl.style.cursor = "not-allowed";
+      botonBibliaEl.style.filter = "grayscale(1)";
+      botonBibliaEl.title = "📖 Solo disponible para Premium";
+    }
+  }
+
+  // 🔒 HIMNOS PERSONALIZADOS - Solo Premium
+  if (botonHimnosProEl) {
+    console.log("[BOTONES] Procesando Himnos Pro...");
+    if (planTipo === "premium") {
+      botonHimnosProEl.disabled = false;
+      botonHimnosProEl.style.opacity = "1";
+      botonHimnosProEl.style.pointerEvents = "auto";
+      botonHimnosProEl.style.cursor = "pointer";
+      botonHimnosProEl.style.filter = "none";
+      botonHimnosProEl.title = "Himnos Personalizados";
+    } else {
+      botonHimnosProEl.disabled = true;
+      botonHimnosProEl.style.opacity = "0.9";
+      botonHimnosProEl.style.pointerEvents = "none";
+      botonHimnosProEl.style.cursor = "not-allowed";
+      botonHimnosProEl.style.filter = "grayscale(1)";
+      botonHimnosProEl.title = "🎵 Solo disponible para Premium";
+    }
+  }
+
+  // 🎬 YOUTUBE - Básico y Premium (deshabilitado para Gratis)
+  if (botonYoutubeEl) {
+    console.log("[BOTONES] Procesando YouTube...");
+    if (planTipo === "gratis") {
+      botonYoutubeEl.disabled = true;
+      botonYoutubeEl.style.opacity = "0.9";
+      botonYoutubeEl.style.pointerEvents = "none";
+      botonYoutubeEl.style.cursor = "not-allowed";
+      botonYoutubeEl.style.filter = "grayscale(1)";
+      botonYoutubeEl.title = "📺 Solo para Básico y Premium";
+    } else {
+      botonYoutubeEl.disabled = false;
+      botonYoutubeEl.style.opacity = "1";
+      botonYoutubeEl.style.pointerEvents = "auto";
+      botonYoutubeEl.style.cursor = "pointer";
+      botonYoutubeEl.style.filter = "none";
+      if (planTipo === "basico") {
+        botonYoutubeEl.title = "Reproductor de YouTube (Con límite de búsqueda)";
+      } else {
+        botonYoutubeEl.title = "Reproductor de YouTube";
+      }
+    }
+  }
+
+  // 📊 POWERPOINT - Básico y Premium (deshabilitado para Gratis)
+  if (botonPowerPointEl) {
+    console.log("[BOTONES] Procesando PowerPoint...");
+    if (planTipo === "gratis") {
+      botonPowerPointEl.disabled = true;
+      botonPowerPointEl.style.opacity = "0.9";
+      botonPowerPointEl.style.pointerEvents = "none";
+      botonPowerPointEl.style.cursor = "not-allowed";
+      botonPowerPointEl.style.filter = "grayscale(1)";
+      botonPowerPointEl.title = "📊 Solo para Básico y Premium";
+    } else {
+      botonPowerPointEl.disabled = false;
+      botonPowerPointEl.style.opacity = "1";
+      botonPowerPointEl.style.pointerEvents = "auto";
+      botonPowerPointEl.style.cursor = "pointer";
+      botonPowerPointEl.style.filter = "none";
+      botonPowerPointEl.title = "Power Point para proyectar";
+    }
+  }
+
+  // 📅 PROGRAMADOR - Básico y Premium (deshabilitado para Gratis)
+  if (botonProgramacionEl) {
+    console.log("[BOTONES] Procesando Programación...");
+    if (planTipo === "gratis") {
+      botonProgramacionEl.disabled = true;
+      botonProgramacionEl.style.opacity = "0.9";
+      botonProgramacionEl.style.pointerEvents = "none";
+      botonProgramacionEl.style.cursor = "not-allowed";
+      botonProgramacionEl.style.filter = "grayscale(1)";
+      botonProgramacionEl.title = "📅 Solo para Básico y Premium";
+    } else {
+      botonProgramacionEl.disabled = false;
+      botonProgramacionEl.style.opacity = "1";
+      botonProgramacionEl.style.pointerEvents = "auto";
+      botonProgramacionEl.style.cursor = "pointer";
+      botonProgramacionEl.style.filter = "none";
+      botonProgramacionEl.title = "Programación de Eventos";
+    }
+  }
+  
+  console.log("[BOTONES] Actualización completada");
+}
+
 function aplicarEstadoPremium(esPremiumAux) {
   console.log("[PREMIUM] Aplicando estado premium:", esPremiumAux);
 
   // 🔐 Actualizar variable global
   esPremium = esPremiumAux;
 
-  // 🔐 Notificar al proceso principal el estado premium (para control remoto)
+  // 🔐 Obtener planTipo
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+
+  // 🔐 Notificar al proceso principal el estado premium Y el planTipo (para control remoto)
   if (window.electronAPI && window.electronAPI.setPremiumStatus) {
-    window.electronAPI.setPremiumStatus(esPremiumAux);
-    console.log("[PREMIUM] Estado premium notificado al proceso principal");
+    window.electronAPI.setPremiumStatus({
+      esPremium: esPremiumAux,
+      planTipo: planTipo
+    });
+    console.log(`[PREMIUM] Estado notificado al proceso principal - esPremium: ${esPremiumAux}, planTipo: ${planTipo}`);
   }
 
   if (esPremiumAux) {
+    // USUARIO PREMIUM - Sin marca de agua, todo activado
     waterMark = "";
-    if (botonPremium) botonPremium.style.display = "none";
-    if (contenedorPremium) contenedorPremium.style.display = "none";
+    // ✅ MANTENER BOTÓN VISIBLE - Ahora muestra el estado del plan
+    if (botonPremium) botonPremium.style.display = "flex";
     document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
       el.style.display = "flex";
     });
@@ -579,18 +782,41 @@ function aplicarEstadoPremium(esPremiumAux) {
     // 📌 OCULTAR MARCA DE AGUA DE POWERPOINT (usuario premium)
     actualizarMarcaAguaPowerPoint();
   } else {
-    waterMark = "imagenes/logo-proyectoja.png";
-    if (botonPremium) botonPremium.style.display = "flex";
-    document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
-      el.style.display = "none";
-    });
-    if (contenedorMonitor) contenedorMonitor.style.display = "flex";
+    // USUARIO GRATIS O BÁSICO
+    const planTipo = localStorage.getItem("planTipo") || "gratis";
+    
+    if (planTipo === "basico") {
+      // PLAN BÁSICO - SIN marca de agua, sin características premium
+      waterMark = "";
+      if (botonPremium) botonPremium.style.display = "flex";
+      document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
+        el.style.display = "none";
+      });
+      if (contenedorMonitor) contenedorMonitor.style.display = "flex";
+      
+      // 📌 OCULTAR MARCA DE AGUA DE POWERPOINT (usuario básico)
+      actualizarMarcaAguaPowerPoint();
+    } else {
+      // PLAN GRATIS - CON marca de agua
+      waterMark = "imagenes/logo-proyectoja.png";
+      if (botonPremium) botonPremium.style.display = "flex";
+      document.querySelectorAll(".contenedorPremiumActivado").forEach((el) => {
+        el.style.display = "none";
+      });
+      if (contenedorMonitor) contenedorMonitor.style.display = "flex";
 
-    // 📌 MOSTRAR MARCA DE AGUA DE POWERPOINT (usuario gratis)
-    actualizarMarcaAguaPowerPoint();
+      // 📌 MOSTRAR MARCA DE AGUA DE POWERPOINT (usuario gratis)
+      actualizarMarcaAguaPowerPoint();
+    }
   }
 
-  // 📌 Actualizar información en el menú de usuario
+  // 📌 Actualizar texto del botón según el plan
+  actualizarTextoPlanBoton();
+  
+  // � Actualizar estado de botones según el plan
+  actualizarEstadoBotones();
+  
+  // �📌 Actualizar información en el menú de usuario
   actualizarInformacionUsuarioMenu();
 }
 
@@ -607,17 +833,27 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
   if (!infoEstado) return;
 
   const esPremiumGlobal = localStorage.getItem("premium") === "true";
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
   const promoCode = localStorage.getItem("promoCode");
   const paypalId = localStorage.getItem("paypalSubscriptionId");
   const stripeId = localStorage.getItem("stripeSubscriptionId");
 
-  // Actualizar estado
-  infoEstado.innerHTML = `Estado: <span style="color: ${
-    esPremiumGlobal ? "#4CAF50" : "#ffeb3b"
-  }">${esPremiumGlobal ? "Licencia Premium" : "Licencia Gratis"}</span>`;
+  // Actualizar estado con el tipo de plan
+  let estadoTexto = "Licencia Gratis";
+  let estadoColor = "#ffeb3b";
+  
+  if (esPremiumGlobal) {
+    estadoTexto = "Licencia Premium";
+    estadoColor = "#4CAF50";
+  } else if (planTipo === "basico") {
+    estadoTexto = "Plan Básico";
+    estadoColor = "#6495ED";
+  }
+  
+  infoEstado.innerHTML = `Estado: <span style="color: ${estadoColor}">${estadoTexto}</span>`;
 
   // Actualizar código premium
-  if (esPremiumGlobal) {
+  if (esPremiumGlobal || planTipo === "basico") {
     infoCodigo.textContent = `${promoCode || paypalId || stripeId || "Activo"}`;
   } else {
     infoCodigo.textContent = "Sin código";
@@ -795,6 +1031,7 @@ async function validarCodigos() {
           localStorage.removeItem("stripeSubscriptionId");
         }
         localStorage.setItem("premium", "true");
+        localStorage.setItem("planTipo", "premium");
         localStorage.setItem("lastValidationDate", Date.now().toString());
         aplicarEstadoPremium(true);
         return;
@@ -810,15 +1047,28 @@ async function validarCodigos() {
         `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=paypal&modo=${modo}&machineId=${machineId}`,
       );
       if (dataPaypal.premium === true) {
-        alert("✅ Código PayPal válido, acceso premium activado");
+        // 🔥 Determinar tipo de plan basado en plan_id devuelto por el servidor
+        let planTipo = "premium"; // Por defecto premium
+        if (dataPaypal.plan_id) {
+          const planesBasicos = [
+            "P-40E25374WC496032ENB62ANQ", // Básico Mensual
+            "P-4P300126BF854730HNE4GATY"   // Básico Anual
+          ];
+          planTipo = planesBasicos.includes(dataPaypal.plan_id) ? "basico" : "premium";
+        }
+        
+        const esPremium = planTipo === "premium";
+        alert(esPremium ? "✅ Código PayPal válido, acceso premium activado" : "✅ Código PayPal válido, plan básico activado");
+        
         if (codigoIngresado) {
           localStorage.setItem("paypalSubscriptionId", codigoIngresado);
           localStorage.removeItem("stripeSubscriptionId");
           localStorage.removeItem("promoCode");
         }
-        localStorage.setItem("premium", "true");
+        localStorage.setItem("premium", esPremium ? "true" : "false");
+        localStorage.setItem("planTipo", planTipo);
         localStorage.setItem("lastValidationDate", Date.now().toString());
-        aplicarEstadoPremium(true);
+        aplicarEstadoPremium(esPremium);
         return;
       }
     } catch (e) {
@@ -831,6 +1081,7 @@ async function validarCodigos() {
       `${API_URL}?subscriptionId=${codigoAValidar}&proveedor=stripe&modo=${modoAux}&machineId=${machineId}`,
     );
     if (dataStripe.premium === true) {
+      // 📝 Stripe actualmente solo maneja plan premium
       alert("✅ Código Stripe válido, acceso premium activado");
       if (codigoIngresado) {
         localStorage.setItem("stripeSubscriptionId", codigoIngresado);
@@ -838,6 +1089,7 @@ async function validarCodigos() {
         localStorage.removeItem("promoCode");
       }
       localStorage.setItem("premium", "true");
+      localStorage.setItem("planTipo", "premium");
       localStorage.setItem("lastValidationDate", Date.now().toString());
       aplicarEstadoPremium(true);
       return;
@@ -856,6 +1108,7 @@ async function validarCodigos() {
 botonPremium.addEventListener("click", function () {
   const displayContenedorPremium = getComputedStyle(contenedorPremium).display;
 
+  // ✅ TOGGLE: Si está oculto, mostrarlo; si está visible, ocultarlo
   if (displayContenedorPremium === "none") {
     contenedorPremium.textContent = "";
     validarPremium();
@@ -909,24 +1162,88 @@ botonPremium.addEventListener("click", function () {
       "Desbloquea herramientas profesionales para tu iglesia";
     subTitulo.style.color = "#bdc3c7";
     subTitulo.style.textAlign = "center";
-    subTitulo.style.margin = "0 0 15px 0";
+    subTitulo.style.margin = "0 0 20px 0";
     subTitulo.style.fontSize = "14px";
     contenedorInterno.appendChild(subTitulo);
 
-    // Contenedor de comparación
+    // Toggle Mensual/Anual
+    const contenedorToggle = document.createElement("div");
+    contenedorToggle.style.display = "flex";
+    contenedorToggle.style.justifyContent = "center";
+    contenedorToggle.style.alignItems = "center";
+    contenedorToggle.style.gap = "15px";
+    contenedorToggle.style.marginBottom = "25px";
+
+    const textoMensual = document.createElement("span");
+    textoMensual.textContent = "Mensual";
+    textoMensual.style.color = "#FFF";
+    textoMensual.style.fontSize = "14px";
+    textoMensual.style.fontWeight = "bold";
+    textoMensual.id = "texto-mensual";
+
+    const toggleSwitch = document.createElement("div");
+    toggleSwitch.style.width = "60px";
+    toggleSwitch.style.height = "30px";
+    toggleSwitch.style.background = "rgba(255,255,255,0.2)";
+    toggleSwitch.style.borderRadius = "15px";
+    toggleSwitch.style.position = "relative";
+    toggleSwitch.style.cursor = "pointer";
+    toggleSwitch.style.transition = "background 0.3s";
+
+    const toggleCircle = document.createElement("div");
+    toggleCircle.style.width = "26px";
+    toggleCircle.style.height = "26px";
+    toggleCircle.style.background = "#FFF";
+    toggleCircle.style.borderRadius = "50%";
+    toggleCircle.style.position = "absolute";
+    toggleCircle.style.top = "2px";
+    toggleCircle.style.left = "2px";
+    toggleCircle.style.transition = "left 0.3s";
+    toggleCircle.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
+
+    toggleSwitch.appendChild(toggleCircle);
+
+    const textoAnual = document.createElement("span");
+    textoAnual.textContent = "Anual";
+    textoAnual.style.color = "rgba(255,255,255,0.6)";
+    textoAnual.style.fontSize = "14px";
+    textoAnual.style.fontWeight = "bold";
+    textoAnual.id = "texto-anual";
+
+    const textoAhorro = document.createElement("span");
+    textoAhorro.textContent = "💰 Ahorra 20%";
+    textoAhorro.style.color = "#2ecc71";
+    textoAhorro.style.fontSize = "12px";
+    textoAhorro.style.fontWeight = "bold";
+    textoAhorro.style.background = "rgba(46, 204, 113, 0.1)";
+    textoAhorro.style.padding = "4px 10px";
+    textoAhorro.style.borderRadius = "12px";
+    textoAhorro.style.border = "1px solid rgba(46, 204, 113, 0.3)";
+
+    let esAnual = false;
+
+    contenedorToggle.appendChild(textoMensual);
+    contenedorToggle.appendChild(toggleSwitch);
+    contenedorToggle.appendChild(textoAnual);
+    contenedorToggle.appendChild(textoAhorro);
+    contenedorInterno.appendChild(contenedorToggle);
+
+    // Contenedor de comparación (3 columnas)
     const contenedorComparacion = document.createElement("div");
     contenedorComparacion.style.display = "flex";
     contenedorComparacion.style.flexDirection = "row";
-    contenedorComparacion.style.gap = "15px";
+    contenedorComparacion.style.gap = "12px";
     contenedorComparacion.style.flexWrap = "wrap";
     contenedorComparacion.style.justifyContent = "center";
+    contenedorComparacion.style.marginBottom = "20px";
 
-    // Columna Versión Gratis
+    // ========== COLUMNA 1: GRATIS ==========
     const columnaGratis = document.createElement("div");
     columnaGratis.style.flex = "1";
-    columnaGratis.style.minWidth = "180px";
+    columnaGratis.style.minWidth = "160px";
+    columnaGratis.style.maxWidth = "200px";
     columnaGratis.style.background = "rgba(255, 255, 255, 0.05)";
-    columnaGratis.style.padding = "20px";
+    columnaGratis.style.padding = "20px 15px";
     columnaGratis.style.borderRadius = "16px";
     columnaGratis.style.textAlign = "center";
     columnaGratis.style.border = "1px solid rgba(255,255,255,0.1)";
@@ -934,47 +1251,123 @@ botonPremium.addEventListener("click", function () {
     columnaGratis.style.opacity = "0.8";
 
     const tituloGratis = document.createElement("h3");
-    tituloGratis.textContent = "Básico";
+    tituloGratis.textContent = "Gratis";
     tituloGratis.style.color = "rgba(255,255,255,0.7)";
-    tituloGratis.style.margin = "0 0 15px 0";
+    tituloGratis.style.margin = "0 0 10px 0";
     tituloGratis.style.fontSize = "18px";
     tituloGratis.style.fontWeight = "bold";
-    tituloGratis.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
-    tituloGratis.style.paddingBottom = "10px";
+
+    const precioGratis = document.createElement("div");
+    precioGratis.innerHTML = "$0";
+    precioGratis.style.color = "rgba(255,255,255,0.8)";
+    precioGratis.style.fontSize = "20px";
+    precioGratis.style.fontWeight = "bold";
+    precioGratis.style.margin = "0 0 15px 0";
+    precioGratis.style.paddingBottom = "10px";
+    precioGratis.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
 
     const listaGratis = document.createElement("ul");
     listaGratis.style.textAlign = "left";
     listaGratis.style.color = "rgba(255,255,255,0.7)";
     listaGratis.style.listStyle = "none";
     listaGratis.style.padding = "0";
-    listaGratis.style.margin = "0";
-    listaGratis.style.fontSize = "13px";
+    listaGratis.style.margin = "0 0 15px 0";
+    listaGratis.style.fontSize = "12px";
     listaGratis.innerHTML = `
-      <li style="margin-bottom: 8px;">✅ Todos los himnos</li>
-      <li style="margin-bottom: 8px;">✅ Búsqueda básica</li>
-      <li style="margin-bottom: 8px;">❌ Marca de agua</li>
+      <li style="margin-bottom: 8px;">❌ Con marca de agua</li>
+      <li style="margin-bottom: 8px;">❌ Sin películas</li>
       <li style="margin-bottom: 8px;">❌ Sin control remoto</li>
       <li style="margin-bottom: 8px;">❌ Sin Biblia proyectable</li>
+      <li style="margin-bottom: 8px;">❌ Himnos limitados</li>
     `;
 
     columnaGratis.appendChild(tituloGratis);
+    columnaGratis.appendChild(precioGratis);
     columnaGratis.appendChild(listaGratis);
     contenedorComparacion.appendChild(columnaGratis);
 
-    // Columna Versión Premium (DESTACADA)
+    // ========== COLUMNA 2: BÁSICO ==========
+    const columnaBasico = document.createElement("div");
+    columnaBasico.style.flex = "1";
+    columnaBasico.style.minWidth = "180px";
+    columnaBasico.style.maxWidth = "220px";
+    columnaBasico.style.background = "rgba(255, 255, 255, 0.08)";
+    columnaBasico.style.padding = "20px 15px";
+    columnaBasico.style.borderRadius = "16px";
+    columnaBasico.style.textAlign = "center";
+    columnaBasico.style.border = "1px solid rgba(100, 149, 237, 0.3)";
+    columnaBasico.style.position = "relative";
+
+    const tituloBasico = document.createElement("h3");
+    tituloBasico.textContent = "Básico";
+    tituloBasico.style.color = "#6495ED";
+    tituloBasico.style.margin = "0 0 10px 0";
+    tituloBasico.style.fontSize = "19px";
+    tituloBasico.style.fontWeight = "bold";
+
+    const precioBasico = document.createElement("div");
+    precioBasico.innerHTML = "$1.99 <span style='font-size: 12px; font-weight: normal; opacity: 0.7;'>/ mes</span>";
+    precioBasico.style.color = "#FFF";
+    precioBasico.style.fontSize = "22px";
+    precioBasico.style.fontWeight = "bold";
+    precioBasico.style.margin = "0 0 15px 0";
+    precioBasico.style.paddingBottom = "10px";
+    precioBasico.style.borderBottom = "1px solid rgba(255,255,255,0.15)";
+
+    const listaBasico = document.createElement("ul");
+    listaBasico.style.textAlign = "left";
+    listaBasico.style.color = "rgba(255,255,255,0.9)";
+    listaBasico.style.listStyle = "none";
+    listaBasico.style.padding = "0";
+    listaBasico.style.margin = "0 0 15px 0";
+    listaBasico.style.fontSize = "13px";
+    listaBasico.innerHTML = `
+      <li style="margin-bottom: 8px;">✅ Sin marca de agua</li>
+      <li style="margin-bottom: 8px;">✅ Películas incluidas</li>
+      <li style="margin-bottom: 8px;">❌ Sin control remoto</li>
+      <li style="margin-bottom: 8px;">❌ Sin Biblia proyectable</li>
+      <li style="margin-bottom: 8px;">✅ Himnos completos</li>
+    `;
+
+    // Botones de PayPal para Básico
+    const paypalBasicoMensual = document.createElement("div");
+    paypalBasicoMensual.id = "paypal-basico-mensual";
+    paypalBasicoMensual.style.width = "100%";
+    paypalBasicoMensual.style.marginTop = "15px";
+    paypalBasicoMensual.style.minHeight = "40px";
+    paypalBasicoMensual.innerHTML = "<div style='text-align:center;font-size:11px;opacity:0.7;padding:10px;background:rgba(100,149,237,0.2);border-radius:8px;'>PayPal Básico Mensual</div>";
+
+    const paypalBasicoAnual = document.createElement("div");
+    paypalBasicoAnual.id = "paypal-basico-anual";
+    paypalBasicoAnual.style.width = "100%";
+    paypalBasicoAnual.style.marginTop = "15px";
+    paypalBasicoAnual.style.minHeight = "40px";
+    paypalBasicoAnual.style.display = "none";
+    paypalBasicoAnual.innerHTML = "<div style='text-align:center;font-size:11px;opacity:0.7;padding:10px;background:rgba(100,149,237,0.2);border-radius:8px;'>PayPal Básico Anual</div>";
+
+    columnaBasico.appendChild(tituloBasico);
+    columnaBasico.appendChild(precioBasico);
+    columnaBasico.appendChild(listaBasico);
+    columnaBasico.appendChild(paypalBasicoMensual);
+    columnaBasico.appendChild(paypalBasicoAnual);
+    contenedorComparacion.appendChild(columnaBasico);
+
+    // ========== COLUMNA 3: PREMIUM (DESTACADA) ==========
     const columnaPremium = document.createElement("div");
-    columnaPremium.style.flex = "1.2"; // Más grande
-    columnaPremium.style.minWidth = "220px";
+    columnaPremium.style.flex = "1.2";
+    columnaPremium.style.minWidth = "200px";
+    columnaPremium.style.maxWidth = "240px";
     columnaPremium.style.background =
       "linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)";
-    columnaPremium.style.padding = "25px";
+    columnaPremium.style.padding = "25px 18px";
     columnaPremium.style.borderRadius = "20px";
     columnaPremium.style.textAlign = "center";
     columnaPremium.style.boxShadow =
-      "0 10px 40px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,215,0,0.3)"; // Borde dorado sutil
+      "0 10px 40px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,215,0,0.3)";
     columnaPremium.style.position = "relative";
     columnaPremium.style.border = "1px solid rgba(255,255,255,0.2)";
     columnaPremium.style.zIndex = "10";
+    columnaPremium.style.transform = "scale(1.05)";
 
     // Badge de Recomendado
     const badge = document.createElement("div");
@@ -987,20 +1380,27 @@ botonPremium.addEventListener("click", function () {
     badge.style.color = "#000";
     badge.style.padding = "5px 15px";
     badge.style.borderRadius = "20px";
-    badge.style.fontSize = "12px";
+    badge.style.fontSize = "11px";
     badge.style.fontWeight = "bold";
     badge.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)";
     columnaPremium.appendChild(badge);
 
     const tituloPremium = document.createElement("h3");
-    tituloPremium.innerHTML = "⭐ PREMIUM PRO";
+    tituloPremium.innerHTML = "⭐ PREMIUM";
     tituloPremium.style.color = "#FFD700";
-    tituloPremium.style.margin = "10px 0 15px 0";
-    tituloPremium.style.fontSize = "24px";
+    tituloPremium.style.margin = "10px 0 10px 0";
+    tituloPremium.style.fontSize = "22px";
     tituloPremium.style.fontWeight = "bold";
     tituloPremium.style.textShadow = "0 0 15px rgba(255,215,0,0.3)";
-    tituloPremium.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
-    tituloPremium.style.paddingBottom = "15px";
+
+    const precioPremium = document.createElement("div");
+    precioPremium.innerHTML = "$8.99 <span style='font-size: 12px; font-weight: normal; opacity: 0.7;'>/ mes</span>";
+    precioPremium.style.color = "#FFF";
+    precioPremium.style.fontSize = "24px";
+    precioPremium.style.fontWeight = "bold";
+    precioPremium.style.margin = "0 0 15px 0";
+    precioPremium.style.paddingBottom = "12px";
+    precioPremium.style.borderBottom = "1px solid rgba(255,255,255,0.2)";
 
     const listaPremium = document.createElement("ul");
     listaPremium.style.textAlign = "left";
@@ -1008,35 +1408,88 @@ botonPremium.addEventListener("click", function () {
     listaPremium.style.listStyle = "none";
     listaPremium.style.padding = "0";
     listaPremium.style.margin = "0";
-    listaPremium.style.fontSize = "14px";
+    listaPremium.style.fontSize = "13px";
 
-    // Lista de beneficios con iconos más atractivos
     listaPremium.innerHTML = `
-      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 18px;">📱</span> <strong>Control Remoto desde Celular</strong>
+      <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">📱</span> <strong>Control Remoto</strong>
       </li>
-      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 18px;">✨</span> <strong>Sin Marca de Agua (Limpio)</strong>
+      <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">✨</span> <strong>Sin Marca de Agua</strong>
       </li>
-      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 18px;">📖</span> Biblia con múltiples versiones
+      <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">📖</span> Biblia proyectable
       </li>
-      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 18px;">🎹</span> Himnos Personalizables & Pistas
+      <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">🎹</span> Himnos + Pistas
       </li>
-      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 18px;">🎞️</span> Fondos Dinámicos & YouTube Full
+      <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">🎞️</span> YouTube Full
       </li>
-      <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 18px;">🚀</span> Soporte Prioritario VIP
+      <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">🚀</span> Soporte VIP
       </li>
     `;
 
+    // Botones de PayPal para Premium
+    const paypalPremiumMensual = document.createElement("div");
+    paypalPremiumMensual.id = "paypal-button-container-inner";
+    paypalPremiumMensual.style.width = "100%";
+    paypalPremiumMensual.style.marginTop = "15px";
+    paypalPremiumMensual.style.minHeight = "40px";
+    paypalPremiumMensual.innerHTML = "<div style='text-align:center;font-size:11px;opacity:0.7;padding:10px;background:rgba(255,215,0,0.15);border-radius:8px;'>Cargando PayPal...</div>";
+
+    const paypalPremiumAnual = document.createElement("div");
+    paypalPremiumAnual.id = "paypal-button-container-anual";
+    paypalPremiumAnual.style.width = "100%";
+    paypalPremiumAnual.style.marginTop = "15px";
+    paypalPremiumAnual.style.minHeight = "40px";
+    paypalPremiumAnual.style.display = "none";
+    paypalPremiumAnual.innerHTML = "<div style='text-align:center;font-size:11px;opacity:0.7;padding:10px;background:rgba(46,204,113,0.15);border-radius:8px;'>Cargando PayPal...</div>";
+
     columnaPremium.appendChild(tituloPremium);
+    columnaPremium.appendChild(precioPremium);
     columnaPremium.appendChild(listaPremium);
+    columnaPremium.appendChild(paypalPremiumMensual);
+    columnaPremium.appendChild(paypalPremiumAnual);
     contenedorComparacion.appendChild(columnaPremium);
 
     contenedorInterno.appendChild(contenedorComparacion);
+
+    // Ahora asignar el evento onclick del toggle (después de crear los contenedores)
+    toggleSwitch.onclick = () => {
+      esAnual = !esAnual;
+      
+      if (esAnual) {
+        toggleCircle.style.left = "32px";
+        toggleSwitch.style.background = "#2ecc71";
+        textoMensual.style.color = "rgba(255,255,255,0.6)";
+        textoAnual.style.color = "#FFF";
+        // Actualizar precios a anuales
+        precioBasico.innerHTML = "$23.88 <span style='font-size: 12px; font-weight: normal; opacity: 0.7;'>/ año</span>";
+        precioPremium.innerHTML = "$107.88 <span style='font-size: 12px; font-weight: normal; opacity: 0.7;'>/ año</span>";
+        // Controlar botones de PayPal en Básico
+        paypalBasicoMensual.style.display = "none";
+        paypalBasicoAnual.style.display = "block";
+        // Controlar botones de PayPal en Premium
+        paypalPremiumMensual.style.display = "none";
+        paypalPremiumAnual.style.display = "block";
+      } else {
+        toggleCircle.style.left = "2px";
+        toggleSwitch.style.background = "rgba(255,255,255,0.2)";
+        textoMensual.style.color = "#FFF";
+        textoAnual.style.color = "rgba(255,255,255,0.6)";
+        // Actualizar precios a mensuales
+        precioBasico.innerHTML = "$1.99 <span style='font-size: 12px; font-weight: normal; opacity: 0.7;'>/ mes</span>";
+        precioPremium.innerHTML = "$8.99 <span style='font-size: 12px; font-weight: normal; opacity: 0.7;'>/ mes</span>";
+        // Controlar botones de PayPal en Básico
+        paypalBasicoMensual.style.display = "block";
+        paypalBasicoAnual.style.display = "none";
+        // Controlar botones de PayPal en Premium
+        paypalPremiumMensual.style.display = "block";
+        paypalPremiumAnual.style.display = "none";
+      }
+    };
 
     // Mensaje Social Proof
     const mensajeSocial = document.createElement("p");
@@ -1045,81 +1498,10 @@ botonPremium.addEventListener("click", function () {
     mensajeSocial.style.textAlign = "center";
     mensajeSocial.style.color = "#ecf0f1";
     mensajeSocial.style.fontSize = "13px";
-    mensajeSocial.style.marginTop = "20px";
+    mensajeSocial.style.marginTop = "15px";
+    mensajeSocial.style.marginBottom = "20px";
     mensajeSocial.style.opacity = "0.8";
     contenedorInterno.appendChild(mensajeSocial);
-
-    // Separador Plan Mensual
-    const separador = document.createElement("div");
-    separador.style.margin = "20px 0 10px 0";
-    separador.style.textAlign = "center";
-    separador.innerHTML =
-      "<span style='background: rgba(44, 62, 80, 0.8); padding: 5px 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); font-weight: bold;'>💎 Opción Flexible</span>";
-    contenedorInterno.appendChild(separador);
-
-    // Texto de precio mensual
-    const precioMensual = document.createElement("h3");
-    precioMensual.innerHTML =
-      "$8,99 <span style='font-size: 14px; font-weight: normal; opacity: 0.7;'>/ mes</span>";
-    precioMensual.style.textAlign = "center";
-    precioMensual.style.margin = "5px 0 10px 0";
-    precioMensual.style.fontSize = "28px";
-    precioMensual.style.color = "#FFF";
-    contenedorInterno.appendChild(precioMensual);
-
-    // Contenedor de PayPal (MENSUAL)
-    const paypalContainer = document.createElement("div");
-    paypalContainer.id = "paypal-button-container-inner";
-    paypalContainer.style.width = "100%";
-    paypalContainer.style.maxWidth = "280px";
-    paypalContainer.style.alignSelf = "center";
-    paypalContainer.style.minHeight = "45px";
-    paypalContainer.style.marginBottom = "10px";
-    // Placeholder
-    paypalContainer.innerHTML =
-      "<div style='text-align:center;font-size:12px;opacity:0.7'>Cargando botón seguro...</div>";
-    contenedorInterno.appendChild(paypalContainer);
-
-    // Separador Plan Anual (El más atractivo)
-    const contenedorAnual = document.createElement("div");
-    contenedorAnual.style.background = "rgba(46, 204, 113, 0.1)"; // Fondo verdoso suave
-    contenedorAnual.style.border = "1px solid rgba(46, 204, 113, 0.4)";
-    contenedorAnual.style.borderRadius = "15px";
-    contenedorAnual.style.padding = "15px";
-    contenedorAnual.style.margin = "10px 0";
-    contenedorAnual.style.textAlign = "center";
-
-    const tituloAnual = document.createElement("h4");
-    tituloAnual.innerHTML = "🏆 MEJOR VALOR: Plan Anual";
-    tituloAnual.style.color = "#2ecc71"; // Verde vibrante
-    tituloAnual.style.margin = "0 0 5px 0";
-    tituloAnual.style.fontSize = "16px";
-    tituloAnual.style.fontWeight = "bold";
-    contenedorAnual.appendChild(tituloAnual);
-
-    const precioAnual = document.createElement("div");
-    precioAnual.innerHTML =
-      "<span style='text-decoration: line-through; opacity: 0.6; font-size: 14px;'>$149.00</span> <span style='font-size: 22px; font-weight: bold;'>$107,88</span> <span style='font-size: 12px;'>/ año</span>";
-    precioAnual.style.marginBottom = "10px";
-    contenedorAnual.appendChild(precioAnual);
-
-    const textoAhorro = document.createElement("div");
-    textoAhorro.textContent = "¡Un solo pago, 12 meses de tranquilidad!";
-    textoAhorro.style.fontSize = "12px";
-    textoAhorro.style.color = "#bdc3c7";
-    textoAhorro.style.marginBottom = "10px";
-    contenedorAnual.appendChild(textoAhorro);
-
-    // Contenedor de PayPal (ANUAL)
-    const paypalContainerAnual = document.createElement("div");
-    paypalContainerAnual.id = "paypal-button-container-anual";
-    paypalContainerAnual.style.width = "100%";
-    paypalContainerAnual.style.maxWidth = "280px";
-    paypalContainerAnual.style.margin = "0 auto";
-    paypalContainerAnual.style.minHeight = "45px";
-    contenedorAnual.appendChild(paypalContainerAnual);
-
-    contenedorInterno.appendChild(contenedorAnual);
 
     // NUEVO: Enlace alternativo si falla - BOTÓN VISIBLE
     const alternativoLinkContainer = document.createElement("div");
@@ -1403,18 +1785,19 @@ botonPremium.addEventListener("click", function () {
         return;
       }
       console.log("Contenedor interno encontrado. Limpiando y renderizando...");
-      paypalContainer.innerHTML = ""; // Limpiar texto temporal
+      containerInner.innerHTML = ""; // Limpiar texto temporal
 
       if (!window.paypal || typeof window.paypal.Buttons !== "function") {
         console.error(
           "Error: El SDK de PayPal no se cargó correctamente o la función 'Buttons' no está disponible.",
         );
-        paypalContainer.innerHTML =
+        containerInner.innerHTML =
           "<p style='color:red; text-align:center;'>Error: PayPal SDK no pudo inicializarse.<br>Verifique su conexión a internet y recargue la aplicación.</p>";
         return;
       }
 
       try {
+        // BOTÓN PREMIUM MENSUAL
         window.paypal
           .Buttons({
             style: {
@@ -1438,6 +1821,7 @@ botonPremium.addEventListener("click", function () {
 
               localStorage.setItem("paypalSubscriptionId", subscriptionId);
               localStorage.setItem("premium", "true");
+              localStorage.setItem("planTipo", "premium");
               localStorage.setItem("lastValidationDate", Date.now().toString());
 
               location.reload();
@@ -1452,7 +1836,7 @@ botonPremium.addEventListener("click", function () {
           })
           .render("#paypal-button-container-inner");
 
-        // RENDERIZAR BOTÓN ANUAL
+        // BOTÓN PREMIUM ANUAL
         window.paypal
           .Buttons({
             style: {
@@ -1476,6 +1860,7 @@ botonPremium.addEventListener("click", function () {
 
               localStorage.setItem("paypalSubscriptionId", subscriptionId);
               localStorage.setItem("premium", "true");
+              localStorage.setItem("planTipo", "premium");
               localStorage.setItem("lastValidationDate", Date.now().toString());
 
               location.reload();
@@ -1490,14 +1875,94 @@ botonPremium.addEventListener("click", function () {
           })
           .render("#paypal-button-container-anual");
 
+        // BOTÓN BÁSICO MENSUAL
+        const containerBasicoMensual = document.getElementById("paypal-basico-mensual");
+        if (containerBasicoMensual) {
+          containerBasicoMensual.innerHTML = ""; // Limpiar
+          window.paypal
+            .Buttons({
+              style: {
+                layout: "vertical",
+                color: "silver",
+                shape: "rect",
+                label: "subscribe",
+                height: 35,
+                tagline: false,
+              },
+              createSubscription: function (data, actions) {
+                return actions.subscription.create({
+                  plan_id: "P-40E25374WC496032ENB62ANQ", // TODO: Reemplazar con el ID real del plan básico mensual
+                });
+              },
+              onApprove: function (data, actions) {
+                const subscriptionId = data.subscriptionID;
+                alert("✅ ¡Plan Básico activado! Disfruta de películas sin límites.");
+                localStorage.setItem("paypalSubscriptionId", subscriptionId);
+                localStorage.setItem("planTipo", "basico");
+                localStorage.setItem("premium", "false");
+                localStorage.setItem("lastValidationDate", Date.now().toString());
+                location.reload();
+              },
+              onCancel: function () {
+                alert("Suscripción cancelada.");
+              },
+              onError: function (err) {
+                console.error("Error PayPal Básico:", err);
+                alert("Error en el proceso de pago: " + err);
+              },
+            })
+            .render("#paypal-basico-mensual");
+        }
+
+        // BOTÓN BÁSICO ANUAL
+        const containerBasicoAnual = document.getElementById("paypal-basico-anual");
+        if (containerBasicoAnual) {
+          containerBasicoAnual.innerHTML = ""; // Limpiar
+          window.paypal
+            .Buttons({
+              style: {
+                layout: "vertical",
+                color: "silver",
+                shape: "rect",
+                label: "subscribe",
+                height: 35,
+                tagline: false,
+              },
+              createSubscription: function (data, actions) {
+                return actions.subscription.create({
+                  plan_id: "P-4P300126BF854730HNE4GATY", // TODO: Reemplazar con el ID real del plan básico anual
+                });
+              },
+              onApprove: function (data, actions) {
+                const subscriptionId = data.subscriptionID;
+                alert("✅ ¡Plan Básico Anual activado! Disfruta de películas sin límites.");
+                localStorage.setItem("paypalSubscriptionId", subscriptionId);
+                localStorage.setItem("planTipo", "basico");
+                localStorage.setItem("premium", "false");
+                localStorage.setItem("lastValidationDate", Date.now().toString());
+                location.reload();
+
+              },
+              onCancel: function () {
+                alert("Suscripción cancelada.");
+              },
+              onError: function (err) {
+                console.error("Error PayPal Básico Anual:", err);
+                alert("Error en el proceso de pago: " + err);
+              },
+            })
+            .render("#paypal-basico-anual");
+        }
+
         console.log("✅ Botones de PayPal renderizados correctamente");
       } catch (error) {
         console.error("Error al renderizar botones de PayPal:", error);
         // Mostrar el error específico en pantalla
-        paypalContainer.innerHTML = `<p style='color:red; text-align:center;'>Error al iniciar PayPal</p>`;
+        containerInner.innerHTML = `<p style='color:red; text-align:center;'>Error al iniciar PayPal</p>`;
       }
     }, 500);
   } else {
+    // ✅ TOGGLE: Cerrar el contenedor al hacer clic de nuevo
     contenedorPremium.style.display = "none";
   }
 });
@@ -2278,6 +2743,12 @@ const ventanaPelis = document.getElementById("contenedor-peliculas");
 */
 
 botonProgramacion.addEventListener("click", function () {
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  if (planTipo === "gratis") {
+    alert("⏰ El Programador de Eventos está disponible para Básico y Premium. ¡Mejora tu plan ahora!");
+    return;
+  }
+
   const displayActual = getComputedStyle(ventanaProgramacion).display;
 
   if (displayActual === "none") {
@@ -2303,6 +2774,12 @@ botonProgramacion.addEventListener("click", function () {
 });
 
 botonPowerPoint.addEventListener("click", function () {
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  if (planTipo === "gratis") {
+    alert("📊 PowerPoint está disponible para Básico y Premium. ¡Mejora tu plan ahora!");
+    return;
+  }
+
   const displayActual = getComputedStyle(ventanaPowerPoint).display;
 
   if (displayActual === "none") {
@@ -2328,6 +2805,14 @@ botonPowerPoint.addEventListener("click", function () {
 });
 
 botonBiblia.addEventListener("click", function () {
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  
+  // Validar si es Premium
+  if (planTipo !== "premium") {
+    alert("📖 La Biblia está disponible solo para el plan Premium. ¡Mejora tu plan ahora!");
+    return;
+  }
+
   const displayActual = getComputedStyle(ventanaBiblia).display;
 
   if (displayActual === "none") {
@@ -2353,6 +2838,14 @@ botonBiblia.addEventListener("click", function () {
 });
 
 botonHimnosPro.addEventListener("click", function () {
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  
+  // Validar si es Premium
+  if (planTipo !== "premium") {
+    alert("🎵 Los Himnos Personalizados están disponibles solo para el plan Premium. ¡Mejora tu plan ahora!");
+    return;
+  }
+
   const displayActual = getComputedStyle(ventanaHimnosPro).display;
 
   if (displayActual === "none") {
@@ -2378,6 +2871,17 @@ botonHimnosPro.addEventListener("click", function () {
 });
 
 botonYoutube.addEventListener("click", function () {
+  // Validar si el usuario tiene acceso a YouTube
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  
+  if (planTipo === "gratis") {
+    // Usuario gratis no tiene acceso
+    alert(
+      "📺 YouTube está disponible para planes Básico y Premium.\n\nUpgradea tu plan para disfrutar del contenido sin límites."
+    );
+    return; // No abrir la ventana de YouTube
+  }
+
   const displayActual = getComputedStyle(ventanaYouTube).display;
 
   if (displayActual === "none") {
@@ -2403,6 +2907,17 @@ botonYoutube.addEventListener("click", function () {
 });
 
 botonPelis.addEventListener("click", function () {
+  // Validar si el usuario tiene acceso a películas
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
+  
+  if (planTipo === "gratis") {
+    // Usuario gratis no tiene acceso
+    alert(
+      "🎬 Las películas están disponibles para planes Básico y Premium.\n\nUpgradea tu plan para disfrutar del contenido sin límites."
+    );
+    return; // No abrir la ventana de películas
+  }
+
   const displayActual = getComputedStyle(ventanaPelis).display;
 
   if (displayActual === "none") {
@@ -2452,15 +2967,17 @@ function cerrarVentanaReproductor() {
   botonPRO = false;
   //toggleContainer.classList.remove("active");
 
-  botonHimnosPro.style.display = "none";
+  // No ocultar botonBiblia y botonHimnosPro - deben permanecer visibles pero deshabilitados
   ventanaHimnosPro.style.display = "none";
-  botonBiblia.style.display = "none";
   ventanaBiblia.style.display = "none";
   ventanaYouTube.style.display = "none";
   ventanaPowerPoint.style.display = "none";
   ventanaProgramacion.style.display = "none";
   ventanaPelis.style.display = "none";
   himnarioContainer.style.display = "grid";
+  
+  // Asegurar que los botones se actualicen correctamente
+  actualizarEstadoBotones();
 }
 
 // Escuchar el mensaje de cierre de la ventana secundaria
@@ -3470,7 +3987,7 @@ async function buscarVideosCore(
   searchButton.style.opacity = "0.5";
 
   const premiumCategoria = localStorage.getItem("premium") === "true";
-  let velocidadDeBusqueda = premiumCategoria ? 100 : 30000;
+  let velocidadDeBusqueda = premiumCategoria ? 100 : 5000;
 
   if (!input.includes("youtube.com") && !input.includes("youtu.be")) {
     let apiUrl = `https://api-youtube-gamma.vercel.app/api/search?q=${encodeURIComponent(
@@ -4936,7 +5453,7 @@ async function cargarMonitores() {
   // ✅ Cuando el usuario selecciona algo
   select.addEventListener("change", () => {
     const monitorId = parseInt(select.value, 10);
-    const esPremium = localStorage.getItem("premium") === "true";
+    const planTipo = localStorage.getItem("planTipo") || "gratis";
 
     if (isNaN(monitorId) || monitorId === -1) {
       // 👉 Modo normal
@@ -4948,11 +5465,11 @@ async function cargarMonitores() {
     // 👉 Abrir ventana secundaria en el monitor seleccionado
     window.electronAPI.abrirVentanaSecundaria(monitorId);
 
-    // Solo activar modo PRO si el usuario es premium
-    if (esPremium) {
+    // Solo activar modo PRO si el usuario tiene plan PREMIUM (no básico)
+    if (planTipo === "premium") {
       activarModoPro();
     } else {
-      // Usuario gratuito: mantener modo normal pero con monitor
+      // Usuario gratuito o básico: mantener modo normal pero con monitor
       activarModoNormal();
     }
   });
@@ -4970,10 +5487,10 @@ async function cargarMonitores() {
 function activarModoPro() {
   audioHimno.pause();
   botonPRO = true;
-  const esPremium = localStorage.getItem("premium") === "true";
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
 
-  // Solo mostrar botones PRO si el usuario es premium
-  if (esPremium) {
+  // Solo mostrar botones PRO si el usuario tiene plan PREMIUM (no básico)
+  if (planTipo === "premium") {
     botonBiblia.style.display = "flex";
     botonHimnosPro.style.display = "flex";
   } else {
@@ -7274,17 +7791,19 @@ function actualizarMarcaAguaPowerPoint() {
   const marcaAguaPPT = document.getElementById("marcadeagua-powerpoint");
   if (!marcaAguaPPT) return;
 
-  // Verificar estado premium desde localStorage
-  const esPremium = localStorage.getItem("premium") === "true";
+  // Verificar planTipo desde localStorage
+  const planTipo = localStorage.getItem("planTipo") || "gratis";
 
-  if (esPremium) {
-    // Usuario premium: ocultar marca de agua
-    marcaAguaPPT.classList.add("oculta");
-    marcaAguaPPT.classList.remove("visible");
-  } else {
+  // Solo mostrar marca de agua en plan GRATIS
+  // Plan Premium y Básico: SIN marca de agua
+  if (planTipo === "gratis") {
     // Usuario gratis: mostrar marca de agua
     marcaAguaPPT.classList.remove("oculta");
     marcaAguaPPT.classList.add("visible");
+  } else {
+    // Usuario premium o básico: ocultar marca de agua
+    marcaAguaPPT.classList.add("oculta");
+    marcaAguaPPT.classList.remove("visible");
   }
 }
 
@@ -8685,9 +9204,11 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   btnLocal.onmouseover = () => (btnLocal.style.background = "#34495e");
   btnLocal.onmouseout = () => (btnLocal.style.background = "#2c3e50");
   btnLocal.onclick = async () => {
-    if (!esPremium) {
+    // Validar que sea SOLO plan PREMIUM (no basico)
+    const planTipo = localStorage.getItem("planTipo") || "gratis";
+    if (planTipo !== "premium") {
       alert(
-        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!",
+        "Esta funcion solo esta disponible para usuarios PREMIUM. El plan Basico solo permite ver peliculas.",
       );
       return;
     }
@@ -8751,9 +9272,11 @@ function crearModalSelectorHimnos(onHimnoSeleccionado) {
   };
 
   btnYoutube.onclick = () => {
-    if (!esPremium) {
+    // Validar que sea SOLO plan PREMIUM (no básico)
+    const planTipo = localStorage.getItem("planTipo") || "gratis";
+    if (planTipo !== "premium") {
       alert(
-        "Esta función solo está disponible para usuarios PREMIUM. ¡Apóyanos para desbloquearla!",
+        "Esta función solo está disponible para usuarios PREMIUM. El plan Básico solo permite ver películas."
       );
       return;
     }

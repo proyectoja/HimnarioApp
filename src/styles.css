@@ -1021,7 +1021,7 @@ h5 {
 .contenedor-buscador .botonBiblia {
   margin-right: 0px;
   margin-left: 15px;
-  display: none;
+  display: flex;
 }
 .contenedor-buscador .botonYouTube {
   margin-right: 15px;
@@ -2007,7 +2007,7 @@ audio {
 .contenedor-buscador .botonHimnosPro {
   margin-right: 15px;
   margin-left: 0px;
-  display: none;
+  display: flex;
 }
 
 #previsualizacion img {

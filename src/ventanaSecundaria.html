@@ -446,14 +446,19 @@
     function actualizarMarcaAguaPowerPointVS(esPremium) {
       if (!marcaAguaPPT_VS) return;
 
-      if (esPremium) {
-        // Usuario premium: ocultar marca de agua
-        marcaAguaPPT_VS.classList.add("oculta");
-        marcaAguaPPT_VS.classList.remove("visible");
-      } else {
+      // Obtener planTipo desde localStorage para mayor precision
+      const planTipo = localStorage.getItem("planTipo") || "gratis";
+
+      // Solo mostrar marca de agua en plan GRATIS
+      // Plan Premium y Basico: SIN marca de agua
+      if (planTipo === "gratis") {
         // Usuario gratis: mostrar marca de agua
         marcaAguaPPT_VS.classList.remove("oculta");
         marcaAguaPPT_VS.classList.add("visible");
+      } else {
+        // Usuario premium o basico: ocultar marca de agua
+        marcaAguaPPT_VS.classList.add("oculta");
+        marcaAguaPPT_VS.classList.remove("visible");
       }
     }
 
