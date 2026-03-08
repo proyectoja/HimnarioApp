@@ -10,6 +10,7 @@
   <title>Ventana Secundaria Reproductor Himnario PRO | PROYECTO JA</title>
 
 
+
   <link rel="stylesheet" href="styles.css">
   <style>
     body {
@@ -247,6 +248,51 @@
     .marcadeagua-powerpoint-vs.visible {
       display: block;
     }
+
+    /* 🎮 Estilos para proyección del host del juego */
+    #host-proyeccion-container {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    #host-proyeccion-content {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Ajuste compacto para proyección del host */
+    #host-proyeccion-container .cbq-pregunta-display {
+      overflow: hidden !important;
+    }
+
+    #host-proyeccion-container .cbq-pregunta-contenido {
+      min-height: auto !important;
+    }
+
+    #host-proyeccion-container .cbq-pregunta-texto {
+      font-size: clamp(26px, 3.4vh, 48px) !important;
+      margin-bottom: 0.6rem !important;
+      line-height: 1.2 !important;
+    }
+
+    #host-proyeccion-container .cbq-pregunta-opcion {
+      padding: 0.75rem 1rem !important;
+      font-size: clamp(18px, 2vh, 31px) !important;
+      margin: 0.35rem 0 !important;
+    }
+
+    #host-proyeccion-container .cbq-pregunta-status {
+      font-size: clamp(16px, 1.6vh, 24px) !important;
+      margin-top: 0.5rem !important;
+      padding: 0.45rem !important;
+    }
+
+    #host-proyeccion-container .cbq-pregunta-imagen {
+      max-height: 34vh !important;
+    }
   </style>
 </head>
 
@@ -281,6 +327,13 @@
                     margin:auto;
                     overflow:hidden;'>
     <div id="player-youtube"></div>
+  </div>
+
+  <!-- 🎮 Contenedor de proyección del host del juego -->
+  <div id="host-proyeccion-container" style="display: none; position: absolute; inset: 0; z-index: 10; background: #08152f; color: white; overflow: hidden;">
+    <div id="host-proyeccion-content" style="width: 100%; height: 100%; box-sizing: border-box; overflow: hidden;">
+      <!-- El contenido del host se insertará aquí dinámicamente -->
+    </div>
   </div>
 
   <script>
@@ -925,6 +978,30 @@
       if (playerYouTube) { playerYouTube.destroy(); playerYouTube = null; }
       document.getElementById("player-container-youtube").style.display = "none";
       videoPlayerContainer.style.display = "none";
+    }
+
+    // 🎮 Escuchar actualizaciones del host del juego
+    if (window.electronAPI && window.electronAPI.onActualizacionHost) {
+      window.electronAPI.onActualizacionHost((data) => {
+        console.log('[HOST PROYECCION] Actualización recibida:', data);
+
+        const container = document.getElementById('host-proyeccion-container');
+        const content = document.getElementById('host-proyeccion-content');
+        if (!container || !content) return;
+
+        if (data && data.tipo === 'actualizacion-host') {
+          // Mostrar la proyección con la estructura completa del host
+          container.style.display = 'block';
+          content.innerHTML = data.html || '';
+          return;
+        }
+
+        if (data && data.tipo === 'limpiar-proyeccion') {
+          // Limpiar sin cerrar ventana secundaria
+          content.innerHTML = '';
+          container.style.display = 'block';
+        }
+      });
     }
   </script>
   <script type="text/javascript" charset="utf-8" src="clappr.js"></script>

@@ -1,4 +1,4 @@
-//Variables Globales
+﻿//Variables Globales
 let player = null;
 let playerYouTube = null;
 let playerWindow = null;
@@ -10,7 +10,6 @@ let waterMark = "";
 let modo = "live"; // o "sandbox"
 let modoAux = "test";
 //modo = "sandbox";
-
 function esMonitorActivo() {
   const selectMonitores = document.getElementById("selectMonitores");
   return (
@@ -149,6 +148,93 @@ async function fetchWithTimeout(resource, options = {}) {
     clearTimeout(id);
     throw error;
   }
+}
+
+function esperar(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function esErrorDeConexion(err) {
+  if (!err) return false;
+  if (err.name === "AbortError") return true;
+  if (err instanceof TypeError) return true;
+
+  const mensaje = (err.message || "").toLowerCase();
+  return (
+    mensaje.includes("failed to fetch") ||
+    mensaje.includes("network") ||
+    mensaje.includes("timed out") ||
+    mensaje.includes("timeout")
+  );
+}
+
+async function solicitarValidacionConReintentos(url, timeout = 7000) {
+  const totalIntentos = 3;
+  let ultimoError = null;
+
+  for (let intento = 1; intento <= totalIntentos; intento++) {
+    try {
+      const res = await fetchWithTimeout(url, { timeout });
+
+      if (!res.ok) {
+        return {
+          data: null,
+          respuestaServidor: true,
+          errorConexion: false,
+          error: new Error(`HTTP ${res.status}`),
+        };
+      }
+
+      const data = await res.json();
+      return {
+        data,
+        respuestaServidor: true,
+        errorConexion: false,
+        error: null,
+      };
+    } catch (err) {
+      ultimoError = err;
+      const conexion = esErrorDeConexion(err);
+
+      if (!conexion) {
+        return {
+          data: null,
+          respuestaServidor: true,
+          errorConexion: false,
+          error: err,
+        };
+      }
+
+      if (intento < totalIntentos) {
+        await esperar(800 * intento);
+      }
+    }
+  }
+
+  return {
+    data: null,
+    respuestaServidor: false,
+    errorConexion: true,
+    error: ultimoError,
+  };
+}
+
+function mostrarAlertaPeriodoGraciaControlada(diasRestantes) {
+  const ALERTA_GRACIA_KEY = "lastGraceAlertDate";
+  const INTERVALO_MINIMO_MS = 12 * 60 * 60 * 1000; // 12 horas
+
+  const ultimaAlerta = parseInt(localStorage.getItem(ALERTA_GRACIA_KEY) || "0");
+  const ahora = Date.now();
+
+  if (ahora - ultimaAlerta < INTERVALO_MINIMO_MS) {
+    console.log("[PREMIUM] Alerta de periodo de gracia omitida para evitar repetición.");
+    return;
+  }
+
+  localStorage.setItem(ALERTA_GRACIA_KEY, ahora.toString());
+  alert(
+    `[PREMIUM] Modo offline: Periodo de gracia activo (${diasRestantes} dias restantes).`,
+  );
 }
 
 async function inicializarAplicacion() {
@@ -479,65 +565,73 @@ async function validarPremium() {
   }
 
   const API_URL = "https://verificador-paypal.vercel.app/api/verificaPremium";
+  let huboRespuestaServidor = false;
+  let huboErrorDeConexion = false;
 
   // 1. Validar PROMO
   if (promoCode) {
-    try {
-      const res = await fetchWithTimeout(
-        `${API_URL}?promoCode=${promoCode}&machineId=${machineId}`,
-        { timeout: 4000 },
-      );
-      const data = await res.json();
+    const promoResult = await solicitarValidacionConReintentos(
+      `${API_URL}?promoCode=${promoCode}&machineId=${machineId}`,
+    );
+    huboRespuestaServidor =
+      huboRespuestaServidor || promoResult.respuestaServidor;
+    huboErrorDeConexion = huboErrorDeConexion || promoResult.errorConexion;
 
-      if (data.premium === true) {
-        localStorage.setItem("premium", "true");
-        localStorage.setItem("lastValidationDate", Date.now().toString());
-        aplicarEstadoPremium(true);
-        return;
-      }
-    } catch (err) {
-      console.error("❌ Error al verificar Promo:", err);
+    if (promoResult.error) {
+      console.error("❌ Error al verificar Promo:", promoResult.error);
+    }
+
+    const data = promoResult.data;
+    if (data && data.premium === true) {
+      localStorage.setItem("premium", "true");
+      localStorage.setItem("lastValidationDate", Date.now().toString());
+      aplicarEstadoPremium(true);
+      return;
     }
   }
 
   // 2. Validar PayPal
   if (paypalId) {
     // Intentar validar PayPal primero si existe
-    try {
-      const res = await fetchWithTimeout(
-        `${API_URL}?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal&machineId=${machineId}`,
-        { timeout: 4000 },
-      );
-      const data = await res.json();
+    const paypalResult = await solicitarValidacionConReintentos(
+      `${API_URL}?subscriptionId=${paypalId}&modo=${modo}&proveedor=paypal&machineId=${machineId}`,
+    );
+    huboRespuestaServidor =
+      huboRespuestaServidor || paypalResult.respuestaServidor;
+    huboErrorDeConexion = huboErrorDeConexion || paypalResult.errorConexion;
 
-      if (data.premium === true) {
-        const planTipoActual = localStorage.getItem("planTipo");
-        
-        // 🔥 Determinar tipo de plan basado en plan_id devuelto por el servidor
-        let planTipoNuevo = "premium"; // Por defecto premium
-        if (data.plan_id) {
-          // IDs de planes básicos
-          const planesBasicos = [
-            "P-40E25374WC496032ENB62ANQ", // Básico Mensual
-            "P-4P300126BF854730HNE4GATY"   // Básico Anual
-          ];
-          planTipoNuevo = planesBasicos.includes(data.plan_id) ? "basico" : "premium";
-        }
-        
-        // Si ya hay un planTipo almacenado localmente, respetarlo (no sobrescribir)
-        if (planTipoActual === "basico" || planTipoActual === "premium") {
-          planTipoNuevo = planTipoActual;
-        }
-        
-        const esPremium = planTipoNuevo === "premium";
-        localStorage.setItem("premium", esPremium ? "true" : "false");
-        localStorage.setItem("planTipo", planTipoNuevo);
-        localStorage.setItem("lastValidationDate", Date.now().toString());
-        aplicarEstadoPremium(esPremium);
-        return; // Salir si ya validó
+    if (paypalResult.error) {
+      console.error("❌ Error al verificar PayPal:", paypalResult.error);
+    }
+
+    const data = paypalResult.data;
+    if (data && data.premium === true) {
+      const planTipoActual = localStorage.getItem("planTipo");
+
+      // 🔥 Determinar tipo de plan basado en plan_id devuelto por el servidor
+      let planTipoNuevo = "premium"; // Por defecto premium
+      if (data.plan_id) {
+        // IDs de planes básicos
+        const planesBasicos = [
+          "P-40E25374WC496032ENB62ANQ", // Básico Mensual
+          "P-4P300126BF854730HNE4GATY", // Básico Anual
+        ];
+        planTipoNuevo = planesBasicos.includes(data.plan_id)
+          ? "basico"
+          : "premium";
       }
-    } catch (err) {
-      console.error("❌ Error al verificar PayPal:", err);
+
+      // Si ya hay un planTipo almacenado localmente, respetarlo (no sobrescribir)
+      if (planTipoActual === "basico" || planTipoActual === "premium") {
+        planTipoNuevo = planTipoActual;
+      }
+
+      const esPremium = planTipoNuevo === "premium";
+      localStorage.setItem("premium", esPremium ? "true" : "false");
+      localStorage.setItem("planTipo", planTipoNuevo);
+      localStorage.setItem("lastValidationDate", Date.now().toString());
+      aplicarEstadoPremium(esPremium);
+      return; // Salir si ya validó
     }
   }
 
@@ -545,54 +639,57 @@ async function validarPremium() {
 
   // 3. Validar Stripe
   if (stripeId) {
-    try {
-      const res = await fetchWithTimeout(
-        `${API_URL}?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe&machineId=${machineId}`,
-        { timeout: 4000 },
-      );
-      const data = await res.json();
+    const stripeResult = await solicitarValidacionConReintentos(
+      `${API_URL}?subscriptionId=${stripeId}&modo=${modoAux}&proveedor=stripe&machineId=${machineId}`,
+    );
+    huboRespuestaServidor =
+      huboRespuestaServidor || stripeResult.respuestaServidor;
+    huboErrorDeConexion = huboErrorDeConexion || stripeResult.errorConexion;
 
-      if (data.premium === true) {
-        const planTipoActual = localStorage.getItem("planTipo");
-        
-        // Si ya hay un planTipo establecido (básico o premium), respetarlo
-        if (planTipoActual === "basico") {
-          // Es básico, mantenerlo como básico (no cambiar a premium)
-          localStorage.setItem("premium", "false");
-          localStorage.setItem("lastValidationDate", Date.now().toString());
-          aplicarEstadoPremium(false);
-          return;
-        } else {
-          // Es premium o no hay planTipo, asignar como premium
-          localStorage.setItem("premium", "true");
-          localStorage.setItem("planTipo", "premium");
-          localStorage.setItem("lastValidationDate", Date.now().toString());
-          aplicarEstadoPremium(true);
-          return;
-        }
+    if (stripeResult.error) {
+      console.error("❌ Error al verificar Stripe:", stripeResult.error);
+    }
+
+    const data = stripeResult.data;
+    if (data && data.premium === true) {
+      const planTipoActual = localStorage.getItem("planTipo");
+
+      // Si ya hay un planTipo establecido (básico o premium), respetarlo
+      if (planTipoActual === "basico") {
+        // Es básico, mantenerlo como básico (no cambiar a premium)
+        localStorage.setItem("premium", "false");
+        localStorage.setItem("lastValidationDate", Date.now().toString());
+        aplicarEstadoPremium(false);
+        return;
+      } else {
+        // Es premium o no hay planTipo, asignar como premium
+        localStorage.setItem("premium", "true");
+        localStorage.setItem("planTipo", "premium");
+        localStorage.setItem("lastValidationDate", Date.now().toString());
+        aplicarEstadoPremium(true);
+        return;
       }
-    } catch (err) {
-      console.error("❌ Error al verificar Stripe:", err);
     }
   }
 
   // Si llegamos aqui, ninguna validacion funciono
-  // Verificar periodo de gracia (7 dias) SOLO si hace poco tuvimos conexion
+  // Verificar periodo de gracia SOLO cuando la validacion no pudo completarse por conexion
   const lastValidation = localStorage.getItem("lastValidationDate");
-  if (lastValidation && (promoCode || paypalId || stripeId)) {
+  if (
+    lastValidation &&
+    (promoCode || paypalId || stripeId) &&
+    !huboRespuestaServidor &&
+    huboErrorDeConexion
+  ) {
     const daysDiff =
       (Date.now() - parseInt(lastValidation)) / (1000 * 60 * 60 * 24);
-    
+
     // Solo aplicar periodo de gracia si tiene registro de ultima validacion reciente (menos de 7 dias)
     if (daysDiff < 7) {
       console.log(
-        `[PREMIUM] Periodo de gracia activo. Dias desde ultima validacion: ${Math.floor(daysDiff)}`
+        `[PREMIUM] Periodo de gracia activo. Dias desde ultima validacion: ${Math.floor(daysDiff)}`,
       );
-      alert(
-        `[PREMIUM] Modo offline: Periodo de gracia activo (${
-          7 - Math.floor(daysDiff)
-        } dias restantes).`
-      );
+      mostrarAlertaPeriodoGraciaControlada(7 - Math.floor(daysDiff));
       aplicarEstadoPremium(true);
       return;
     }
@@ -635,13 +732,15 @@ function actualizarEstadoBotones() {
   const botonYoutubeEl = document.getElementById("botonYoutube");
   const botonPowerPointEl = document.getElementById("botonPowerPoint");
   const botonProgramacionEl = document.getElementById("botonProgramacion");
+  const botonConexionBiblicaEl = document.getElementById("botonConexionBiblica");
 
   console.log("[BOTONES] Elementos encontrados:", {
     biblia: !!botonBibliaEl,
     himnosPro: !!botonHimnosProEl,
     youtube: !!botonYoutubeEl,
     powerPoint: !!botonPowerPointEl,
-    programacion: !!botonProgramacionEl
+    programacion: !!botonProgramacionEl,
+    conexionBiblica: !!botonConexionBiblicaEl
   });
 
   // 🔒 BIBLIA - Solo Premium
@@ -747,6 +846,25 @@ function actualizarEstadoBotones() {
       botonProgramacionEl.title = "Programación de Eventos";
     }
   }
+
+  // ❓ CONEXIÓN BÍBLICA - Disponible para todos los planes (con límites según plan)
+  if (botonConexionBiblicaEl) {
+    console.log("[BOTONES] Procesando Conexión Bíblica...");
+    botonConexionBiblicaEl.disabled = false;
+    botonConexionBiblicaEl.style.opacity = "1";
+    botonConexionBiblicaEl.style.pointerEvents = "auto";
+    botonConexionBiblicaEl.style.cursor = "pointer";
+    botonConexionBiblicaEl.style.filter = "none";
+    
+    // Actualizar título según plan
+    if (planTipo === "gratis") {
+      botonConexionBiblicaEl.title = "Conexión Bíblica (Gratis: máx 5 participantes)";
+    } else if (planTipo === "basico") {
+      botonConexionBiblicaEl.title = "Conexión Bíblica (Básico: máx 25 participantes)";
+    } else {
+      botonConexionBiblicaEl.title = "Conexión Bíblica (Premium: ilimitado)";
+    }
+  }
   
   console.log("[BOTONES] Actualización completada");
 }
@@ -813,10 +931,10 @@ function aplicarEstadoPremium(esPremiumAux) {
   // 📌 Actualizar texto del botón según el plan
   actualizarTextoPlanBoton();
   
-  // � Actualizar estado de botones según el plan
+  //  Actualizar estado de botones según el plan
   actualizarEstadoBotones();
   
-  // �📌 Actualizar información en el menú de usuario
+  // 📌 Actualizar información en el menú de usuario
   actualizarInformacionUsuarioMenu();
 }
 
@@ -1274,6 +1392,7 @@ botonPremium.addEventListener("click", function () {
     listaGratis.style.margin = "0 0 15px 0";
     listaGratis.style.fontSize = "12px";
     listaGratis.innerHTML = `
+      <li style="margin-bottom: 8px;">👥 <strong>Máximo 5 participantes</strong></li>
       <li style="margin-bottom: 8px;">❌ Con marca de agua</li>
       <li style="margin-bottom: 8px;">❌ Sin películas</li>
       <li style="margin-bottom: 8px;">❌ Sin control remoto</li>
@@ -1322,6 +1441,7 @@ botonPremium.addEventListener("click", function () {
     listaBasico.style.margin = "0 0 15px 0";
     listaBasico.style.fontSize = "13px";
     listaBasico.innerHTML = `
+      <li style="margin-bottom: 8px;">👥 <strong>Hasta 25 participantes</strong></li>
       <li style="margin-bottom: 8px;">✅ Sin marca de agua</li>
       <li style="margin-bottom: 8px;">✅ Películas incluidas</li>
       <li style="margin-bottom: 8px;">❌ Sin control remoto</li>
@@ -1411,6 +1531,9 @@ botonPremium.addEventListener("click", function () {
     listaPremium.style.fontSize = "13px";
 
     listaPremium.innerHTML = `
+      <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">👥</span> <strong>Participantes ilimitados</strong>
+      </li>
       <li style="margin-bottom: 9px; display: flex; align-items: center; gap: 8px;">
         <span style="font-size: 16px;">📱</span> <strong>Control Remoto</strong>
       </li>
@@ -2703,6 +2826,10 @@ const botonPowerPoint = document.getElementById("botonPowerPoint");
 const ventanaPowerPoint = document.getElementById("contenedor-power-point");
 const botonProgramacion = document.getElementById("botonProgramacion");
 const ventanaProgramacion = document.getElementById("contenedor-programacion");
+const botonConexionBiblica = document.getElementById("botonConexionBiblica");
+const ventanaConexionBiblica = document.getElementById(
+  "contenedor-preguntas-y-respuestas",
+);
 const botonManual = document.getElementById("botonManualUsuario");
 const ventanaManual = document.getElementById("contenedor-manual-usuario");
 const botonPelis = document.getElementById("botonPelis");
@@ -2759,6 +2886,7 @@ botonProgramacion.addEventListener("click", function () {
     ventanaPowerPoint.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     ventanaProgramacion.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
@@ -2769,8 +2897,2144 @@ botonProgramacion.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
+});
+
+botonConexionBiblica.addEventListener("click", function () {
+  // Conexión Bíblica disponible para todos los planes con límites de participantes
+  const displayActual = getComputedStyle(ventanaConexionBiblica).display;
+
+  if (displayActual === "none") {
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    himnarioContainer.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "flex";
+    document.getElementById("contenedor-contador").style.display = "none";
+
+    inicializarConexionBiblicaUI();
+    renderInicioConexionBiblica();
+  } else {
+    ventanaHimnosPro.style.display = "none";
+    ventanaBiblia.style.display = "none";
+    ventanaYouTube.style.display = "none";
+    ventanaPowerPoint.style.display = "none";
+    ventanaProgramacion.style.display = "none";
+    ventanaManual.style.display = "none";
+    ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
+    himnarioContainer.style.display = "grid";
+  }
+});
+
+// ========================================
+// ❓ CONEXIÓN BÍBLICA - FASE 1
+// ========================================
+const CBQ_STORAGE_KEY = "conexion-biblica-formularios-local";
+const cbqState = {
+  initialized: false,
+  preguntasDraft: [],
+  portadaBase64Draft: null,
+  formularios: [],
+  usarFs: false,
+  fs: null,
+  path: null,
+};
+
+function cbqCrearId() {
+  return `cbq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function cbqSlug(texto) {
+  return (texto || "formulario")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 60) || "formulario";
+}
+
+function cbqEscapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function cbqObtenerModulosNode() {
+  if (cbqState.fs && cbqState.path) return;
+  try {
+    if (typeof require === "function") {
+      cbqState.fs = require("fs");
+      cbqState.path = require("path");
+      cbqState.usarFs = true;
+      return;
+    }
+  } catch (err) {
+    console.warn("[CBQ] require no disponible en renderer:", err.message);
+  }
+
+  cbqState.usarFs = false;
+}
+
+function cbqDirectorioBase() {
+  if (!cbqState.usarFs || !cbqState.path) return null;
+
+  const userDataDir =
+    window.paths && window.paths.userData ? window.paths.userData : null;
+
+  if (!userDataDir) return null;
+  return cbqState.path.join(userDataDir, "conexion-biblica-formularios");
+}
+
+async function cbqAsegurarCarpetaBase() {
+  if (!cbqState.usarFs || !cbqState.fs) return false;
+  const baseDir = cbqDirectorioBase();
+  if (!baseDir) return false;
+
+  await cbqState.fs.promises.mkdir(baseDir, { recursive: true });
+  return true;
+}
+
+function cbqLeerLocalStorage() {
+  try {
+    const raw = localStorage.getItem(CBQ_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn("[CBQ] Error leyendo localStorage:", err);
+    return [];
+  }
+}
+
+function cbqGuardarLocalStorage(formularios) {
+  localStorage.setItem(CBQ_STORAGE_KEY, JSON.stringify(formularios || []));
+}
+
+async function cbqCargarFormularios() {
+  cbqObtenerModulosNode();
+
+  if (cbqState.usarFs) {
+    try {
+      const carpetaLista = await cbqAsegurarCarpetaBase();
+      if (!carpetaLista) {
+        cbqState.formularios = cbqLeerLocalStorage();
+        return cbqState.formularios;
+      }
+
+      const baseDir = cbqDirectorioBase();
+      const entries = await cbqState.fs.promises.readdir(baseDir, {
+        withFileTypes: true,
+      });
+
+      const formularios = [];
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+
+        const jsonPath = cbqState.path.join(baseDir, entry.name, "formulario.json");
+        try {
+          const raw = await cbqState.fs.promises.readFile(jsonPath, "utf8");
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.id && parsed.titulo) {
+            formularios.push(parsed);
+          }
+        } catch (err) {
+          console.warn(`[CBQ] No se pudo leer ${jsonPath}:`, err.message);
+        }
+      }
+
+      formularios.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      cbqState.formularios = formularios;
+      return formularios;
+    } catch (err) {
+      console.error("[CBQ] Error cargando formularios desde FS:", err);
+    }
+  }
+
+  cbqState.formularios = cbqLeerLocalStorage();
+  return cbqState.formularios;
+}
+
+async function cbqGuardarFormulario(formulario) {
+  cbqObtenerModulosNode();
+
+  if (cbqState.usarFs) {
+    const carpetaLista = await cbqAsegurarCarpetaBase();
+    if (carpetaLista) {
+      const baseDir = cbqDirectorioBase();
+      const folderName = `${Date.now()}-${cbqSlug(formulario.titulo)}`;
+      const formDir = cbqState.path.join(baseDir, folderName);
+      const jsonPath = cbqState.path.join(formDir, "formulario.json");
+
+      await cbqState.fs.promises.mkdir(formDir, { recursive: true });
+      await cbqState.fs.promises.writeFile(
+        jsonPath,
+        JSON.stringify(formulario, null, 2),
+        "utf8",
+      );
+      return;
+    }
+  }
+
+  const actual = cbqLeerLocalStorage();
+  actual.unshift(formulario);
+  cbqGuardarLocalStorage(actual);
+}
+
+async function cbqActualizarFormularioExistente(formularioActualizado) {
+  cbqObtenerModulosNode();
+
+  if (cbqState.usarFs) {
+    const baseDir = cbqDirectorioBase();
+    if (baseDir) {
+      const dirs = await cbqState.fs.promises.readdir(baseDir, { withFileTypes: true });
+      for (const dirent of dirs) {
+        if (!dirent.isDirectory()) continue;
+
+        const formDir = cbqState.path.join(baseDir, dirent.name);
+        const jsonPath = cbqState.path.join(formDir, "formulario.json");
+        try {
+          const data = await cbqState.fs.promises.readFile(jsonPath, "utf8");
+          const form = JSON.parse(data);
+          if (form.id === formularioActualizado.id) {
+            await cbqState.fs.promises.writeFile(
+              jsonPath,
+              JSON.stringify(formularioActualizado, null, 2),
+              "utf8",
+            );
+            return;
+          }
+        } catch (err) {
+          console.warn("[CBQ] Error actualizando formulario en FS:", err);
+        }
+      }
+    }
+  }
+
+  const actual = cbqLeerLocalStorage();
+  const idx = actual.findIndex((f) => f.id === formularioActualizado.id);
+  if (idx >= 0) {
+    actual[idx] = formularioActualizado;
+    cbqGuardarLocalStorage(actual);
+  }
+}
+
+async function cbqGuardarParticipantesEnFormulario(formularioId, participantesOrdenados) {
+  const formulario = cbqState.formularios.find((f) => f.id === formularioId);
+  if (!formulario) return;
+
+  formulario.participantesGuardados = (participantesOrdenados || []).map((p, index) => ({
+    nombre: p.nombre,
+    puntos: p.puntos,
+    posicion: index + 1,
+  }));
+  formulario.updatedAt = Date.now();
+
+  await cbqActualizarFormularioExistente(formulario);
+}
+
+async function cbqEliminarFormulario(formularioId) {
+  cbqObtenerModulosNode();
+  
+  if (cbqState.usarFs) {
+    const formulario = cbqState.formularios.find(f => f.id === formularioId);
+    if (!formulario) return;
+    
+    const baseDir = cbqDirectorioBase();
+    const dirs = await cbqState.fs.promises.readdir(baseDir, { withFileTypes: true });
+    
+    for (const dirent of dirs) {
+      if (!dirent.isDirectory()) continue;
+      const formDir = cbqState.path.join(baseDir, dirent.name);
+      const jsonPath = cbqState.path.join(formDir, "formulario.json");
+      
+      try {
+        const data = await cbqState.fs.promises.readFile(jsonPath, "utf8");
+        const form = JSON.parse(data);
+        if (form.id === formularioId) {
+          await cbqState.fs.promises.rm(formDir, { recursive: true, force: true });
+          return;
+        }
+      } catch (err) {
+        console.warn("[CBQ] Error leyendo/eliminando:", err);
+      }
+    }
+  }
+  
+  const actual = cbqLeerLocalStorage();
+  const filtrado = actual.filter(f => f.id !== formularioId);
+  cbqGuardarLocalStorage(filtrado);
+}
+
+function cbqGetDraftTitle() {
+  const input = document.getElementById("cbq-form-title");
+  return input ? input.value.trim() : "";
+}
+
+function cbqGetFormPortada() {
+  return cbqState.portadaBase64Draft || null;
+}
+
+function cbqCambiarTab(tabName) {
+  const tabs = document.querySelectorAll(".cbq-tab-btn");
+  tabs.forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.tab === tabName);
+  });
+
+  const panelInicio = document.getElementById("cbq-tab-inicio");
+  const panelCrear = document.getElementById("cbq-tab-crear");
+
+  if (panelInicio) panelInicio.style.display = tabName === "inicio" ? "block" : "none";
+  if (panelCrear) panelCrear.style.display = tabName === "crear" ? "block" : "none";
+}
+
+function cbqDataUrlDesdeRuta(rutaArchivo, base64) {
+  const extension = (rutaArchivo.split(".").pop() || "png").toLowerCase();
+  const mimeMap = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+  };
+  const mime = mimeMap[extension] || "image/png";
+  return `data:${mime};base64,${base64}`;
+}
+
+async function cbqSeleccionarImagenBase64() {
+  if (!window.electronAPI || !window.electronAPI.abrirDialogoMultimedia) {
+    alert("No se pudo abrir el selector de archivos.");
+    return null;
+  }
+
+  const rutaArchivo = await window.electronAPI.abrirDialogoMultimedia();
+  if (!rutaArchivo) return null;
+
+  if (!rutaArchivo.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+    alert("Selecciona una imagen válida (jpg, jpeg, png, gif o webp).");
+    return null;
+  }
+
+  try {
+    const base64 = await window.electronAPI.leerArchivo(rutaArchivo);
+    return cbqDataUrlDesdeRuta(rutaArchivo, base64);
+  } catch (err) {
+    console.error("[CBQ] Error leyendo imagen:", err);
+    alert("No se pudo leer la imagen seleccionada.");
+    return null;
+  }
+}
+
+function cbqCrearPregunta(tipo) {
+  if (tipo === "vf") {
+    return {
+      id: cbqCrearId(),
+      tipo: "vf",
+      texto: "",
+      imagenBase64: null,
+      opciones: [
+        { texto: "Verdadero", correcta: true },
+        { texto: "Falso", correcta: false },
+      ],
+    };
+  }
+
+  return {
+    id: cbqCrearId(),
+    tipo: "multiple",
+    texto: "",
+    imagenBase64: null,
+    opciones: [
+      { texto: "", correcta: true },
+      { texto: "", correcta: false },
+      { texto: "", correcta: false },
+      { texto: "", correcta: false },
+    ],
+  };
+}
+
+function cbqAgregarPregunta(tipo) {
+  cbqState.preguntasDraft.push(cbqCrearPregunta(tipo));
+  cbqRenderPreguntasDraft();
+}
+
+function cbqEliminarPregunta(preguntaId) {
+  cbqState.preguntasDraft = cbqState.preguntasDraft.filter(
+    (q) => q.id !== preguntaId,
+  );
+  cbqRenderPreguntasDraft();
+}
+
+function cbqRenderPreguntasDraft() {
+  const lista = document.getElementById("cbq-questions-list");
+  if (!lista) return;
+
+  if (cbqState.preguntasDraft.length === 0) {
+    lista.innerHTML =
+      '<div class="cbq-empty-questions">No hay preguntas agregadas aún.</div>';
+    return;
+  }
+
+  lista.innerHTML = cbqState.preguntasDraft
+    .map((pregunta, idx) => {
+      const badge =
+        pregunta.tipo === "multiple" ? "Opción Múltiple" : "Verdadero/Falso";
+
+      const opcionesHtml =
+        pregunta.tipo === "multiple"
+          ? pregunta.opciones
+              .map(
+                (op, opIdx) => `
+                  <div class="cbq-option-row">
+                    <input type="radio" name="cbq-correcta-${pregunta.id}" data-cbq-action="set-correct" data-question-id="${pregunta.id}" data-option-index="${opIdx}" ${op.correcta ? "checked" : ""} />
+                    <input type="text" class="cbq-option-input" data-cbq-action="set-option-text" data-question-id="${pregunta.id}" data-option-index="${opIdx}" value="${cbqEscapeHtml(op.texto)}" placeholder="Opción ${opIdx + 1}" />
+                    <button class="cbq-btn-danger-mini" data-cbq-action="remove-option" data-question-id="${pregunta.id}" data-option-index="${opIdx}" ${pregunta.opciones.length <= 2 ? "disabled" : ""}>X</button>
+                  </div>
+                `,
+              )
+              .join("")
+          : `
+              <div class="cbq-option-row cbq-vf-row">
+                <input type="radio" name="cbq-correcta-${pregunta.id}" data-cbq-action="set-correct" data-question-id="${pregunta.id}" data-option-index="0" ${pregunta.opciones[0]?.correcta ? "checked" : ""} />
+                <span class="cbq-vf-label">Verdadero</span>
+              </div>
+              <div class="cbq-option-row cbq-vf-row">
+                <input type="radio" name="cbq-correcta-${pregunta.id}" data-cbq-action="set-correct" data-question-id="${pregunta.id}" data-option-index="1" ${pregunta.opciones[1]?.correcta ? "checked" : ""} />
+                <span class="cbq-vf-label">Falso</span>
+              </div>
+            `;
+
+      return `
+        <div class="cbq-question-card" data-question-id="${pregunta.id}">
+          <div class="cbq-question-header">
+            <h4>Pregunta ${idx + 1}</h4>
+            <span class="cbq-badge">${badge}</span>
+          </div>
+          <input type="text" class="cbq-question-input" data-cbq-action="set-question-text" data-question-id="${pregunta.id}" value="${cbqEscapeHtml(pregunta.texto)}" placeholder="Escribe la pregunta aquí..." />
+          <div class="cbq-image-row">
+            <button class="cbq-btn-secondary" data-cbq-action="add-image" data-question-id="${pregunta.id}">Agregar Imagen</button>
+            ${pregunta.imagenBase64 ? `<img class="cbq-question-image" src="${pregunta.imagenBase64}" alt="Imagen pregunta" />` : '<span class="cbq-image-empty">Sin imagen</span>'}
+          </div>
+          <div class="cbq-options-block">${opcionesHtml}</div>
+          <div class="cbq-question-actions">
+            ${pregunta.tipo === "multiple" ? '<button class="cbq-btn-primary" data-cbq-action="add-option" data-question-id="' + pregunta.id + '">+ Agregar Opción</button>' : ""}
+            <button class="cbq-btn-danger" data-cbq-action="delete-question" data-question-id="${pregunta.id}">Eliminar Pregunta</button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function cbqAsegurarCorrecta(pregunta) {
+  if (!pregunta.opciones.some((op) => op.correcta) && pregunta.opciones.length > 0) {
+    pregunta.opciones[0].correcta = true;
+  }
+}
+
+function cbqBindEventosPreguntas() {
+  const lista = document.getElementById("cbq-questions-list");
+  if (!lista) return;
+
+  lista.addEventListener("input", (evt) => {
+    const target = evt.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const action = target.getAttribute("data-cbq-action");
+    const questionId = target.getAttribute("data-question-id");
+    if (!questionId) return;
+
+    const pregunta = cbqState.preguntasDraft.find((q) => q.id === questionId);
+    if (!pregunta) return;
+
+    if (action === "set-question-text") {
+      pregunta.texto = target.value;
+    }
+
+    if (action === "set-option-text") {
+      const optionIndex = Number(target.getAttribute("data-option-index"));
+      if (Number.isInteger(optionIndex) && pregunta.opciones[optionIndex]) {
+        pregunta.opciones[optionIndex].texto = target.value;
+      }
+    }
+  });
+
+  lista.addEventListener("change", (evt) => {
+    const target = evt.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const action = target.getAttribute("data-cbq-action");
+    if (action !== "set-correct") return;
+
+    const questionId = target.getAttribute("data-question-id");
+    const optionIndex = Number(target.getAttribute("data-option-index"));
+    const pregunta = cbqState.preguntasDraft.find((q) => q.id === questionId);
+    if (!pregunta || !pregunta.opciones[optionIndex]) return;
+
+    pregunta.opciones.forEach((op) => (op.correcta = false));
+    pregunta.opciones[optionIndex].correcta = true;
+  });
+
+  lista.addEventListener("click", async (evt) => {
+    const target = evt.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const action = target.getAttribute("data-cbq-action");
+    const questionId = target.getAttribute("data-question-id");
+    if (!action || !questionId) return;
+
+    const pregunta = cbqState.preguntasDraft.find((q) => q.id === questionId);
+    if (!pregunta) return;
+
+    if (action === "delete-question") {
+      cbqEliminarPregunta(questionId);
+      return;
+    }
+
+    if (action === "add-option" && pregunta.tipo === "multiple") {
+      pregunta.opciones.push({ texto: "", correcta: false });
+      cbqRenderPreguntasDraft();
+      return;
+    }
+
+    if (action === "remove-option" && pregunta.tipo === "multiple") {
+      const optionIndex = Number(target.getAttribute("data-option-index"));
+      if (!Number.isInteger(optionIndex) || pregunta.opciones.length <= 2) return;
+
+      const eraCorrecta = Boolean(pregunta.opciones[optionIndex]?.correcta);
+      pregunta.opciones.splice(optionIndex, 1);
+
+      if (eraCorrecta) cbqAsegurarCorrecta(pregunta);
+      cbqRenderPreguntasDraft();
+      return;
+    }
+
+    if (action === "add-image") {
+      const dataUrl = await cbqSeleccionarImagenBase64();
+      if (dataUrl) {
+        pregunta.imagenBase64 = dataUrl;
+        cbqRenderPreguntasDraft();
+      }
+    }
+  });
+}
+
+function cbqValidarDraft() {
+  const titulo = cbqGetDraftTitle();
+  if (!titulo) {
+    alert("Debes escribir un título para el formulario.");
+    return { ok: false };
+  }
+
+  if (cbqState.preguntasDraft.length === 0) {
+    alert("Agrega al menos una pregunta.");
+    return { ok: false };
+  }
+
+  for (let i = 0; i < cbqState.preguntasDraft.length; i++) {
+    const q = cbqState.preguntasDraft[i];
+    if (!q.texto || !q.texto.trim()) {
+      alert(`La pregunta ${i + 1} no tiene texto.`);
+      return { ok: false };
+    }
+
+    if (!q.opciones || q.opciones.length < 2) {
+      alert(`La pregunta ${i + 1} necesita al menos 2 opciones.`);
+      return { ok: false };
+    }
+
+    if (q.tipo === "multiple" && q.opciones.some((op) => !String(op.texto || "").trim())) {
+      alert(`Completa todas las opciones de la pregunta ${i + 1}.`);
+      return { ok: false };
+    }
+
+    if (!q.opciones.some((op) => op.correcta)) {
+      alert(`Selecciona una respuesta correcta en la pregunta ${i + 1}.`);
+      return { ok: false };
+    }
+  }
+
+  return { ok: true, titulo };
+}
+
+function cbqConstruirFormularioDesdeDraft(titulo) {
+  const now = Date.now();
+  const preguntas = cbqState.preguntasDraft.map((q) => ({
+    id: q.id,
+    tipo: q.tipo,
+    texto: (q.texto || "").trim(),
+    imagenBase64: q.imagenBase64 || null,
+    opciones: q.opciones.map((op) => ({
+      texto: (op.texto || "").trim(),
+      correcta: Boolean(op.correcta),
+    })),
+  }));
+
+  const portadaBase64 = cbqGetFormPortada() || preguntas.find((q) => q.imagenBase64)?.imagenBase64 || null;
+  
+  const tiempoLimite = cbqGetTiempoLimite();
+
+  return {
+    id: cbqCrearId(),
+    titulo,
+    portadaBase64,
+    tiempoLimitePorPregunta: tiempoLimite,
+    createdAt: now,
+    updatedAt: now,
+    preguntas,
+  };
+}
+
+function cbqGetTiempoLimite() {
+  const valor = document.getElementById("cbq-tiempo-valor");
+  const unidad = document.getElementById("cbq-tiempo-unidad");
+  
+  if (!valor || !unidad) return 30;
+  
+  const num = parseInt(valor.value) || 30;
+  const esSegundos = unidad.value === "segundos";
+  
+  return esSegundos ? num : num * 60;
+}
+
+function cbqResetDraft() {
+  cbqState.preguntasDraft = [];
+  cbqState.portadaBase64Draft = null;
+
+  const titleInput = document.getElementById("cbq-form-title");
+  if (titleInput) titleInput.value = "";
+  
+  const tiempoValor = document.getElementById("cbq-tiempo-valor");
+  const tiempoUnidad = document.getElementById("cbq-tiempo-unidad");
+  if (tiempoValor) tiempoValor.value = "30";
+  if (tiempoUnidad) tiempoUnidad.value = "segundos";
+
+  const portadaImg = document.getElementById("cbq-portada-preview");
+  const portadaEmpty = document.getElementById("cbq-portada-empty");
+  if (portadaImg) portadaImg.style.display = "none";
+  if (portadaImg) portadaImg.src = "";
+  if (portadaEmpty) portadaEmpty.style.display = "inline";
+
+  cbqRenderPreguntasDraft();
+}
+
+async function cbqCrearFormularioDesdeUI() {
+  const validacion = cbqValidarDraft();
+  if (!validacion.ok) return;
+
+  const formulario = cbqConstruirFormularioDesdeDraft(validacion.titulo);
+
+  try {
+    await cbqGuardarFormulario(formulario);
+    alert("Formulario creado correctamente.");
+    cbqResetDraft();
+    await cbqCargarFormularios();
+    renderInicioConexionBiblica();
+    cbqCambiarTab("inicio");
+  } catch (err) {
+    console.error("[CBQ] Error guardando formulario:", err);
+    alert("No se pudo guardar el formulario.");
+  }
+}
+
+function cbqResumenRespuestasCorrectas(pregunta) {
+  const correctas = (pregunta.opciones || [])
+    .filter((op) => op.correcta)
+    .map((op) => op.texto)
+    .filter(Boolean);
+  return correctas.length ? correctas.join(", ") : "Sin respuesta correcta";
+}
+
+// === JUEGO EN VIVO ===
+let cbqJuegoActivo = null; // { pin, intervaloActualizacion }
+
+function cbqClaseMovimientoRankingHost(participanteId, posicionActual) {
+  if (!cbqJuegoActivo) return "";
+  if (!(cbqJuegoActivo.posicionesPreviasHost instanceof Map)) {
+    cbqJuegoActivo.posicionesPreviasHost = new Map();
+  }
+
+  const prev = cbqJuegoActivo.posicionesPreviasHost.get(participanteId);
+  cbqJuegoActivo.posicionesPreviasHost.set(participanteId, posicionActual);
+
+  if (!Number.isInteger(prev)) return "";
+  if (posicionActual < prev) return "cbq-rank-up";
+  if (posicionActual > prev) return "cbq-rank-down";
+  return "";
+}
+
+async function cbqIniciarJuegoEnVivo(formularioId) {
+  const formulario = cbqState.formularios.find(f => f.id === formularioId);
+  if (!formulario) {
+    alert("Formulario no encontrado");
+    return false;
+  }
+  
+  // Si ya hay un juego activo, verificar si es el mismo formulario
+  if (cbqJuegoActivo) {
+    if (cbqJuegoActivo.formularioId === formularioId) {
+      // Es el mismo formulario, solo reabrir el modal
+      cbqReabrirInterfazHost();
+      return true;
+    } else {
+      // Es otro formulario, preguntar si desea detener el anterior
+      const confirmar = confirm(
+        "Ya tienes un juego en curso. ¿Deseas detener el juego anterior e iniciar este formulario?"
+      );
+      if (!confirmar) return false;
+      
+      // Detener el juego anterior
+      await cbqDetenerJuegoEnVivo();
+    }
+  }
+  
+  try {
+    // Iniciar servidor si no está activo
+    const infoServidor = await window.electronAPI.juegoIniciarServidor();
+    if (!infoServidor.ok) {
+      alert("Error iniciando servidor: " + infoServidor.error);
+      return false;
+    }
+    
+    // Obtener plan actual del usuario
+    const planTipo = localStorage.getItem("planTipo") || "gratis";
+    
+    // Crear sala de juego con información del plan
+    const formularioConPlan = { ...formulario, planTipo };
+    const salaResult = await window.electronAPI.juegoCrearSala(formularioConPlan);
+    if (!salaResult.ok) {
+      alert("Error creando sala: " + salaResult.error);
+      return false;
+    }
+    
+    // Generar QR code
+    const urlParticipante = `http://${infoServidor.ip || "localhost"}:${infoServidor.puerto || 4000}/juego?pin=${encodeURIComponent(salaResult.pin)}`;
+    const qrDataURL = await window.electronAPI.generateQRCodeDataURL(urlParticipante);
+    
+    cbqJuegoActivo = {
+      pin: salaResult.pin,
+      formularioId,
+      intervaloActualizacion: null,
+      url: urlParticipante,
+      qrDataURL: qrDataURL,
+      formulario: formulario,
+      infoServidor: infoServidor,
+      juegoIniciado: false,
+      participantesGuardados: false,
+      posicionesPreviasHost: new Map(),
+    };
+    
+    // Mostrar interfaz host
+    cbqMostrarInterfazHost(salaResult.pin, urlParticipante, qrDataURL, formulario, infoServidor);
+    return true;
+    
+  } catch (err) {
+    console.error("[CBQ JUEGO] Error:", err);
+    alert("Error al iniciar juego: " + err.message);
+    return false;
+  }
+}
+
+async function cbqCopiarTexto(texto) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch (error) {
+    console.warn("[CBQ] Clipboard API no disponible, usando fallback:", error);
+  }
+
+  try {
+    const temp = document.createElement("textarea");
+    temp.value = texto;
+    temp.setAttribute("readonly", "");
+    temp.style.position = "fixed";
+    temp.style.opacity = "0";
+    document.body.appendChild(temp);
+    temp.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(temp);
+    return ok;
+  } catch (error) {
+    console.error("[CBQ] Error copiando texto:", error);
+    return false;
+  }
+}
+
+function cbqMostrarInterfazHost(pin, url, qrDataURL, formulario, infoServidor) {
+  const urlConIP = url;
+
+  cbqAbrirModal(`
+    <div class="cbq-host-interface">
+      <div class="cbq-host-header">
+        <div class="cbq-host-header-main">
+          <h2>${cbqEscapeHtml(formulario.titulo)} - ESPERANDO</h2>
+          <div class="cbq-host-top-meta">
+            <div class="cbq-status-badge">
+              <i class="bx bxs-circle" style="font-size: 8px"></i> Conectado
+            </div>
+            <div class="cbq-users-badge" id="cbq-users-badge">
+              <i class='bx bx-show'></i>
+              <span id="cbq-usersCount">0</span> conectado
+            </div>
+            <button class="cbq-btn-success" id="cbq-btn-host-iniciar" disabled>
+              Iniciar preguntas
+            </button>
+          </div>
+        </div>
+
+        <div class="cbq-host-header-actions">
+          <button class="cbq-btn-secondary" id="cbq-btn-imprimir-participantes-host" title="Ver lista de participantes" style="display: none;">
+            <i class='bx bx-eye'></i> Ver participantes
+          </button>
+          <button class="cbq-btn-secondary" id="cbq-btn-proyectar-host" style="display: none;" title="Proyectar interfaz en monitor externo">
+            <i class='bx bx-desktop'></i> Proyectar
+          </button>
+          <button class="cbq-btn-secondary" id="cbq-btn-cerrar-host">Cerrar</button>
+        </div>
+      </div>
+      
+      <div class="cbq-host-body">
+        <div class="cbq-host-left">
+          <div class="cbq-qr-container">
+            <img src="${qrDataURL}" alt="Código QR de acceso" class="cbq-qr-image" />
+            <div class="cbq-url-display">${urlConIP}</div>
+            <div class="cbq-access-actions">
+              <button class="cbq-btn-secondary" id="cbq-btn-copy-link">Copiar enlace completo</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="cbq-host-center">
+          <div id="cbq-pregunta-display" class="cbq-pregunta-display">
+            <div class="cbq-pregunta-placeholder">
+              <i class='bx bx-help-circle'></i>
+              <p>La pregunta aparecerá aquí cuando inicie el juego</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="cbq-host-right">
+          <h3>Participantes conectados:</h3>
+          <div id="cbq-participantes-lista" class="cbq-participantes-lista">
+            <div class="cbq-empty-participantes">Nadie conectado aún...</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="cbq-host-footer">
+        <p><strong>Preguntas:</strong> ${formulario.preguntas.length}</p>
+        <p><strong>Tiempo por pregunta:</strong> ${formulario.tiempoLimitePorPregunta || 30} seg</p>
+        <p><strong>IP Local:</strong> ${urlConIP}</p>
+      </div>
+    </div>
+  `);
+
+  const modalContent = document.querySelector("#cbq-modal .cbq-modal-content");
+  if (modalContent) {
+    modalContent.classList.add("cbq-modal-content-host");
+  }
+  
+  // Vincular eventos
+  const btnCerrar = document.getElementById("cbq-btn-cerrar-host");
+  if (btnCerrar) {
+    btnCerrar.addEventListener("click", () => {
+      cbqCerrarInterfazHost();
+    });
+  }
+  
+  const btnDetenerPermanente = document.createElement("button");
+  btnDetenerPermanente.className = "cbq-btn-danger";
+  btnDetenerPermanente.textContent = "Detener juego";
+  btnDetenerPermanente.style.marginLeft = "10px";
+  btnDetenerPermanente.addEventListener("click", async () => {
+    if (confirm("¿Seguro que quieres detener el juego completamente?")) {
+      await cbqDetenerJuegoEnVivo();
+    }
+  });
+  if (btnCerrar) {
+    btnCerrar.parentNode.insertBefore(btnDetenerPermanente, btnCerrar);
+  }
+  
+  const btnIniciar = document.getElementById("cbq-btn-host-iniciar");
+  if (btnIniciar) {
+    if (cbqJuegoActivo && cbqJuegoActivo.juegoIniciado) {
+      btnIniciar.disabled = true;
+      btnIniciar.textContent = "Juego en curso...";
+    }
+
+    btnIniciar.addEventListener("click", async () => {
+      if (btnIniciar.disabled) return;
+      await cbqIniciarPreguntasJuego(pin);
+    });
+  }
+
+  const btnCopyLink = document.getElementById("cbq-btn-copy-link");
+  if (btnCopyLink) {
+    btnCopyLink.addEventListener("click", async () => {
+      const copiado = await cbqCopiarTexto(urlConIP);
+      if (copiado) {
+        btnCopyLink.textContent = "✓ Enlace copiado";
+        setTimeout(() => {
+          btnCopyLink.textContent = "Copiar enlace completo";
+        }, 1800);
+      } else {
+        alert("No se pudo copiar el enlace.");
+      }
+    });
+  }
+
+  // Botón de imprimir participantes (en la interfaz del host durante el juego en vivo)
+  const btnVerParticipantes = document.getElementById("cbq-btn-imprimir-participantes-host");
+  if (btnVerParticipantes) {
+    btnVerParticipantes.addEventListener("click", async () => {
+      try {
+        const result = await window.electronAPI.juegoObtenerSala(pin);
+        if (!result.ok || !result.sala) {
+          alert("No se pudo obtener la lista de participantes");
+          return;
+        }
+        
+        const sala = result.sala;
+        const participantes = sala.participantes || [];
+        
+        if (participantes.length === 0) {
+          alert("No hay participantes conectados");
+          return;
+        }
+        
+        // Mostrar modal con participantes y opción de imprimir
+        const participantesOrdenados = [...participantes].sort((a, b) => b.puntos - a.puntos);
+        const htmlItems = participantesOrdenados
+          .map((p, idx) => `
+            <div class="cbq-participante-item">
+              <span class="cbq-participante-pos">#${idx + 1}</span>
+              <span class="cbq-participante-nombre">${cbqEscapeHtml(p.nombre)}</span>
+              <span class="cbq-participante-puntos">${p.puntos} pts</span>
+            </div>
+          `)
+          .join("");
+        
+        cbqAbrirModal(`
+          <div class="cbq-preview-wrap">
+            <h3>Participantes en vivo: ${cbqEscapeHtml(formulario.titulo)}</h3>
+            <div class="cbq-participantes-lista" style="max-height: 50vh; min-height: 200px;">${htmlItems}</div>
+            <div class="cbq-mini-actions">
+              <button class="cbq-btn-primary" id="cbq-btn-imprimir-vivo"><i class='bx bx-printer'></i> Imprimir</button>
+              <button class="cbq-btn-secondary" id="cbq-btn-close-modal">Cerrar</button>
+            </div>
+          </div>
+        `);
+        
+        const btnImprimir = document.getElementById("cbq-btn-imprimir-vivo");
+        if (btnImprimir) {
+          btnImprimir.addEventListener('click', async () => {
+            try {
+              btnImprimir.disabled = true;
+              btnImprimir.classList.add('cbq-btn-loading');
+              btnImprimir.innerHTML = `<span class="cbq-spinner"></span> Generando...`;
+              await cbqImprimirParticipantes(participantesOrdenados, formulario.titulo);
+            } finally {
+              btnImprimir.disabled = false;
+              btnImprimir.classList.remove('cbq-btn-loading');
+              btnImprimir.innerHTML = `<i class='bx bx-printer'></i> Imprimir`;
+            }
+          });
+        }
+        
+        const btnClose = document.getElementById("cbq-btn-close-modal");
+        if (btnClose) {
+          btnClose.addEventListener("click", cbqCerrarModal);
+        }
+      } catch (err) {
+        console.error('[CBQ] Error mostrando participantes:', err);
+        alert('Error: ' + err.message);
+      }
+    });
+  }
+
+  // Botón de proyectar a monitor externo
+  const btnProyectar = document.getElementById("cbq-btn-proyectar-host");
+  if (btnProyectar) {
+    btnProyectar.addEventListener("click", async () => {
+      await cbqProyectarHostAMonitor();
+    });
+  }
+
+  // Detectar monitores externos y mostrar botón de proyectar
+  cbqDetectarMonitoresExternos();
+  
+  // Conectar socket del host para escuchar eventos en tiempo real
+  cbqConectarSocketHost(pin, infoServidor);
+  
+  // Actualizar lista de participantes cada 2 segundos
+  cbqJuegoActivo.intervaloActualizacion = setInterval(async () => {
+    await cbqActualizarListaParticipantes(pin);
+  }, 2000);
+  
+  // Primera actualización inmediata
+  cbqActualizarListaParticipantes(pin);
+}
+
+async function cbqActualizarListaParticipantes(pin) {
+  try {
+    const result = await window.electronAPI.juegoObtenerSala(pin);
+    if (!result.ok) return;
+    
+    const sala = result.sala;
+    const lista = document.getElementById("cbq-participantes-lista");
+    const btnIniciar = document.getElementById("cbq-btn-host-iniciar");
+    const usersCount = document.getElementById("cbq-usersCount");
+    
+    if (!lista) return;
+    
+    // Actualizar badge de usuarios conectados
+    if (usersCount) {
+      usersCount.textContent = sala.participantes.length;
+    }
+    
+    const participantesOrdenados = [...sala.participantes].sort((a, b) => b.puntos - a.puntos);
+
+    if (participantesOrdenados.length === 0) {
+      lista.innerHTML = '<div class="cbq-empty-participantes">Nadie conectado aún...</div>';
+      if (btnIniciar) {
+        btnIniciar.disabled = true;
+        btnIniciar.textContent = "Iniciar preguntas";
+      }
+    } else {
+      lista.innerHTML = participantesOrdenados
+        .map((p, idx) => {
+          const pos = idx + 1;
+          const claseMovimiento = cbqClaseMovimientoRankingHost(p.id, pos);
+          return `
+          <div class="cbq-participante-item ${claseMovimiento}">
+            <span class="cbq-participante-pos">#${idx + 1}</span>
+            ${cbqRenderAvatarParticipante(p)}
+            <span class="cbq-participante-nombre">${cbqEscapeHtml(p.nombre)}</span>
+            <span class="cbq-participante-puntos">${p.puntos} pts</span>
+          </div>
+        `;
+        })
+        .join("");
+
+      if (btnIniciar) {
+        if (sala.estado === "esperando") {
+          btnIniciar.disabled = false;
+          btnIniciar.textContent = "Iniciar preguntas";
+          if (cbqJuegoActivo) cbqJuegoActivo.juegoIniciado = false;
+        } else if (sala.estado === "jugando" || sala.estado === "preparacion") {
+          btnIniciar.disabled = true;
+          btnIniciar.textContent = "Juego en curso...";
+          if (cbqJuegoActivo) cbqJuegoActivo.juegoIniciado = true;
+        } else if (sala.estado === "terminado") {
+          btnIniciar.disabled = false;
+          btnIniciar.textContent = "Iniciar preguntas";
+          if (cbqJuegoActivo) cbqJuegoActivo.juegoIniciado = false;
+        }
+      }
+    }
+    
+    // Actualizar estado del título cuando el juego inicia
+    if (sala.estado === "jugando") {
+      const tituloHost = document.querySelector(".cbq-host-header h2");
+      if (tituloHost) {
+        tituloHost.textContent = `${formatearTituloHostActual()} - JUGANDO`;
+      }
+    } else if (sala.estado === "preparacion") {
+      const tituloHost = document.querySelector(".cbq-host-header h2");
+      if (tituloHost) {
+        tituloHost.textContent = `${formatearTituloHostActual()} - PREPARANDO`;
+      }
+    } else if (sala.estado === "terminado") {
+      const tituloHost = document.querySelector(".cbq-host-header h2");
+      if (tituloHost) {
+        tituloHost.textContent = `${formatearTituloHostActual()} - TERMINADO`;
+      }
+
+      if (cbqJuegoActivo && !cbqJuegoActivo.participantesGuardados) {
+        await cbqGuardarParticipantesEnFormulario(cbqJuegoActivo.formularioId, participantesOrdenados);
+        cbqJuegoActivo.participantesGuardados = true;
+      }
+    }
+    
+  } catch (err) {
+    console.error("[CBQ] Error actualizando participantes:", err);
+  }
+}
+
+function formatearTituloHostActual() {
+  const tituloHost = document.querySelector(".cbq-host-header h2");
+  if (!tituloHost) return "Conexión Bíblica";
+  const texto = String(tituloHost.textContent || "");
+  return texto.replace(/\s-\s(ESPERANDO|JUGANDO|PREPARANDO|TERMINADO)$/i, "");
+}
+
+function cbqRenderAvatarParticipante(participante) {
+  if (participante.avatarBase64) {
+    return `<img class="cbq-participante-avatar" src="${participante.avatarBase64}" alt="Avatar de ${cbqEscapeHtml(participante.nombre)}" />`;
+  }
+
+  if (participante.avatarUrl) {
+    const inicial = cbqEscapeHtml((participante.nombre || "?").charAt(0).toUpperCase() || "?");
+    return `
+      <div class="cbq-participante-avatar-wrap">
+        <img class="cbq-participante-avatar" src="${participante.avatarUrl}" alt="Avatar de ${cbqEscapeHtml(participante.nombre)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+        <span class="cbq-participante-avatar-inicial" style="display:none;">${inicial}</span>
+      </div>
+    `;
+  }
+
+  const inicial = cbqEscapeHtml((participante.nombre || "?").charAt(0).toUpperCase() || "?");
+  return `<span class="cbq-participante-avatar-inicial">${inicial}</span>`;
+}
+
+async function cbqIniciarPreguntasJuego(pin) {
+  if (cbqJuegoActivo && cbqJuegoActivo.juegoIniciado) return;
+
+  const btnIniciar = document.getElementById("cbq-btn-host-iniciar");
+
+  try {
+    if (btnIniciar) {
+      btnIniciar.disabled = true;
+      btnIniciar.textContent = "Juego en curso...";
+    }
+
+    const result = await window.electronAPI.juegoIniciar(pin);
+    if (!result.ok) {
+      alert("Error iniciando juego: " + result.error);
+      if (btnIniciar) {
+        btnIniciar.disabled = false;
+        btnIniciar.textContent = "Iniciar preguntas";
+      }
+      return;
+    }
+
+    if (cbqJuegoActivo) {
+      cbqJuegoActivo.juegoIniciado = true;
+      cbqJuegoActivo.participantesGuardados = false;
+    }
+    
+  } catch (err) {
+    console.error("[CBQ] Error iniciando preguntas:", err);
+    alert("Error iniciando preguntas: " + err.message);
+    if (btnIniciar) {
+      btnIniciar.disabled = false;
+      btnIniciar.textContent = "Iniciar preguntas";
+    }
+  }
+}
+
+function cbqCerrarInterfazHost() {
+  // Desconectar socket del host
+  if (cbqHostSocket) {
+    cbqHostSocket.disconnect();
+    cbqHostSocket = null;
+  }
+
+  // Limpiar contador
+  if (cbqContadorInterval) {
+    clearInterval(cbqContadorInterval);
+    cbqContadorInterval = null;
+  }
+
+  cbqPinHostActivo = null;
+
+  // Mostrar QR de nuevo
+  const hostLeft = document.querySelector('.cbq-host-left');
+  const hostInterface = document.querySelector('.cbq-host-interface');
+  if (hostLeft) hostLeft.style.display = 'flex';
+  if (hostInterface) hostInterface.classList.remove('cbq-juego-activo');
+
+  // Resetear HTML de proyección para permitir resincronización
+  cbqUltimoHtmlEnviado = null;
+
+  // Solo cierra el modal, no detiene el juego
+  cbqCerrarModal();
+}
+
+let cbqHostSocket = null;
+let cbqContadorInterval = null;
+let cbqContadorPausado = false;
+let cbqSegundosRestantes = 0;
+let cbqPinHostActivo = null;
+let cbqResizeAjustePreguntaRegistrado = false;
+
+function cbqConectarSocketHost(pin, infoServidor) {
+  // Cargar Socket.IO dinámicamente si no está disponible
+  if (typeof io === 'undefined') {
+    const script = document.createElement('script');
+    script.src = `http://${infoServidor.ip}:${infoServidor.puerto}/socket.io/socket.io.js`;
+    script.onload = () => cbqInicializarSocketHost(pin, infoServidor);
+    script.onerror = () => console.error('[CBQ Host] Error cargando Socket.IO');
+    document.head.appendChild(script);
+  } else {
+    cbqInicializarSocketHost(pin, infoServidor);
+  }
+}
+
+function cbqInicializarSocketHost(pin, infoServidor) {
+  if (cbqHostSocket) {
+    cbqHostSocket.disconnect();
+  }
+
+  cbqPinHostActivo = pin;
+
+  const socketUrl = `http://${infoServidor.ip}:${infoServidor.puerto}`;
+  cbqHostSocket = io(socketUrl, {
+    forceNew: true,
+    reconnection: false,
+    query: { pin, tipo: "host" }
+  });
+
+  cbqHostSocket.on('connect', () => {
+    console.log('[CBQ Host] Conectado al servidor Socket.IO');
+  });
+
+  cbqHostSocket.on("pregunta-iniciada", (data) => {
+    cbqMostrarPreguntaEnHost(data);
+  });
+
+  cbqHostSocket.on("respuesta-recibida", (data) => {
+    cbqActualizarContadorRespuestas(data);
+  });
+
+  cbqHostSocket.on("todos-respondieron", (data) => {
+    cbqMarcarRespuestaCorrecta(data.respuestaCorrecta);
+  });
+
+  cbqHostSocket.on("mostrar-ranking-pregunta", (data) => {
+    cbqMostrarContadorSiguientePregunta(data.segundosEspera || 10);
+  });
+
+  cbqHostSocket.on("juego-terminado", (data = {}) => {
+    cbqMostrarPodioFinalHost(data.ranking || []);
+  });
+
+  cbqHostSocket.on("estado-contador-host", (data = {}) => {
+    cbqContadorPausado = Boolean(data.pausado);
+    if (typeof data.segundosRestantes === "number") {
+      cbqSegundosRestantes = Math.max(0, Math.floor(data.segundosRestantes));
+      const numeroDiv = document.getElementById("cbq-contador-numero");
+      if (numeroDiv) numeroDiv.textContent = cbqSegundosRestantes + "s";
+    }
+
+    const btnPausar = document.getElementById("cbq-btn-pausar");
+    if (btnPausar) {
+      if (cbqContadorPausado) {
+        btnPausar.innerHTML = "<i class='bx bx-play'></i> Reanudar contador";
+        btnPausar.classList.add("pausado");
+      } else {
+        btnPausar.innerHTML = "<i class='bx bx-pause'></i> Pausar contador";
+        btnPausar.classList.remove("pausado");
+      }
+    }
+
+    requestAnimationFrame(() => cbqAjustarPreguntaHostAlto());
+  });
+
+  cbqHostSocket.on("estado-juego-cambio", (data) => {
+    cbqControlarVisibilidadQR(data.estado);
+  });
+
+  cbqHostSocket.on("disconnect", () => {
+    console.log("[CBQ Host] Desconectado del servidor Socket.IO");
+  });
+}
+
+function cbqAjustarPreguntaHostAlto() {
+  const display = document.getElementById('cbq-pregunta-display');
+  const contenido = display ? display.querySelector('.cbq-pregunta-contenido') : null;
+  if (!display || !contenido) return;
+
+  display.style.overflow = 'hidden';
+  contenido.style.transform = 'none';
+  contenido.style.transformOrigin = 'top center';
+  contenido.style.width = '100%';
+
+  const estilosDisplay = window.getComputedStyle(display);
+  const paddingTop = parseFloat(estilosDisplay.paddingTop) || 0;
+  const paddingBottom = parseFloat(estilosDisplay.paddingBottom) || 0;
+  const altoDisponible = Math.max(0, display.clientHeight - paddingTop - paddingBottom - 6);
+  const anchoDisponible = Math.max(0, display.clientWidth - 6);
+  if (!altoDisponible || !anchoDisponible) return;
+
+  const altoContenido = contenido.scrollHeight;
+  const anchoContenido = contenido.scrollWidth;
+
+  let escala = Math.min(1, altoDisponible / altoContenido, anchoDisponible / anchoContenido);
+  if (!Number.isFinite(escala)) escala = 1;
+
+  if (escala < 0.98) {
+    escala = Math.max(0.62, escala);
+    contenido.style.transform = `scale(${escala})`;
+    contenido.style.width = `${100 / escala}%`;
+  }
+}
+
+function cbqMostrarPreguntaEnHost(data) {
+  const display = document.getElementById('cbq-pregunta-display');
+  if (!display) return;
+
+  // Ocultar QR para dar campo a la pregunta
+  const hostLeft = document.querySelector('.cbq-host-left');
+  const hostInterface = document.querySelector('.cbq-host-interface');
+  if (hostLeft) hostLeft.style.display = 'none';
+  if (hostInterface) hostInterface.classList.add('cbq-juego-activo');
+
+  const pregunta = data.pregunta;
+  const letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  let opcionesHTML = pregunta.opciones.map((opcion, idx) => {
+    const etiqueta = letras[idx] || String(idx + 1);
+    return `
+      <div class="cbq-pregunta-opcion" data-indice="${idx}">
+        <div class="cbq-pregunta-opcion-letra">${etiqueta}</div>
+        <div>${cbqEscapeHtml(opcion.texto)}</div>
+      </div>
+    `;
+  }).join('');
+
+  let imagenHTML = '';
+  let claseLayout = '';
+  if (pregunta.imagenBase64) {
+    imagenHTML = `<img src="${pregunta.imagenBase64}" alt="Imagen de la pregunta" class="cbq-pregunta-imagen" />`;
+    claseLayout = 'cbq-pregunta-con-imagen';
+  }
+
+  display.innerHTML = `
+    <div class="cbq-pregunta-contenido ${claseLayout}">
+      <div class="cbq-pregunta-texto">${cbqEscapeHtml(pregunta.texto)}</div>
+      ${imagenHTML}
+      <div class="cbq-pregunta-opciones">
+        ${opcionesHTML}
+      </div>
+    </div>
+    <div class="cbq-pregunta-overlay-bottom" id="cbq-pregunta-overlay-bottom">
+      <div class="cbq-pregunta-status" id="cbq-pregunta-status">
+        Respondieron 0 de ${data.totalParticipantes}
+      </div>
+    </div>
+  `;
+
+  display.classList.remove('cbq-con-contador');
+
+  // Guardar datos de la pregunta actual para uso posterior
+  if (cbqJuegoActivo) {
+    cbqJuegoActivo.preguntaActualData = data;
+  }
+
+  if (!cbqResizeAjustePreguntaRegistrado) {
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(() => cbqAjustarPreguntaHostAlto());
+    });
+    cbqResizeAjustePreguntaRegistrado = true;
+  }
+
+  requestAnimationFrame(() => cbqAjustarPreguntaHostAlto());
+
+  // Sincronizar con ventana de proyección
+  cbqEnviarEstadoHostAProyeccion();
+}
+
+function cbqActualizarContadorRespuestas(data) {
+  const statusDiv = document.getElementById('cbq-pregunta-status');
+  if (statusDiv) {
+    statusDiv.textContent = `Respondieron ${data.respondidas} de ${data.totalParticipantes}`;
+  }
+  requestAnimationFrame(() => cbqAjustarPreguntaHostAlto());
+  
+  // Sincronizar con ventana de proyección
+  cbqEnviarEstadoHostAProyeccion();
+}
+
+function cbqMarcarRespuestaCorrecta(indiceCorrecta) {
+  const opciones = document.querySelectorAll('.cbq-pregunta-opcion');
+  opciones.forEach((opcion, idx) => {
+    if (idx === indiceCorrecta) {
+      opcion.classList.add('correcta');
+    }
+  });
+
+  const statusDiv = document.getElementById('cbq-pregunta-status');
+  
+  // Sincronizar con ventana de proyección
+  cbqEnviarEstadoHostAProyeccion();
+  if (statusDiv) {
+    statusDiv.textContent = '¡Todos han respondido!';
+  }
+  requestAnimationFrame(() => cbqAjustarPreguntaHostAlto());
+}
+
+function cbqMostrarPodioFinalHost(ranking = []) {
+  const display = document.getElementById('cbq-pregunta-display');
+  if (!display) return;
+
+  const top3 = Array.isArray(ranking) ? ranking.slice(0, 3) : [];
+
+  if (!top3.length) {
+    display.innerHTML = `
+      <div class="cbq-final-vacio">
+        <i class='bx bx-trophy'></i>
+        <h3>Juego finalizado</h3>
+        <p>No hay participantes para mostrar en el podio.</p>
+      </div>
+    `;
+    display.classList.remove('cbq-con-contador');
+    cbqEnviarEstadoHostAProyeccion();
+    return;
+  }
+
+  const clases = ['oro', 'plata', 'bronce'];
+  const medallas = ['🥇', '🥈', '🥉'];
+
+  const items = top3
+    .map((p, idx) => {
+      const clase = clases[idx] || '';
+      const medalla = medallas[idx] || '🏅';
+      const nombre = cbqEscapeHtml(p.nombre || `Participante ${idx + 1}`);
+      const puntos = Number(p.puntos || 0);
+      const iconoCorona = idx === 0
+        ? `<img class="cbq-podio-icono" src="iconos/corona.png" alt="Corona" onerror="this.style.display='none'" />`
+        : '';
+
+      return `
+        <div class="cbq-podio-item ${clase}">
+          <div class="cbq-podio-badge">${medalla}</div>
+          ${iconoCorona}
+          <div class="cbq-podio-pos">#${idx + 1}</div>
+          <div class="cbq-podio-nombre">${nombre}</div>
+          <div class="cbq-podio-puntos">${puntos} pts</div>
+        </div>
+      `;
+    })
+    .join('');
+
+  display.innerHTML = `
+    <div class="cbq-podio-final">
+      <h3 class="cbq-podio-titulo">🏆 Podio Final</h3>
+      <div class="cbq-podio-grid">
+        ${items}
+      </div>
+    </div>
+  `;
+
+  display.classList.remove('cbq-con-contador');
+  cbqEnviarEstadoHostAProyeccion();
+}
+
+function cbqMostrarContadorSiguientePregunta(segundos) {
+  cbqSegundosRestantes = segundos;
+  cbqContadorPausado = false;
+
+  const display = document.getElementById("cbq-pregunta-display");
+  if (!display) return;
+
+  const overlay = document.getElementById("cbq-pregunta-overlay-bottom");
+  if (!overlay) return;
+
+  let contenedorContador = document.getElementById("cbq-pregunta-contador-host");
+  if (!contenedorContador) {
+    contenedorContador = document.createElement("div");
+    contenedorContador.id = "cbq-pregunta-contador-host";
+    contenedorContador.className = "cbq-pregunta-contador";
+    contenedorContador.innerHTML = `
+      <div class="cbq-contador-texto">Siguiente pregunta en:</div>
+      <div class="cbq-contador-numero" id="cbq-contador-numero">${segundos}s</div>
+      <button class="cbq-btn-pausar-contador" id="cbq-btn-pausar">
+        <i class='bx bx-pause'></i> Pausar contador
+      </button>
+    `;
+    overlay.appendChild(contenedorContador);
+  } else {
+    const numeroDiv = document.getElementById("cbq-contador-numero");
+    if (numeroDiv) {
+      numeroDiv.textContent = `${segundos}s`;
+    }
+  }
+
+  display.classList.add('cbq-con-contador');
+
+  const btnPausar = document.getElementById("cbq-btn-pausar");
+  if (btnPausar) {
+    btnPausar.onclick = cbqTogglePausaContador;
+  }
+
+  requestAnimationFrame(() => cbqAjustarPreguntaHostAlto());
+
+  cbqIniciarContador();
+}
+
+function cbqIniciarContador() {
+  if (cbqContadorInterval) {
+    clearInterval(cbqContadorInterval);
+  }
+
+  cbqContadorInterval = setInterval(() => {
+    if (cbqContadorPausado) return;
+
+    cbqSegundosRestantes--;
+    const numeroDiv = document.getElementById("cbq-contador-numero");
+    if (numeroDiv) {
+      numeroDiv.textContent = cbqSegundosRestantes + "s";
+    }
+    cbqAjustarPreguntaHostAlto();
+
+    if (cbqSegundosRestantes <= 0) {
+      clearInterval(cbqContadorInterval);
+      cbqContadorInterval = null;
+    }
+  }, 1000);
+}
+
+function cbqTogglePausaContador() {
+  cbqContadorPausado = !cbqContadorPausado;
+  const btnPausar = document.getElementById("cbq-btn-pausar");
+  if (!btnPausar) return;
+
+  if (cbqHostSocket && cbqHostSocket.connected && cbqPinHostActivo) {
+    cbqHostSocket.emit("pausar-contador", {
+      pin: cbqPinHostActivo,
+      pausado: cbqContadorPausado,
+    });
+  }
+
+  if (cbqContadorPausado) {
+    btnPausar.innerHTML = "<i class='bx bx-play'></i> Reanudar contador";
+    btnPausar.classList.add("pausado");
+  } else {
+    btnPausar.innerHTML = "<i class='bx bx-pause'></i> Pausar contador";
+    btnPausar.classList.remove("pausado");
+  }
+}
+
+function cbqControlarVisibilidadQR(estado) {
+  const containerQr = document.getElementById("contenedor-qr-remoto");
+  if (!containerQr) return;
+
+  console.log(`[CBQ] Cambio de estado del juego: ${estado}`);
+
+  // Ocultar QR cuando está jugando o en preparación
+  // Mostrar QR cuando está esperando, mostrando resultados o terminado
+  if (estado === "jugando" || estado === "preparacion") {
+    containerQr.style.display = "none";
+    console.log("[CBQ] QR ocultado - juego en curso");
+  } else if (estado === "esperando" || estado === "mostrando-resultados" || estado === "terminado") {
+    containerQr.style.display = "block";
+    console.log("[CBQ] QR mostrado - se pueden unir jugadores");
+  }
+}
+
+async function cbqImprimirParticipantes(participantesData, titulo = "Participantes") {
+  try {
+    const participantes = Array.isArray(participantesData) ? participantesData : [];
+    if (participantes.length === 0) {
+      alert("No hay participantes para imprimir");
+      return;
+    }
+
+    await cargarLibreriasExportacion();
+
+    const participantesOrdenados = [...participantes].sort((a, b) => b.puntos - a.puntos);
+    const container = document.createElement("div");
+    container.style.cssText = "position:fixed;top:-10000px;left:0;width:1000px;background:white;padding:30px;font-family:Arial,sans-serif;color:black;";
+
+    const html = `
+      <h1 style="color:#213d75;border-bottom:3px solid #213d75;padding-bottom:10px;margin-bottom:20px;">
+        Lista de Participantes de Conexión Bíblica
+      </h1>
+      <p style="margin:5px 0;"><strong>Título:</strong> ${cbqEscapeHtml(titulo)}</p>
+      <p style="margin:5px 0;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <p style="margin:5px 0;"><strong>Hora:</strong> ${new Date().toLocaleTimeString('es-ES')}</p>
+      <p style="margin:5px 0;"><strong>Total de participantes:</strong> ${participantes.length}</p>
+
+      <table style="width:100%;border-collapse:collapse;margin-top:20px;">
+        <thead>
+          <tr style="background:#213d75;color:white;">
+            <th style="padding:12px;text-align:left;border:1px solid #ddd;">Posición</th>
+            <th style="padding:12px;text-align:left;border:1px solid #ddd;">Nombre</th>
+            <th style="padding:12px;text-align:left;border:1px solid #ddd;">Puntos</th>
+            <th style="padding:12px;text-align:left;border:1px solid #ddd;">Respuestas correctas</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${participantesOrdenados.map((p, idx) => {
+            const respuestasCorrectas = (p.respuestas || []).filter((r) => r.esCorrecta).length;
+            const bgColor = idx % 2 === 0 ? '#f9f9f9' : '#ffffff';
+            return `
+              <tr style="background:${bgColor};">
+                <td style="padding:12px;text-align:left;border:1px solid #ddd;font-weight:bold;color:#213d75;">#${idx + 1}</td>
+                <td style="padding:12px;text-align:left;border:1px solid #ddd;">${cbqEscapeHtml(p.nombre)}</td>
+                <td style="padding:12px;text-align:left;border:1px solid #ddd;font-weight:bold;color:#27b55f;">${p.puntos} pts</td>
+                <td style="padding:12px;text-align:left;border:1px solid #ddd;">${respuestasCorrectas} / ${p.respuestas?.length || 0}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <p style="margin-top:30px;text-align:center;color:#666;font-size:12px;">
+        Generado por Himnario Adventista Pro - Conexión Bíblica
+      </p>
+    `;
+
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF("p", "mm", "a4");
+      const canvas = await html2canvas(container, { backgroundColor: "#ffffff", logging: false });
+      const imgData = canvas.toDataURL("image/png");
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`Participantes-${Date.now()}.pdf`);
+    } finally {
+      document.body.removeChild(container);
+    }
+  } catch (err) {
+    console.error("[CBQ] Error imprimiendo participantes:", err);
+    alert("Error al generar PDF: " + err.message);
+  }
+}
+
+async function cbqDetectarMonitoresExternos() {
+  try {
+    if (!window.electronAPI || !window.electronAPI.obtenerMonitores) {
+      return;
+    }
+    
+    const monitores = await window.electronAPI.obtenerMonitores();
+    const btnProyectar = document.getElementById("cbq-btn-proyectar-host");
+    
+    // Mostrar botón si hay al menos 1 monitor (incluido el principal)
+    if (btnProyectar && monitores && monitores.length >= 1) {
+      btnProyectar.style.display = "inline-block";
+    }
+  } catch (err) {
+    console.error('[CBQ] Error detectando monitores:', err);
+  }
+}
+
+let cbqVentanaProyeccion = null;
+let cbqUltimoHtmlEnviado = null; // Guardar último HTML para evitar recargas innecesarias
+
+async function cbqProyectarHostAMonitor() {
+  try {
+    if (!cbqVentanaProyeccion) {
+      // Primera vez: abrir ventana de proyección
+      const resultado = await window.electronAPI.abrirVentanaHostProyeccion(0);
+      
+      if (resultado) {
+        cbqVentanaProyeccion = true;
+        
+        const btnProyectar = document.getElementById("cbq-btn-proyectar-host");
+        if (btnProyectar) {
+          btnProyectar.innerHTML = "<i class='bx bx-x'></i> Detener proyección";
+        }
+        
+        // Iniciar sincronización de la interfaz
+        cbqIniciarSincronizacionHost();
+
+        // Refuerzo: reenviar al terminar de cargar la ventana secundaria
+        setTimeout(() => {
+          if (cbqVentanaProyeccion) cbqEnviarEstadoHostAProyeccion();
+        }, 600);
+        
+        // Escuchar cuando se cierre la ventana
+        if (window.electronAPI.onVentanaHostProyeccionCerrada) {
+          window.electronAPI.onVentanaHostProyeccionCerrada(() => {
+            cbqVentanaProyeccion = null;
+            const btn = document.getElementById("cbq-btn-proyectar-host");
+            if (btn) {
+              btn.innerHTML = "<i class='bx bx-desktop'></i> Proyectar";
+            }
+          });
+        }
+      }
+    } else {
+      // Ya está proyectando: solo limpiar el contenedor, no cerrar la ventana
+      cbqVentanaProyeccion = null;
+      
+      // Enviar HTML vacío para limpiar la proyección
+      if (window.electronAPI && window.electronAPI.enviarActualizacionHost) {
+        const data = {
+          tipo: 'limpiar-proyeccion',
+          html: '',
+          timestamp: Date.now()
+        };
+        window.electronAPI.enviarActualizacionHost(data);
+      }
+      
+      const btnProyectar = document.getElementById("cbq-btn-proyectar-host");
+      if (btnProyectar) {
+        btnProyectar.innerHTML = "<i class='bx bx-desktop'></i> Proyectar";
+      }
+    }
+    
+  } catch (err) {
+    console.error('[CBQ] Error al proyectar:', err);
+    alert('Error al proyectar: ' + err.message);
+  }
+}
+
+
+
+function cbqIniciarSincronizacionHost() {
+  // Enviar estado inicial
+  cbqEnviarEstadoHostAProyeccion();
+  
+  // Sincronizar cada vez que cambie algo importante
+  if (cbqJuegoActivo && cbqJuegoActivo.intervaloSincronizacion) {
+    clearInterval(cbqJuegoActivo.intervaloSincronizacion);
+  }
+  
+  if (!cbqJuegoActivo) return;
+  
+  cbqJuegoActivo.intervaloSincronizacion = setInterval(() => {
+    if (cbqVentanaProyeccion) {
+      cbqEnviarEstadoHostAProyeccion();
+    } else {
+      clearInterval(cbqJuegoActivo.intervaloSincronizacion);
+    }
+  }, 500); // Sincronizar cada 500ms
+}
+
+function cbqEnviarEstadoHostAProyeccion() {
+  if (!window.electronAPI || !window.electronAPI.enviarActualizacionHost) {
+    console.error('[CBQ] electronAPI no disponible');
+    return;
+  }
+  
+  // Enviar la interfaz completa del host - buscar en el modal
+  let hostInterface = document.querySelector('.cbq-host-interface');
+  
+  if (!hostInterface) {
+    console.error('[CBQ] No se encontró .cbq-host-interface en el DOM');
+    // Intentar encontrarlo dentro del modal
+    const modal = document.querySelector('#cbq-modal');
+    if (modal) {
+      hostInterface = modal.querySelector('.cbq-host-interface');
+    }
+  }
+  
+  if (!hostInterface || !hostInterface.innerHTML.trim()) {
+    console.error('[CBQ] cbq-host-interface vacío o no encontrado');
+    return;
+  }
+  
+  const htmlActual = hostInterface.outerHTML;
+  
+  // Solo enviar si el HTML cambió - evita recargas innecesarias y preserva scroll
+  if (cbqUltimoHtmlEnviado === htmlActual) {
+    return; // No enviar si es idéntico
+  }
+  
+  cbqUltimoHtmlEnviado = htmlActual;
+  
+  const data = {
+    tipo: 'actualizacion-host',
+    html: htmlActual,
+    timestamp: Date.now()
+  };
+  
+  console.log('[CBQ] Enviando interfaz host a proyección (contenido cambió)');
+  window.electronAPI.enviarActualizacionHost(data);
+}
+
+function cbqReabrirInterfazHost() {
+  if (!cbqJuegoActivo) return;
+  
+  // Reabrir el modal con la información guardada
+  cbqMostrarInterfazHost(
+    cbqJuegoActivo.pin,
+    cbqJuegoActivo.url,
+    cbqJuegoActivo.qrDataURL,
+    cbqJuegoActivo.formulario,
+    cbqJuegoActivo.infoServidor
+  );
+}
+
+async function cbqDetenerJuegoEnVivo() {
+  if (!cbqJuegoActivo) return;
+  
+  try {
+    if (cbqJuegoActivo.intervaloActualizacion) {
+      clearInterval(cbqJuegoActivo.intervaloActualizacion);
+    }
+    
+    await window.electronAPI.juegoDetener(cbqJuegoActivo.pin);
+    if (cbqJuegoActivo.posicionesPreviasHost instanceof Map) {
+      cbqJuegoActivo.posicionesPreviasHost.clear();
+    }
+    cbqJuegoActivo = null;
+    cbqCerrarModal();
+    
+  } catch (err) {
+    console.error("[CBQ] Error deteniendo juego:", err);
+  }
+}
+
+function cbqCerrarModal() {
+  const modal = document.getElementById("cbq-modal");
+  if (!modal) return;
+  modal.classList.remove("show");
+
+  const modalContent = modal.querySelector(".cbq-modal-content");
+  if (modalContent) {
+    modalContent.classList.remove("cbq-modal-content-host");
+  }
+}
+
+function cbqAbrirModal(contenidoHtml) {
+  const modal = document.getElementById("cbq-modal");
+  const modalBody = document.getElementById("cbq-modal-body");
+  if (!modal || !modalBody) return;
+
+  modalBody.innerHTML = contenidoHtml;
+  modal.classList.add("show");
+}
+
+function cbqAbrirAccionesFormulario(formularioId) {
+  const formulario = cbqState.formularios.find((f) => f.id === formularioId);
+  if (!formulario) return;
+  
+  const tiempoTexto = formulario.tiempoLimitePorPregunta 
+    ? (formulario.tiempoLimitePorPregunta >= 60 
+        ? `${Math.floor(formulario.tiempoLimitePorPregunta / 60)} min` 
+        : `${formulario.tiempoLimitePorPregunta} seg`)
+    : "30 seg";
+
+  cbqAbrirModal(`
+    <div class="cbq-mini-pop">
+      <h3>${cbqEscapeHtml(formulario.titulo)}</h3>
+      <p>Total de preguntas: <strong>${formulario.preguntas?.length || 0}</strong></p>
+      <p>Tiempo por pregunta: <strong>${tiempoTexto}</strong></p>
+      <div class="cbq-mini-actions">
+        <button class="cbq-btn-success" id="cbq-btn-iniciar-juego">Iniciar juego en vivo</button>
+        <button class="cbq-btn-primary" id="cbq-btn-ver-participantes">Ver participantes</button>
+        <button class="cbq-btn-primary" id="cbq-btn-preview-form">Previsualizar</button>
+        <button class="cbq-btn-danger" id="cbq-btn-delete-form">Eliminar</button>
+        <button class="cbq-btn-secondary" id="cbq-btn-close-modal">Cerrar</button>
+      </div>
+    </div>
+  `);
+
+  const btnClose = document.getElementById("cbq-btn-close-modal");
+  if (btnClose) btnClose.addEventListener("click", cbqCerrarModal);
+  
+  const btnDelete = document.getElementById("cbq-btn-delete-form");
+  if (btnDelete) {
+    btnDelete.addEventListener("click", async () => {
+      if (!confirm(`¿Estás seguro de eliminar "${formulario.titulo}"?`)) return;
+      
+      try {
+        await cbqEliminarFormulario(formularioId);
+        await cbqCargarFormularios();
+        renderInicioConexionBiblica();
+        cbqCerrarModal();
+        alert("Formulario eliminado correctamente.");
+      } catch (err) {
+        console.error("[CBQ] Error eliminando formulario:", err);
+        alert("No se pudo eliminar el formulario.");
+      }
+    });
+  }
+  
+  const btnIniciar = document.getElementById("cbq-btn-iniciar-juego");
+  if (btnIniciar) {
+    btnIniciar.addEventListener("click", async () => {
+      const textoOriginal = btnIniciar.textContent;
+      btnIniciar.disabled = true;
+      btnIniciar.classList.add("cbq-btn-loading");
+      btnIniciar.textContent = "Iniciando servidor...";
+
+      const ok = await cbqIniciarJuegoEnVivo(formularioId);
+      if (!ok) {
+        btnIniciar.disabled = false;
+        btnIniciar.classList.remove("cbq-btn-loading");
+        btnIniciar.textContent = textoOriginal;
+      }
+    });
+  }
+
+  const btnPreview = document.getElementById("cbq-btn-preview-form");
+  if (btnPreview) {
+    btnPreview.addEventListener("click", () => {
+      const preguntasHtml = (formulario.preguntas || [])
+        .map(
+          (q, idx) => `
+            <div class="cbq-preview-question">
+              <h4>${idx + 1}. ${cbqEscapeHtml(q.texto)}</h4>
+              ${q.imagenBase64 ? `<img src="${q.imagenBase64}" class="cbq-preview-image" alt="Imagen pregunta" />` : ""}
+              <p><strong>Respuesta correcta:</strong> ${cbqEscapeHtml(cbqResumenRespuestasCorrectas(q))}</p>
+            </div>
+          `,
+        )
+        .join("");
+
+      cbqAbrirModal(`
+        <div class="cbq-preview-wrap">
+          <h3>Previsualización: ${cbqEscapeHtml(formulario.titulo)}</h3>
+          <p>Total de preguntas: <strong>${formulario.preguntas?.length || 0}</strong></p>
+          <div class="cbq-preview-list">${preguntasHtml || "<p>Sin preguntas.</p>"}</div>
+          <div class="cbq-mini-actions">
+            <button class="cbq-btn-secondary" id="cbq-btn-close-modal">Cerrar</button>
+          </div>
+        </div>
+      `);
+
+      const btnClosePreview = document.getElementById("cbq-btn-close-modal");
+      if (btnClosePreview) btnClosePreview.addEventListener("click", cbqCerrarModal);
+    });
+  }
+
+  const btnVerParticipantes = document.getElementById("cbq-btn-ver-participantes");
+  if (btnVerParticipantes) {
+    btnVerParticipantes.addEventListener("click", () => {
+      const data = Array.isArray(formulario.participantesGuardados)
+        ? formulario.participantesGuardados
+        : [];
+
+      const htmlItems = data.length
+        ? data
+            .map(
+              (p) => `
+                <div class="cbq-participante-item">
+                  <span class="cbq-participante-pos">#${p.posicion}</span>
+                  <span class="cbq-participante-nombre">${cbqEscapeHtml(p.nombre)}</span>
+                  <span class="cbq-participante-puntos">${p.puntos} pts</span>
+                </div>
+              `,
+            )
+            .join("")
+        : '<div class="cbq-empty-participantes">No hay participantes guardados.</div>';
+
+      cbqAbrirModal(`
+        <div class="cbq-preview-wrap">
+          <h3>Participantes: ${cbqEscapeHtml(formulario.titulo)}</h3>
+          <div class="cbq-participantes-lista" style="max-height: 45vh; min-height: 160px;">${htmlItems}</div>
+          <div class="cbq-mini-actions">
+            ${data.length ? `<button class="cbq-btn-primary" id="cbq-btn-imprimir-participantes-modal"><i class='bx bx-printer'></i> Imprimir</button>` : ''}
+            <button class="cbq-btn-danger" id="cbq-btn-reset-participantes">Resetear participantes</button>
+            <button class="cbq-btn-secondary" id="cbq-btn-close-modal">Cerrar</button>
+          </div>
+        </div>
+      `)
+      
+      // Botón de imprimir en modal de participantes
+      const btnImprimirModal = document.getElementById("cbq-btn-imprimir-participantes-modal");
+      if (btnImprimirModal) {
+        btnImprimirModal.addEventListener('click', async () => {
+          try {
+            btnImprimirModal.disabled = true;
+            btnImprimirModal.classList.add('cbq-btn-loading');
+            btnImprimirModal.innerHTML = `<span class="cbq-spinner"></span> Generando...`;
+            await cbqImprimirParticipantes(data, formulario.titulo);
+          } finally {
+            btnImprimirModal.disabled = false;
+            btnImprimirModal.classList.remove('cbq-btn-loading');
+            btnImprimirModal.innerHTML = `<i class='bx bx-printer'></i> Imprimir`;
+          }
+        });
+      }
+
+      const btnCloseParticipants = document.getElementById("cbq-btn-close-modal");
+      if (btnCloseParticipants) btnCloseParticipants.addEventListener("click", cbqCerrarModal);
+
+      const btnResetParticipantes = document.getElementById("cbq-btn-reset-participantes");
+      if (btnResetParticipantes) {
+        btnResetParticipantes.addEventListener("click", async () => {
+          if (!confirm("¿Seguro que deseas resetear todos los participantes guardados de este formulario?")) return;
+          formulario.participantesGuardados = [];
+          formulario.updatedAt = Date.now();
+          await cbqActualizarFormularioExistente(formulario);
+          await cbqCargarFormularios();
+          cbqCerrarModal();
+          alert("Participantes guardados reseteados.");
+        });
+      }
+    });
+  }
+}
+
+async function renderInicioConexionBiblica() {
+  const list = document.getElementById("cbq-lista-formularios");
+  if (!list) return;
+
+  await cbqCargarFormularios();
+  const forms = cbqState.formularios || [];
+
+  if (!forms.length) {
+    list.innerHTML = `
+      <div class="cbq-empty-state">
+        <h3>Conexión Bíblica</h3>
+        <p>No hay formularios creados todavía.</p>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = forms
+    .map(
+      (form) => `
+        <div class="cbq-form-card" data-form-id="${form.id}">
+          <div class="cbq-card-thumb">
+            ${form.portadaBase64 ? `<img src="${form.portadaBase64}" alt="Miniatura formulario" />` : '<div class="cbq-card-placeholder">Conexión Bíblica</div>'}
+          </div>
+          <div class="cbq-card-info">
+            <h4>${cbqEscapeHtml(form.titulo)}</h4>
+            <p>${form.preguntas?.length || 0} preguntas</p>
+          </div>
+        </div>
+      `,
+    )
+    .join("");
+
+  list.querySelectorAll(".cbq-form-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const formId = card.getAttribute("data-form-id");
+      if (formId) cbqAbrirAccionesFormulario(formId);
+    });
+  });
+}
+
+function inicializarConexionBiblicaUI() {
+  if (cbqState.initialized) return;
+  if (!ventanaConexionBiblica) return;
+
+  ventanaConexionBiblica.innerHTML = `
+    <div class="cbq-shell">
+      <div class="cbq-tabs">
+        <button class="cbq-tab-btn active" data-tab="inicio">Inicio</button>
+        <button class="cbq-tab-btn" data-tab="crear">Crear formulario</button>
+      </div>
+
+      <div id="cbq-tab-inicio" class="cbq-tab-panel">
+        <div id="cbq-lista-formularios" class="cbq-form-grid"></div>
+      </div>
+
+      <div id="cbq-tab-crear" class="cbq-tab-panel" style="display:none;">
+        <div class="cbq-builder">
+          <div class="cbq-form-head">
+            <h3>Nuevo formulario</h3>
+            <input id="cbq-form-title" type="text" placeholder="Título del formulario" />
+
+            <div class="cbq-tiempo-limite-row">
+              <label for="cbq-tiempo-valor">Tiempo por pregunta:</label>
+              <input id="cbq-tiempo-valor" type="number" min="5" value="30" />
+              <select id="cbq-tiempo-unidad">
+                <option value="segundos">Segundos</option>
+                <option value="minutos">Minutos</option>
+              </select>
+            </div>
+
+            <div class="cbq-image-row">
+              <button class="cbq-btn-secondary" id="cbq-btn-portada">Agregar portada</button>
+              <span class="cbq-image-empty" id="cbq-portada-empty">Sin portada</span>
+              <img id="cbq-portada-preview" class="cbq-question-image" style="display:none;" alt="Portada" />
+            </div>
+          </div>
+
+          <div id="cbq-questions-list"></div>
+
+          <div class="cbq-creator-actions">
+            <button id="cbq-btn-add-multiple" class="cbq-btn-primary">Agregar Pregunta de Opción Múltiple</button>
+            <button id="cbq-btn-add-vf" class="cbq-btn-primary cbq-btn-green">Agregar Pregunta Verdadero/Falso</button>
+            <button id="cbq-btn-create-form" class="cbq-btn-create">Crear Formulario con Evaluación</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cbq-modal" class="cbq-modal">
+      <div class="cbq-modal-content">
+        <div id="cbq-modal-body"></div>
+      </div>
+    </div>
+  `;
+
+  ventanaConexionBiblica.querySelectorAll(".cbq-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+      cbqCambiarTab(tab);
+      if (tab === "inicio") {
+        renderInicioConexionBiblica();
+      }
+    });
+  });
+
+  const btnAddMultiple = document.getElementById("cbq-btn-add-multiple");
+  if (btnAddMultiple) {
+    btnAddMultiple.addEventListener("click", () => cbqAgregarPregunta("multiple"));
+  }
+
+  const btnAddVf = document.getElementById("cbq-btn-add-vf");
+  if (btnAddVf) {
+    btnAddVf.addEventListener("click", () => cbqAgregarPregunta("vf"));
+  }
+
+  const btnCreate = document.getElementById("cbq-btn-create-form");
+  if (btnCreate) {
+    btnCreate.addEventListener("click", cbqCrearFormularioDesdeUI);
+  }
+
+  const btnPortada = document.getElementById("cbq-btn-portada");
+  if (btnPortada) {
+    btnPortada.addEventListener("click", async () => {
+      const dataUrl = await cbqSeleccionarImagenBase64();
+      if (!dataUrl) return;
+
+      cbqState.portadaBase64Draft = dataUrl;
+      const portadaImg = document.getElementById("cbq-portada-preview");
+      const portadaEmpty = document.getElementById("cbq-portada-empty");
+      if (portadaImg) {
+        portadaImg.src = dataUrl;
+        portadaImg.style.display = "block";
+      }
+      if (portadaEmpty) portadaEmpty.style.display = "none";
+    });
+  }
+
+  const modal = document.getElementById("cbq-modal");
+  if (modal) {
+    modal.addEventListener("click", (evt) => {
+      if (evt.target === modal) cbqCerrarModal();
+    });
+  }
+
+  cbqBindEventosPreguntas();
+  cbqRenderPreguntasDraft();
+  cbqState.initialized = true;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  inicializarConexionBiblicaUI();
 });
 
 botonPowerPoint.addEventListener("click", function () {
@@ -2790,6 +5054,7 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
@@ -2800,6 +5065,7 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2824,6 +5090,7 @@ botonBiblia.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -2833,6 +5100,7 @@ botonBiblia.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2857,6 +5125,7 @@ botonHimnosPro.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -2866,6 +5135,7 @@ botonHimnosPro.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2893,6 +5163,7 @@ botonYoutube.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -2902,6 +5173,7 @@ botonYoutube.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2929,6 +5201,7 @@ botonPelis.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "flex";
+    ventanaConexionBiblica.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
 
     // Mostramos el pop-up al entrar
@@ -2941,6 +5214,7 @@ botonPelis.addEventListener("click", function () {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2974,6 +5248,7 @@ function cerrarVentanaReproductor() {
   ventanaPowerPoint.style.display = "none";
   ventanaProgramacion.style.display = "none";
   ventanaPelis.style.display = "none";
+  ventanaConexionBiblica.style.display = "none";
   himnarioContainer.style.display = "grid";
   
   // Asegurar que los botones se actualicen correctamente
@@ -3076,6 +5351,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3092,6 +5368,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3107,6 +5384,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3122,6 +5400,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3137,6 +5416,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3152,6 +5432,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3167,6 +5448,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -3180,6 +5462,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
@@ -3205,6 +5488,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
@@ -3227,6 +5511,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos4.length; i++) {
       const numero = titulos4[i].match(/\d{3}/)[0];
@@ -3249,6 +5534,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos5.length; i++) {
       const numero = titulos5[i].match(/\d{3}/)[0];
@@ -3271,6 +5557,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
@@ -3293,6 +5580,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
@@ -3315,6 +5603,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
@@ -3337,6 +5626,7 @@ async function mostrarCategoria(categoria) {
     ventanaProgramacion.style.display = "none";
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
+    ventanaConexionBiblica.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
@@ -5489,6 +7779,10 @@ function activarModoPro() {
   botonPRO = true;
   const planTipo = localStorage.getItem("planTipo") || "gratis";
 
+  if (ventanaConexionBiblica) {
+    ventanaConexionBiblica.style.display = "none";
+  }
+
   // Solo mostrar botones PRO si el usuario tiene plan PREMIUM (no básico)
   if (planTipo === "premium") {
     botonBiblia.style.display = "flex";
@@ -5526,6 +7820,9 @@ function activarModoNormal() {
   ventanaProgramacion.style.display = "none";
   ventanaManual.style.display = "none";
   ventanaPelis.style.display = "none";
+  if (ventanaConexionBiblica) {
+    ventanaConexionBiblica.style.display = "none";
+  }
   himnarioContainer.style.display = "grid";
 }
 
@@ -5626,11 +7923,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-03-07",
+    titulo: "Nueva funcion de conexión bíblica o para preguntas y respuestas.",
+    mensaje: "Se implementó una nueva función para la conexión bíblica, esta función es para que los hermanos puedan hacer preguntas bíblicas o de cualquier tema relacionado con la iglesia, especialmente está función viene gracias a los clubes de conquitadores; ahora podrán crear sus propias preguntas a través de formulario, estos formularios se guardan en su computadora y se pueden usar en cualquier momento. Según el tipo de plan que tengas, puedes conectarte en tu propia red ya sea que no tengas internet o que sí tengas internet (fue pensado para que te puedas conectar incluso si no tienes internet, solo haces tu propia red desde la computadora o desde el celular y se la compartes a la computadora (de hecho para el control remoto pasa lo mismo, también puedes crear tu propia red hostpot) y de esa forma podrás acceder con internet o sin internet) Si no tienes internet, no importa, puedes conectarte con los chicos siempre (esta nueva funcionalidad es mucho mejor que plataforma reconocidas como Kahoot, Mide, Moodle... Al ingresar al formulario te aparecerán la lista de los participantes que se van conectando, además, puedes colocar tu propia foto como avatar, y el anfitrión comenzará las preguntas en cualquier momento; cabe mencionar, que, el anfitrion puede pausar las preguntas o el contador de tiempo por si surge una duda en el desarrollo de las preguntas o el quiz. Por último, también aparece una opción para que puedas proyectar en segundo monitor, de esa forma los chicos puede ver las preguntas en la proyección. También se puede exportar a pdf los participantes.",
+    version: "1.0.111",
+    tipo: "Función nueva",
   },
   {
     fecha: "2026-02-12",
@@ -10117,6 +12414,7 @@ if (botonManual) {
       ventanaProgramacion.style.display = "none";
       ventanaManual.style.display = "flex";
       ventanaPelis.style.display = "none";
+      ventanaConexionBiblica.style.display = "none";
       cargarManual();
       document.getElementById("contenedor-contador").style.display = "none";
     } else {
@@ -10127,6 +12425,7 @@ if (botonManual) {
       ventanaProgramacion.style.display = "none";
       ventanaManual.style.display = "none";
       ventanaPelis.style.display = "none";
+      ventanaConexionBiblica.style.display = "none";
       himnarioContainer.style.display = "grid";
     }
   });

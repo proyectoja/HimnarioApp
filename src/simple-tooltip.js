@@ -356,7 +356,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (document.getElementById("botonConexionBiblica")) {
     addToolTip(
       "#botonConexionBiblica",
-      "Conexión Bíblica | Próximamente...",
+      "Conexión Bíblica",
       "top",
       {
         colorFondo: "#ff6600ff",

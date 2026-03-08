@@ -130,6 +130,28 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Notificación de estado de reproducción
   updatePlaybackStatus: (status) =>
     ipcRenderer.send("update-playback-status", status),
+
+  // 🎮 Juego en Vivo - Conexión Bíblica
+  juegoIniciarServidor: () => ipcRenderer.invoke("juego-iniciar-servidor"),
+  juegoDetenerServidor: () => ipcRenderer.invoke("juego-detener-servidor"),
+  juegoCrearSala: (formulario) => ipcRenderer.invoke("juego-crear-sala", formulario),
+  juegoIniciar: (pin) => ipcRenderer.invoke("juego-iniciar", pin),
+  juegoDetener: (pin) => ipcRenderer.invoke("juego-detener", pin),
+  juegoObtenerSala: (pin) => ipcRenderer.invoke("juego-obtener-sala", pin),
+  onJuegoServidorListo: (callback) =>
+    ipcRenderer.on("juego-servidor-listo", (_, data) => callback(data)),
+
+  // 🖥️ Ventana de proyección del host
+  abrirVentanaHostProyeccion: (monitorIndex) => 
+    ipcRenderer.invoke("abrir-ventana-host-proyeccion", monitorIndex),
+  cerrarVentanaHostProyeccion: () => 
+    ipcRenderer.invoke("cerrar-ventana-host-proyeccion"),
+  onVentanaHostProyeccionCerrada: (callback) =>
+    ipcRenderer.on("ventana-host-proyeccion-cerrada", callback),
+  enviarActualizacionHost: (data) => 
+    ipcRenderer.send("actualizar-host-proyeccion", data),
+  onActualizacionHost: (callback) =>
+    ipcRenderer.on("actualizar-host-proyeccion", (_, data) => callback(data)),
 });
 
 // Obtener paths síncronamente

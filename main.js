@@ -26,6 +26,14 @@ const {
   iniciarControlRemoto,
   detenerControlRemoto,
 } = require("./controlRemoto");
+const {
+  iniciarServidorJuego,
+  detenerServidorJuego,
+  crearSala,
+  iniciarJuego,
+  detenerJuego,
+  obtenerSala,
+} = require("./juegoEnVivoServer");
 let tray = null; // Bandeja del sistema
 let win = null; // Ventana principal
 const express = require("express");
@@ -249,6 +257,123 @@ ipcMain.handle("get-machine-id", async () => {
   }
 });
 
+// 🎮 IPC para el servidor de juego en vivo
+ipcMain.handle("juego-iniciar-servidor", async () => {
+  try {
+    const info = iniciarServidorJuego(win);
+    console.log("[JUEGO] Servidor iniciado:", info);
+    return { ok: true, ...info };
+  } catch (err) {
+    console.error("[JUEGO] Error iniciando servidor:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("juego-detener-servidor", async () => {
+  try {
+    detenerServidorJuego();
+    console.log("[JUEGO] Servidor detenido");
+    return { ok: true };
+  } catch (err) {
+    console.error("[JUEGO] Error deteniendo servidor:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("juego-crear-sala", async (event, formulario) => {
+  try {
+    const pin = crearSala(formulario);
+    console.log("[JUEGO] Sala creada con PIN:", pin);
+    return { ok: true, pin };
+  } catch (err) {
+    console.error("[JUEGO] Error creando sala:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("juego-iniciar", async (event, pin) => {
+  try {
+    const resultado = iniciarJuego(pin);
+    console.log("[JUEGO] Juego iniciado:", resultado);
+    return resultado;
+  } catch (err) {
+    console.error("[JUEGO] Error iniciando juego:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("juego-detener", async (event, pin) => {
+  try {
+    const resultado = detenerJuego(pin);
+    console.log("[JUEGO] Juego detenido:", resultado);
+    return resultado;
+  } catch (err) {
+    console.error("[JUEGO] Error deteniendo juego:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("juego-obtener-sala", async (event, pin) => {
+  try {
+    const sala = obtenerSala(pin);
+    if (!sala) {
+      return { ok: false, error: "Sala no encontrada" };
+    }
+    
+    return {
+      ok: true,
+      sala: {
+        pin: sala.pin,
+        estado: sala.estado,
+        participantes: Array.from(sala.participantes.values()).map(p => ({
+          id: p.id,
+          nombre: p.nombre,
+          puntos: p.puntos,
+          respuestas: p.respuestas,
+          avatarBase64: p.avatarBase64 || null,
+          avatarUrl: p.avatarUrl || null,
+        })),
+        preguntaActual: sala.preguntaActual,
+        totalPreguntas: sala.formulario.preguntas.length,
+        formulario: sala.formulario,
+      },
+    };
+  } catch (err) {
+    console.error("[JUEGO] Error obteniendo sala:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+// 🖥️ Handlers para ventana de proyección del host - usar ventana secundaria existente
+ipcMain.handle("abrir-ventana-host-proyeccion", async (event, monitorIndex) => {
+  try {
+    // Usar la función existente de ventana secundaria
+    abrirVentanaSecundaria(monitorIndex);
+    return true;
+  } catch (err) {
+    console.error("[HOST PROYECCION] Error abriendo ventana:", err);
+    return false;
+  }
+});
+
+ipcMain.handle("cerrar-ventana-host-proyeccion", async () => {
+  try {
+    // Cerrar usando la función existente
+    abrirVentanaSecundaria(-1);
+    return true;
+  } catch (err) {
+    console.error("[HOST PROYECCION] Error cerrando ventana:", err);
+    return false;
+  }
+});
+
+ipcMain.on("actualizar-host-proyeccion", (event, data) => {
+  // Enviar a la ventana secundaria existente
+  if (playerWindow && !playerWindow.isDestroyed()) {
+    playerWindow.webContents.send("actualizar-host-proyeccion", data);
+  }
+});
+
 // Ocultar la barra de menú
 Menu.setApplicationMenu(null);
 
@@ -426,8 +551,8 @@ async function mostrarMonitores() {
       id: i,
       nombre: d.model.replace(/[^\x20-\x7E]/g, ""),
       principal: d.main,
-    }))
-    .filter((d) => !d.principal);
+    }));
+    // Incluir TODOS los monitores, incluyendo el principal
 }
 
 // IPC

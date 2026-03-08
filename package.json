@@ -45,6 +45,7 @@
       "control-remoto.html",
       "downloader.js",
       "installer.nsh",
+      "juegoEnVivoServer.js",
       "log.html",
       "logHelper.js",
       "main.js",
@@ -154,6 +155,7 @@
     "pdf-poppler": "^0.2.3",
     "qrcode": "^1.5.4",
     "selfsigned": "^5.5.0",
+    "socket.io": "^4.8.3",
     "systeminformation": "^5.27.11"
   }
 }
