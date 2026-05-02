@@ -12430,82 +12430,8 @@ const SUSCRIPCIONES_API_URL = "https://verificador-paypal.vercel.app/api/verific
 let observadorSuscripcionesInstalado = false;
 
 // ===== FUNCIONES DE AUTENTICACIÓN =====
-async function obtenerTokenAcceso(email, subscriptionId, modo = "live") {
-  try {
-    // POST a la misma API con accion=autenticar
-    const body = {
-      accion: "autenticar",
-      email: email.trim().toLowerCase(),
-      subscriptionId: subscriptionId.trim(),
-      modo: modo,
-    };
-
-    const res = await fetchWithTimeout(SUSCRIPCIONES_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      timeout: 12000,
-    });
-
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      throw new Error(error.message || `HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    if (data.ok && data.token) {
-      // Guardar token en localStorage
-      const tokenCache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_TOKEN_KEY) || "{}");
-      tokenCache[email] = {
-        token: data.token,
-        subscriptionId: data.subscriptionId,
-        expiresIn: data.expiresIn,
-        createdAt: Date.now(),
-      };
-      localStorage.setItem(SUSCRIPCIONES_TOKEN_KEY, JSON.stringify(tokenCache));
-      return data.token;
-    }
-
-    throw new Error(data.message || "No se pudo obtener token");
-  } catch (err) {
-    console.error("Error obteniendo token:", err);
-    throw err;
-  }
-}
-
-function obtenerTokenGuardado(email) {
-  try {
-    const tokenCache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_TOKEN_KEY) || "{}");
-    const cached = tokenCache[email];
-    if (!cached) return null;
-
-    const ahora = Date.now();
-    const edad = ahora - cached.createdAt;
-    const edadEnDias = edad / (1000 * 60 * 60 * 24);
-
-    // Si el token tiene más de 29 días, considerarlo expirado
-    if (edadEnDias > 29) {
-      delete tokenCache[email];
-      localStorage.setItem(SUSCRIPCIONES_TOKEN_KEY, JSON.stringify(tokenCache));
-      return null;
-    }
-
-    return cached.token;
-  } catch (err) {
-    console.error("Error leyendo token guardado:", err);
-    return null;
-  }
-}
-
-function limpiarTokens(email) {
-  try {
-    const tokenCache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_TOKEN_KEY) || "{}");
-    delete tokenCache[email];
-    localStorage.setItem(SUSCRIPCIONES_TOKEN_KEY, JSON.stringify(tokenCache));
-  } catch (err) {
-    console.error("Error limpiando tokens:", err);
-  }
-}
+// 🚀 SYSTEM SIN TOKENS - Consulta directa a PayPal
+// Todas las consultas son directas al backend, que valida contra PayPal en tiempo real.
 
 function cerrarVentanaSuscripcionesSiAbierta() {
   if (ventanaSuscripciones) ventanaSuscripciones.style.display = "none";
@@ -12878,9 +12804,7 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
   }
 
   pintarEstadoSuscripciones(
-    auto
-      ? "Cargando tu información guardada..."
-      : "Consultando tu licencia...",
+    "Consultando PayPal en tiempo real...",
     "info",
   );
 
@@ -12893,61 +12817,35 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
           <div class="suscripcion-badge">En proceso</div>
         </div>
         <div class="suscripcion-meta">
-          <span>Esperando respuesta del sistema de licencias.</span>
+          <span>Consultando PayPal en este momento.</span>
         </div>
       </div>
     `;
   }
 
   try {
-    const machineId = await getMachineId();
-
-    // Primero intentar con token si lo tenemos
-    let token = obtenerTokenGuardado(email);
-
+    // Consulta DIRECTA sin tokens - solo email y modo
     const query = new URLSearchParams({
       email,
-      machineId,
       modo: modo,
     });
 
-    const hacerConsulta = async (tokenActual) => {
-      const headers = {};
-      if (tokenActual) headers.Authorization = `Bearer ${tokenActual}`;
-      return fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
-        headers,
-        timeout: 12000,
-      });
-    };
+    // Timeout aumentado a 20 segundos para búsquedas complejas con múltiples suscripciones
+    let res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
+      timeout: 20000,
+    });
 
-    let res = await hacerConsulta(token);
-
+    // Reintentar si es 503 (PayPal temporalmente no disponible)
     if (res.status === 503) {
       await new Promise((r) => setTimeout(r, 800));
-      res = await hacerConsulta(token);
+      res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
+        timeout: 20000,
+      });
       if (res.status === 503) {
         await new Promise((r) => setTimeout(r, 1600));
-        res = await hacerConsulta(token);
-      }
-    }
-
-    if ((res.status === 401 || res.status === 403) && token) {
-      limpiarTokens(email);
-      token = null;
-      const subIdReauth = obtenerSubscriptionIdParaAutenticar(email);
-      if (subIdReauth) {
-        pintarEstadoSuscripciones("Tu sesión expiró. Reautenticando...", "info");
-        token = await obtenerTokenAcceso(email, subIdReauth, modo);
-        res = await hacerConsulta(token);
-      }
-    }
-
-    if ((res.status === 401 || res.status === 403) && !token) {
-      const subIdAuth = obtenerSubscriptionIdParaAutenticar(email);
-      if (subIdAuth) {
-        pintarEstadoSuscripciones("Autenticando tu correo para consultar licencias...", "info");
-        token = await obtenerTokenAcceso(email, subIdAuth, modo);
-        res = await hacerConsulta(token);
+        res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
+          timeout: 20000,
+        });
       }
     }
 
@@ -12967,14 +12865,14 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
     const suscripciones = normalizarSuscripcionesRespuesta(data);
     if (suscripciones.length > 0) {
       pintarEstadoSuscripciones(
-        `Encontramos ${suscripciones.length} suscripción(es) para ${email}.`,
+        `✅ Encontramos ${suscripciones.length} suscripción(es) para ${email}.`,
         "exito",
       );
     } else if (data?.premium === true) {
-      pintarEstadoSuscripciones(`Tu licencia está activa para ${email}.`, "exito");
+      pintarEstadoSuscripciones(`✅ Tu licencia está activa para ${email}.`, "exito");
     } else {
       pintarEstadoSuscripciones(
-        `No se encontraron suscripciones activas para ${email}.`,
+        `⚠️ No se encontraron suscripciones activas para ${email}.`,
         "alerta",
       );
     }
@@ -12983,15 +12881,12 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
   } catch (err) {
     console.error("Error al consultar suscripciones de PayPal:", err);
 
-    const esErrorAuth = esErrorAutenticacionSuscripciones(err);
     const esErrorPayPalTemporal = esErrorTemporalPayPalSuscripciones(err);
 
     pintarEstadoSuscripciones(
-      esErrorAuth
-        ? "No pudimos validar tu sesión de licencia. Intenta consultar de nuevo para reautenticar."
-        : esErrorPayPalTemporal
-          ? "PayPal no respondió en este momento. Intenta nuevamente en unos minutos."
-          : "No pudimos consultar tu licencia en este momento. Intenta de nuevo más tarde.",
+      esErrorPayPalTemporal
+        ? "PayPal no respondió en este momento. Intenta nuevamente en unos minutos."
+        : "No pudimos consultar tu licencia en este momento. Intenta de nuevo más tarde.",
       "error",
     );
 
