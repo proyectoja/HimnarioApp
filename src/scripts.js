@@ -219,6 +219,20 @@ async function solicitarValidacionConReintentos(url, timeout = 7000) {
   };
 }
 
+async function esperarPayPalDisponible(timeoutMs = 12000, intervaloMs = 250) {
+  const inicio = Date.now();
+
+  while (Date.now() - inicio < timeoutMs) {
+    if (window.paypal && typeof window.paypal.Buttons === "function") {
+      return true;
+    }
+
+    await esperar(intervaloMs);
+  }
+
+  return false;
+}
+
 function mostrarAlertaPeriodoGraciaControlada(diasRestantes) {
   const ALERTA_GRACIA_KEY = "lastGraceAlertDate";
   const INTERVALO_MINIMO_MS = 12 * 60 * 60 * 1000; // 12 horas
@@ -1896,7 +1910,7 @@ botonPremium.addEventListener("click", function () {
     // contenedorPremium.appendChild(contenedorInterno); // Eliminado por duplicado
 
     // Inicializar PayPal después de un pequeño delay para asegurar que el DOM esté listo
-    setTimeout(() => {
+    setTimeout(async () => {
       console.log("Intentando renderizar botón de PayPal...");
       const containerInner = document.getElementById(
         "paypal-button-container-inner",
@@ -1910,12 +1924,14 @@ botonPremium.addEventListener("click", function () {
       console.log("Contenedor interno encontrado. Limpiando y renderizando...");
       containerInner.innerHTML = ""; // Limpiar texto temporal
 
-      if (!window.paypal || typeof window.paypal.Buttons !== "function") {
+      const paypalDisponible = await esperarPayPalDisponible();
+
+      if (!paypalDisponible) {
         console.error(
-          "Error: El SDK de PayPal no se cargó correctamente o la función 'Buttons' no está disponible.",
+          "Error: El SDK de PayPal no se cargó correctamente o la función 'Buttons' no está disponible. Revisa el client-id público y la conexión a internet; el cliente secreto no afecta este paso.",
         );
         containerInner.innerHTML =
-          "<p style='color:red; text-align:center;'>Error: PayPal SDK no pudo inicializarse.<br>Verifique su conexión a internet y recargue la aplicación.</p>";
+          "<p style='color:red; text-align:center;'>Error: PayPal SDK no pudo inicializarse.<br>Verifique su conexión a internet y el client-id público de PayPal.<br>El cliente secreto no controla la carga de estos botones.</p>";
         return;
       }
 
@@ -2832,6 +2848,8 @@ const ventanaConexionBiblica = document.getElementById(
 );
 const botonManual = document.getElementById("botonManualUsuario");
 const ventanaManual = document.getElementById("contenedor-manual-usuario");
+const botonSuscripciones = document.getElementById("botonSuscripciones");
+const ventanaSuscripciones = document.getElementById("contenedor-suscripciones");
 const botonPelis = document.getElementById("botonPelis");
 const ventanaPelis = document.getElementById("contenedor-peliculas");
 
@@ -10124,6 +10142,7 @@ function pptNext() {
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
 
+    cerrarVentanaSuscripcionesSiAbierta();
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
@@ -10165,6 +10184,7 @@ function pptPrev() {
     const ventanaYouTube = document.getElementById("contenedor-youtube");
     const himnarioContainer = document.getElementById("himnario");
 
+    cerrarVentanaSuscripcionesSiAbierta();
     ventanaHimnosPro.style.display = "none";
     ventanaBiblia.style.display = "none";
     ventanaYouTube.style.display = "none";
@@ -10239,6 +10259,7 @@ function loadPowerPoint(slidesArray, presentationId = null) {
     const himnarioContainer = document.getElementById("himnario");
 
     if (ventanaPowerPoint) {
+      cerrarVentanaSuscripcionesSiAbierta();
       ventanaHimnosPro.style.display = "none";
       ventanaBiblia.style.display = "none";
       ventanaYouTube.style.display = "none";
@@ -12401,6 +12422,704 @@ window.scrollToManualSection = function (id, element) {
   }
 };
 
+const SUSCRIPCIONES_EMAIL_KEY = "paypalSubscriptionEmail";
+const SUSCRIPCIONES_CACHE_KEY = "paypalSubscriptionCache";
+const SUSCRIPCIONES_TOKEN_KEY = "paypalSubscriptionToken";
+const SUSCRIPCIONES_API_URL = "https://verificador-paypal.vercel.app/api/verificaSuscripcionUsuario";
+
+let observadorSuscripcionesInstalado = false;
+
+// ===== FUNCIONES DE AUTENTICACIÓN =====
+async function obtenerTokenAcceso(email, subscriptionId, modo = "live") {
+  try {
+    // POST a la misma API con accion=autenticar
+    const body = {
+      accion: "autenticar",
+      email: email.trim().toLowerCase(),
+      subscriptionId: subscriptionId.trim(),
+      modo: modo,
+    };
+
+    const res = await fetchWithTimeout(SUSCRIPCIONES_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      timeout: 12000,
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (data.ok && data.token) {
+      // Guardar token en localStorage
+      const tokenCache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_TOKEN_KEY) || "{}");
+      tokenCache[email] = {
+        token: data.token,
+        subscriptionId: data.subscriptionId,
+        expiresIn: data.expiresIn,
+        createdAt: Date.now(),
+      };
+      localStorage.setItem(SUSCRIPCIONES_TOKEN_KEY, JSON.stringify(tokenCache));
+      return data.token;
+    }
+
+    throw new Error(data.message || "No se pudo obtener token");
+  } catch (err) {
+    console.error("Error obteniendo token:", err);
+    throw err;
+  }
+}
+
+function obtenerTokenGuardado(email) {
+  try {
+    const tokenCache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_TOKEN_KEY) || "{}");
+    const cached = tokenCache[email];
+    if (!cached) return null;
+
+    const ahora = Date.now();
+    const edad = ahora - cached.createdAt;
+    const edadEnDias = edad / (1000 * 60 * 60 * 24);
+
+    // Si el token tiene más de 29 días, considerarlo expirado
+    if (edadEnDias > 29) {
+      delete tokenCache[email];
+      localStorage.setItem(SUSCRIPCIONES_TOKEN_KEY, JSON.stringify(tokenCache));
+      return null;
+    }
+
+    return cached.token;
+  } catch (err) {
+    console.error("Error leyendo token guardado:", err);
+    return null;
+  }
+}
+
+function limpiarTokens(email) {
+  try {
+    const tokenCache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_TOKEN_KEY) || "{}");
+    delete tokenCache[email];
+    localStorage.setItem(SUSCRIPCIONES_TOKEN_KEY, JSON.stringify(tokenCache));
+  } catch (err) {
+    console.error("Error limpiando tokens:", err);
+  }
+}
+
+function cerrarVentanaSuscripcionesSiAbierta() {
+  if (ventanaSuscripciones) ventanaSuscripciones.style.display = "none";
+}
+
+const BOTONES_QUE_CIERRAN_SUSCRIPCIONES = new Set([
+  "botonPremium",
+  "botonProgramacion",
+  "botonConexionBiblica",
+  "botonPowerPoint",
+  "botonBiblia",
+  "botonHimnosPro",
+  "botonYoutube",
+  "botonPelis",
+  "botonManualUsuario",
+]);
+
+document.addEventListener(
+  "click",
+  (evt) => {
+    const boton = evt.target.closest && evt.target.closest("button");
+    if (!boton || boton.id === "botonSuscripciones") return;
+    if (BOTONES_QUE_CIERRAN_SUSCRIPCIONES.has(boton.id)) {
+      cerrarVentanaSuscripcionesSiAbierta();
+    }
+  },
+  true,
+);
+
+function ocultarPanelesSecundarios() {
+  if (ventanaHimnosPro) ventanaHimnosPro.style.display = "none";
+  if (ventanaBiblia) ventanaBiblia.style.display = "none";
+  if (ventanaYouTube) ventanaYouTube.style.display = "none";
+  if (ventanaPowerPoint) ventanaPowerPoint.style.display = "none";
+  if (ventanaProgramacion) ventanaProgramacion.style.display = "none";
+  if (ventanaManual) ventanaManual.style.display = "none";
+  if (ventanaPelis) ventanaPelis.style.display = "none";
+  if (ventanaConexionBiblica) ventanaConexionBiblica.style.display = "none";
+  cerrarVentanaSuscripcionesSiAbierta();
+}
+
+function normalizarSuscripcionesRespuesta(data) {
+  const lista =
+    data?.suscripciones ||
+    data?.subscriptions ||
+    data?.results ||
+    data?.items ||
+    [];
+
+  if (Array.isArray(lista) && lista.length > 0) {
+    return lista;
+  }
+
+  if (
+    data?.paypalSubscriptionId ||
+    data?.subscriptionId ||
+    data?.codigo ||
+    data?.id
+  ) {
+    return [data];
+  }
+
+  return [];
+}
+
+function normalizarHistorialPagos(data) {
+  const lista = data?.historialPagos || data?.paymentHistory || data?.pagos || [];
+  return Array.isArray(lista) ? lista : [];
+}
+
+function formatearValorPago(item) {
+  const monto = item?.amount || item?.monto || item?.value || null;
+  const moneda = item?.currency || item?.moneda || item?.currency_code || "";
+  if (!monto) return "";
+  return `${monto}${moneda ? ` ${moneda}` : ""}`;
+}
+
+function agruparPagosPorSuscripcion(historial) {
+  const mapa = new Map();
+  (historial || []).forEach((item) => {
+    const id = item?.subscriptionId || item?.paypalSubscriptionId || item?.idSuscripcion || null;
+    if (!id) return;
+    if (!mapa.has(id)) mapa.set(id, []);
+    mapa.get(id).push(item);
+  });
+  return mapa;
+}
+
+function formatearFechaHistorico(item) {
+  return item?.dateLabel || item?.fechaLabel || item?.date || item?.time || item?.fecha || "No disponible";
+}
+
+function extraerSubscriptionIdsDeRespuesta(data) {
+  const suscripciones = normalizarSuscripcionesRespuesta(data);
+  return suscripciones
+    .map((item) =>
+      item?.paypalSubscriptionId ||
+      item?.subscriptionId ||
+      item?.id ||
+      item?.codigo ||
+      item?.sub_id ||
+      null,
+    )
+    .filter(Boolean)
+    .map((id) => String(id).trim());
+}
+
+function obtenerSubscriptionIdParaAutenticar(email) {
+  const candidatos = [];
+
+  try {
+    const tokenCache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_TOKEN_KEY) || "{}");
+    const fromToken = tokenCache?.[email]?.subscriptionId;
+    if (fromToken) candidatos.push(String(fromToken).trim());
+  } catch (err) {
+    console.error("Error leyendo cache de token:", err);
+  }
+
+  try {
+    const subscriptionIdLocal = localStorage.getItem("paypalSubscriptionId");
+    if (subscriptionIdLocal) candidatos.push(String(subscriptionIdLocal).trim());
+  } catch (err) {
+    console.error("Error leyendo paypalSubscriptionId local:", err);
+  }
+
+  try {
+    const cache = JSON.parse(localStorage.getItem(SUSCRIPCIONES_CACHE_KEY) || "null");
+    if (cache) {
+      extraerSubscriptionIdsDeRespuesta(cache).forEach((id) => candidatos.push(id));
+    }
+  } catch (err) {
+    console.error("Error leyendo cache de suscripciones:", err);
+  }
+
+  const unicos = [...new Set(candidatos.filter(Boolean))];
+  return unicos.length ? unicos[0] : null;
+}
+
+function esErrorAutenticacionSuscripciones(err) {
+  const mensaje = String(err?.message || "").toLowerCase();
+  return (
+    mensaje.includes("http 401") ||
+    mensaje.includes("http 403") ||
+    mensaje.includes("missing_token") ||
+    mensaje.includes("invalid_token") ||
+    mensaje.includes("token_expired") ||
+    mensaje.includes("email_mismatch") ||
+    mensaje.includes("auth") ||
+    mensaje.includes("autentic")
+  );
+}
+
+function esErrorTemporalPayPalSuscripciones(err) {
+  const mensaje = String(err?.message || "").toLowerCase();
+  return (
+    mensaje.includes("http 503") ||
+    mensaje.includes("paypal_unavailable") ||
+    mensaje.includes("pay pal") ||
+    mensaje.includes("paypal")
+  );
+}
+
+function normalizarEstadoSuscripcion(valor) {
+  const raw = String(valor || "").toUpperCase();
+  if (raw === "ACTIVE" || raw === "ACTIVA") return { label: "Activa", tipo: "activa" };
+  if (raw === "SUSPENDED" || raw === "PAUSED" || raw === "EN PAUSA") return { label: "En pausa", tipo: "pausa" };
+  if (raw === "CANCELLED" || raw === "CANCELED" || raw === "CANCELADA") return { label: "Cancelada", tipo: "cancelada" };
+  if (raw === "APPROVAL_PENDING" || raw === "PENDING" || raw === "PENDIENTE") return { label: "Pendiente", tipo: "pendiente" };
+  return { label: valor || "No definido", tipo: "neutro" };
+}
+
+function crearTarjetaSuscripcion(item, index, email, pagos = []) {
+  const plan =
+    item?.plan_name ||
+    item?.planNombre ||
+    item?.plan ||
+    item?.planTipo ||
+    item?.producto ||
+    item?.provider ||
+    "PayPal";
+  const precioPlan = item?.plan_price || item?.price_label || item?.price || item?.amount || "";
+  const estadoRaw =
+    item?.status ||
+    item?.estado ||
+    (item?.active === false ? "Inactiva" : "Activa");
+  const estado = normalizarEstadoSuscripcion(estadoRaw);
+  const subscriptionId =
+    item?.paypalSubscriptionId ||
+    item?.subscriptionId ||
+    item?.id ||
+    item?.codigo ||
+    item?.sub_id ||
+    "No disponible";
+  const fecha =
+    item?.next_billing_time ||
+    item?.renewalDate ||
+    item?.fechaRenovacion ||
+    item?.lastValidationDate ||
+    item?.updatedAt ||
+    "No disponible";
+
+  const ultimosPagos = (pagos || []).slice(0, 8);
+
+  return `
+    <div class="suscripcion-item">
+      <div class="suscripcion-item-header">
+        <div class="suscripcion-item-title">Suscripción ${index + 1}: ${plan}${precioPlan ? ` · ${precioPlan}` : ""}</div>
+        <div class="suscripcion-badge suscripcion-badge-${estado.tipo}">${estado.label}</div>
+      </div>
+      <div class="suscripcion-meta">
+        <span><strong>Correo:</strong> ${email || item?.email || "No registrado"}</span>
+        <span><strong>Plan:</strong> ${plan}${precioPlan ? ` · ${precioPlan}` : ""}</span>
+        <span><strong>PayPal ID:</strong> ${subscriptionId}</span>
+        <span><strong>Próxima renovación:</strong> ${fecha}</span>
+      </div>
+      <div class="suscripcion-actions">
+        <button class="suscripcion-copy" type="button" data-copy-suscripcion="${encodeURIComponent(String(subscriptionId))}">Copiar ID</button>
+        <button class="suscripcion-delete" type="button" data-release-machine="${encodeURIComponent(String(subscriptionId))}">✕ Liberar ID de máquina</button>
+      </div>
+      <div class="suscripcion-historial">
+        <div class="suscripcion-historial-titulo">Historial de pagos</div>
+        ${ultimosPagos.length ? ultimosPagos.map((pago) => `
+          <div class="suscripcion-pago-item">
+            <span>${formatearFechaHistorico(pago)}</span>
+            <span>${formatearValorPago(pago)}</span>
+          </div>
+        `).join("") : `
+          <div class="suscripcion-pago-vacio">Sin pagos recientes registrados para esta licencia.</div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+function pintarEstadoSuscripciones(mensaje, tipo = "info") {
+  const estado = document.getElementById("suscripciones-estado");
+  if (!estado) return;
+
+  const colores = {
+    info: "rgba(255,255,255,0.08)",
+    exito: "rgba(46, 204, 113, 0.14)",
+    error: "rgba(231, 76, 60, 0.16)",
+    alerta: "rgba(241, 196, 15, 0.16)",
+  };
+
+  estado.style.background = colores[tipo] || colores.info;
+  estado.textContent = mensaje;
+}
+
+function pintarListaSuscripciones(data, email) {
+  const lista = document.getElementById("suscripciones-lista");
+  if (!lista) return;
+
+  const suscripciones = normalizarSuscripcionesRespuesta(data);
+  const historial = normalizarHistorialPagos(data);
+  const pagosPorSuscripcion = agruparPagosPorSuscripcion(historial);
+
+  const resumen = document.getElementById("suscripciones-resumen");
+  if (resumen) {
+    const totalPagos = historial.length;
+    resumen.textContent = `${suscripciones.length} suscripción(es) · ${totalPagos} pago(s) histórico(s)`;
+  }
+
+  if (!suscripciones.length) {
+    lista.innerHTML = `
+      <div class="suscripcion-item suscripcion-vacio">
+        <div class="suscripcion-item-header">
+          <div class="suscripcion-item-title">Sin suscripciones activas</div>
+          <div class="suscripcion-badge suscripcion-badge-gris">0</div>
+        </div>
+        <div class="suscripcion-meta">
+          <span>El correo ${email || "ingresado"} no tiene suscripciones activas registradas.</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  lista.innerHTML = suscripciones
+    .map((item, index) => {
+      const subId = item?.paypalSubscriptionId || item?.subscriptionId || item?.id || item?.codigo || item?.sub_id || "";
+      const pagos = pagosPorSuscripcion.get(String(subId)) || pagosPorSuscripcion.get(subId) || [];
+      return crearTarjetaSuscripcion(item, index, email, pagos);
+    })
+    .join("");
+
+  lista.querySelectorAll("[data-copy-suscripcion]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const texto = decodeURIComponent(btn.getAttribute("data-copy-suscripcion") || "");
+      try {
+        await navigator.clipboard.writeText(texto);
+        const original = btn.textContent;
+        btn.textContent = "Copiado";
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1400);
+      } catch (err) {
+        console.error("No se pudo copiar el ID de PayPal:", err);
+      }
+    });
+  });
+
+  lista.querySelectorAll("[data-release-machine]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const subscriptionIdDel = decodeURIComponent(btn.getAttribute("data-release-machine") || "");
+      if (!subscriptionIdDel) return;
+
+      const confirmacion = confirm(
+        "Esta opción libera el ID de máquina para esta licencia en esta computadora.\n\n" +
+          "Úsala antes de cambiar de equipo para poder reutilizar el mismo código/suscripción en otra máquina.\n\n" +
+          "¿Deseas continuar?",
+      );
+      if (!confirmacion) return;
+
+      try {
+        const emailActual = (document.getElementById("suscripciones-email")?.value || email || "").trim().toLowerCase();
+        const machineIdActual = await getMachineId();
+        
+        // Obtener token
+        let token = obtenerTokenGuardado(emailActual);
+        if (!token) {
+          pintarEstadoSuscripciones("Autenticando para liberar máquina...", "info");
+          token = await obtenerTokenAcceso(emailActual, subscriptionIdDel, modo);
+        }
+
+        const query = new URLSearchParams({
+          accion: "releaseMachineId",
+          email: emailActual,
+          subscriptionId: subscriptionIdDel,
+          machineId: machineIdActual,
+          modo: modo,
+        });
+        const res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 12000,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        pintarEstadoSuscripciones("ID de máquina liberado correctamente para esta licencia.", "exito");
+        await consultarSuscripcionesPayPal();
+      } catch (err) {
+        console.error("No se pudo liberar el ID de máquina:", err);
+        pintarEstadoSuscripciones("No se pudo liberar el ID de máquina en este momento.", "error");
+      }
+    });
+  });
+}
+
+async function consultarSuscripcionesPayPal({ auto = false } = {}) {
+  if (!ventanaSuscripciones) return;
+
+  const input = document.getElementById("suscripciones-email");
+  const email = (input?.value || "").trim().toLowerCase();
+
+  if (!email) {
+    pintarEstadoSuscripciones(
+      "Escribe el correo usado en la compra para cargar tu licencia.",
+      "alerta",
+    );
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    pintarEstadoSuscripciones(
+      "El correo no parece válido. Verifica el formato e inténtalo de nuevo.",
+      "error",
+    );
+    return;
+  }
+
+  pintarEstadoSuscripciones(
+    auto
+      ? "Cargando tu información guardada..."
+      : "Consultando tu licencia...",
+    "info",
+  );
+
+  const lista = document.getElementById("suscripciones-lista");
+  if (lista) {
+    lista.innerHTML = `
+      <div class="suscripcion-item">
+        <div class="suscripcion-item-header">
+          <div class="suscripcion-item-title">Buscando información...</div>
+          <div class="suscripcion-badge">En proceso</div>
+        </div>
+        <div class="suscripcion-meta">
+          <span>Esperando respuesta del sistema de licencias.</span>
+        </div>
+      </div>
+    `;
+  }
+
+  try {
+    const machineId = await getMachineId();
+
+    // Primero intentar con token si lo tenemos
+    let token = obtenerTokenGuardado(email);
+
+    const query = new URLSearchParams({
+      email,
+      machineId,
+      modo: modo,
+    });
+
+    const hacerConsulta = async (tokenActual) => {
+      const headers = {};
+      if (tokenActual) headers.Authorization = `Bearer ${tokenActual}`;
+      return fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
+        headers,
+        timeout: 12000,
+      });
+    };
+
+    let res = await hacerConsulta(token);
+
+    if (res.status === 503) {
+      await new Promise((r) => setTimeout(r, 800));
+      res = await hacerConsulta(token);
+      if (res.status === 503) {
+        await new Promise((r) => setTimeout(r, 1600));
+        res = await hacerConsulta(token);
+      }
+    }
+
+    if ((res.status === 401 || res.status === 403) && token) {
+      limpiarTokens(email);
+      token = null;
+      const subIdReauth = obtenerSubscriptionIdParaAutenticar(email);
+      if (subIdReauth) {
+        pintarEstadoSuscripciones("Tu sesión expiró. Reautenticando...", "info");
+        token = await obtenerTokenAcceso(email, subIdReauth, modo);
+        res = await hacerConsulta(token);
+      }
+    }
+
+    if ((res.status === 401 || res.status === 403) && !token) {
+      const subIdAuth = obtenerSubscriptionIdParaAutenticar(email);
+      if (subIdAuth) {
+        pintarEstadoSuscripciones("Autenticando tu correo para consultar licencias...", "info");
+        token = await obtenerTokenAcceso(email, subIdAuth, modo);
+        res = await hacerConsulta(token);
+      }
+    }
+
+    if (!res.ok) {
+      let detalle = "";
+      try {
+        const errData = await res.clone().json();
+        detalle = errData?.error || errData?.message || "";
+      } catch (_) {
+        // ignorar parse fallido
+      }
+      throw new Error(detalle ? `HTTP ${res.status} ${detalle}` : `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    const suscripciones = normalizarSuscripcionesRespuesta(data);
+    if (suscripciones.length > 0) {
+      pintarEstadoSuscripciones(
+        `Encontramos ${suscripciones.length} suscripción(es) para ${email}.`,
+        "exito",
+      );
+    } else if (data?.premium === true) {
+      pintarEstadoSuscripciones(`Tu licencia está activa para ${email}.`, "exito");
+    } else {
+      pintarEstadoSuscripciones(
+        `No se encontraron suscripciones activas para ${email}.`,
+        "alerta",
+      );
+    }
+
+    pintarListaSuscripciones(data, email);
+  } catch (err) {
+    console.error("Error al consultar suscripciones de PayPal:", err);
+
+    const esErrorAuth = esErrorAutenticacionSuscripciones(err);
+    const esErrorPayPalTemporal = esErrorTemporalPayPalSuscripciones(err);
+
+    pintarEstadoSuscripciones(
+      esErrorAuth
+        ? "No pudimos validar tu sesión de licencia. Intenta consultar de nuevo para reautenticar."
+        : esErrorPayPalTemporal
+          ? "PayPal no respondió en este momento. Intenta nuevamente en unos minutos."
+          : "No pudimos consultar tu licencia en este momento. Intenta de nuevo más tarde.",
+      "error",
+    );
+
+    const listaError = document.getElementById("suscripciones-lista");
+    if (listaError) {
+      listaError.innerHTML = `
+        <div class="suscripcion-item">
+          <div class="suscripcion-item-header">
+              <div class="suscripcion-item-title">Verificación temporalmente no disponible</div>
+            <div class="suscripcion-badge">Offline</div>
+          </div>
+          <div class="suscripcion-meta">
+              <span>Verifica tu conexión a internet o intenta nuevamente en unos minutos.</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+}
+
+function prepararPanelSuscripciones() {
+  if (!ventanaSuscripciones) return;
+
+  if (ventanaSuscripciones.dataset.cargado === "true") {
+    return;
+  }
+
+  ventanaSuscripciones.innerHTML = `
+    <div class="suscripciones-panel">
+      <div class="suscripciones-card">
+        <h2>Mis suscripciones</h2>
+        <p class="suscripciones-ayuda">
+          El acceso se carga al pulsar este botón. No se completa ni se guarda automáticamente.
+        </p>
+        <div class="suscripciones-form">
+          <label for="suscripciones-email">Correo de compra</label>
+          <input id="suscripciones-email" type="email" placeholder="correo@dominio.com" autocomplete="off" autocapitalize="none" spellcheck="false" />
+          <button id="suscripciones-buscar" type="button">Consultar</button>
+          <div class="suscripciones-ayuda">
+            Escribe el correo que deseas consultar y presiona "Consultar".
+          </div>
+        </div>
+        <div class="suscripciones-estado" id="suscripciones-estado">
+          Ingresa tu correo para revisar el estado de tu licencia.
+        </div>
+        <div class="suscripciones-resumen" id="suscripciones-resumen">0 suscripción(es) · 0 pago(s) histórico(s)</div>
+      </div>
+
+      <div class="suscripciones-listado">
+        <h3>Estado de tu licencia</h3>
+        <div class="suscripciones-lista" id="suscripciones-lista"></div>
+      </div>
+    </div>
+  `;
+
+  ventanaSuscripciones.dataset.cargado = "true";
+
+  const input = document.getElementById("suscripciones-email");
+  const btnBuscar = document.getElementById("suscripciones-buscar");
+  const emailGuardado = "";
+  const cacheGuardado = null;
+
+  try {
+    localStorage.removeItem(SUSCRIPCIONES_EMAIL_KEY);
+    localStorage.removeItem(SUSCRIPCIONES_CACHE_KEY);
+  } catch (err) {
+    console.error("No se pudo limpiar cache local de suscripciones:", err);
+  }
+
+  if (input) {
+    input.value = "";
+  }
+
+  if (btnBuscar) {
+    btnBuscar.addEventListener("click", () => consultarSuscripcionesPayPal());
+  }
+
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        consultarSuscripcionesPayPal();
+      }
+    });
+  }
+
+  if (emailGuardado && cacheGuardado) {
+    // Sin autocompletar/auto-consultar para evitar mostrar correos previos.
+  }
+}
+
+function instalarObservadorExclusividadSuscripciones() {
+  if (observadorSuscripcionesInstalado || !ventanaSuscripciones) return;
+
+  const paneles = [
+    ventanaBiblia,
+    ventanaYouTube,
+    ventanaHimnosPro,
+    ventanaPowerPoint,
+    ventanaProgramacion,
+    ventanaManual,
+    ventanaPelis,
+    ventanaConexionBiblica,
+  ].filter(Boolean);
+
+  const observar = () => {
+    if (getComputedStyle(ventanaSuscripciones).display === "none") return;
+
+    const otroPanelVisible = paneles.some(
+      (panel) => getComputedStyle(panel).display !== "none",
+    );
+
+    if (otroPanelVisible) {
+      ventanaSuscripciones.style.display = "none";
+    }
+  };
+
+  const observer = new MutationObserver(observar);
+  paneles.forEach((panel) => {
+    observer.observe(panel, {
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+  });
+
+  observadorSuscripcionesInstalado = true;
+}
+
 if (botonManual) {
   botonManual.addEventListener("click", function () {
     const displayActual = getComputedStyle(ventanaManual).display;
@@ -12427,6 +13146,27 @@ if (botonManual) {
       ventanaPelis.style.display = "none";
       ventanaConexionBiblica.style.display = "none";
       himnarioContainer.style.display = "grid";
+    }
+  });
+}
+
+if (botonSuscripciones) {
+  botonSuscripciones.addEventListener("click", function () {
+    const displayActual = getComputedStyle(ventanaSuscripciones).display;
+
+    if (displayActual === "none") {
+      ocultarPanelesSecundarios();
+      // Mantener consistencia con otros botones: ocultar el grid principal
+      if (typeof himnarioContainer !== "undefined" && himnarioContainer)
+        himnarioContainer.style.display = "none";
+      ventanaSuscripciones.style.display = "flex";
+      document.getElementById("contenedor-contador").style.display = "none";
+      prepararPanelSuscripciones();
+      instalarObservadorExclusividadSuscripciones();
+    } else {
+      ventanaSuscripciones.style.display = "none";
+      if (typeof himnarioContainer !== "undefined" && himnarioContainer)
+        himnarioContainer.style.display = "grid";
     }
   });
 }

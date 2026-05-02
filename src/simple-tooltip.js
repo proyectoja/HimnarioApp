@@ -387,4 +387,11 @@ document.addEventListener("DOMContentLoaded", function () {
       "right",
     );
   }
+  if (document.getElementById("botonSuscripciones")) {
+    addToolTip(
+      "#botonSuscripciones",
+      "Panel de suscripciones PayPal",
+      "right",
+    );
+  }
 });
