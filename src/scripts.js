@@ -1906,6 +1906,61 @@ botonPremium.addEventListener("click", function () {
     mensajeMonto.appendChild(textoMonto);
     contenedorInterno.appendChild(mensajeMonto);
 
+    const obtenerEmailSuscripcionPaypal = async () => {
+      const emailGuardado = String(
+        localStorage.getItem(SUSCRIPCIONES_EMAIL_KEY) ||
+        localStorage.getItem("lastSuscripcionEmail") ||
+        "",
+      ).trim().toLowerCase();
+
+      if (emailGuardado && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailGuardado)) {
+        return emailGuardado;
+      }
+
+      const emailIngresado = String(
+        prompt("Ingresa el correo para asociar la suscripción PayPal:") || "",
+      ).trim().toLowerCase();
+
+      if (emailIngresado && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailIngresado)) {
+        localStorage.setItem(SUSCRIPCIONES_EMAIL_KEY, emailIngresado);
+        localStorage.setItem("lastSuscripcionEmail", emailIngresado);
+        return emailIngresado;
+      }
+
+      return "";
+    };
+
+    const sincronizarSuscripcionPaypalKV = async ({ subscriptionId, planId = null }) => {
+      if (!subscriptionId) return false;
+
+      const emailSuscripcion = await obtenerEmailSuscripcionPaypal();
+      if (!emailSuscripcion) return false;
+
+      const modoActual = (typeof modo !== "undefined" && modo) ? modo : "live";
+      const query = new URLSearchParams({
+        email: emailSuscripcion,
+        subscriptionId,
+        modo: modoActual,
+        source: "checkout",
+      });
+
+      if (planId) query.set("plan_id", planId);
+
+      try {
+        const res = await fetchWithTimeout(
+          `https://verificador-paypal.vercel.app/api/verificaSuscripcionUsuario?${query.toString()}`,
+          { timeout: 12000 },
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json().catch(() => null);
+        console.log("[PAYPAL-KV] Suscripción sincronizada:", data?.source || "ok");
+        return true;
+      } catch (err) {
+        console.warn("[PAYPAL-KV] No se pudo sincronizar la suscripción:", err?.message || err);
+        return false;
+      }
+    };
+
     // Agregar contenedor interno al principal
     // contenedorPremium.appendChild(contenedorInterno); // Eliminado por duplicado
 
@@ -1948,20 +2003,31 @@ botonPremium.addEventListener("click", function () {
               tagline: false,
             },
             createSubscription: function (data, actions) {
-              return actions.subscription.create({
-                plan_id: "P-0KY630971U339254XNFO7TMQ",
-              });
+              return (async () => {
+                const emailSuscripcion = await obtenerEmailSuscripcionPaypal();
+                const payload = {
+                  plan_id: "P-0KY630971U339254XNFO7TMQ",
+                };
+                if (emailSuscripcion) payload.custom_id = emailSuscripcion;
+                return actions.subscription.create(payload);
+              })();
             },
-            onApprove: function (data, actions) {
+            onApprove: async function (data, actions) {
               const subscriptionId = data.subscriptionID;
               alert(
                 "🎉 ¡Suscripción exitosa! Ahora disfrutas de todas las ventajas premium.",
               );
 
               localStorage.setItem("paypalSubscriptionId", subscriptionId);
+              localStorage.setItem("lastSuscripcionEmail", localStorage.getItem(SUSCRIPCIONES_EMAIL_KEY) || "");
               localStorage.setItem("premium", "true");
               localStorage.setItem("planTipo", "premium");
               localStorage.setItem("lastValidationDate", Date.now().toString());
+
+              await sincronizarSuscripcionPaypalKV({
+                subscriptionId,
+                planId: "P-0KY630971U339254XNFO7TMQ",
+              });
 
               location.reload();
             },
@@ -1987,20 +2053,31 @@ botonPremium.addEventListener("click", function () {
               tagline: false,
             },
             createSubscription: function (data, actions) {
-              return actions.subscription.create({
-                plan_id: "P-2YM91167P37929048NFO7UQI",
-              });
+              return (async () => {
+                const emailSuscripcion = await obtenerEmailSuscripcionPaypal();
+                const payload = {
+                  plan_id: "P-2YM91167P37929048NFO7UQI",
+                };
+                if (emailSuscripcion) payload.custom_id = emailSuscripcion;
+                return actions.subscription.create(payload);
+              })();
             },
-            onApprove: function (data, actions) {
+            onApprove: async function (data, actions) {
               const subscriptionId = data.subscriptionID;
               alert(
                 "🎉 ¡Suscripción Anual exitosa! Ahora disfrutas de todas las ventajas premium.",
               );
 
               localStorage.setItem("paypalSubscriptionId", subscriptionId);
+              localStorage.setItem("lastSuscripcionEmail", localStorage.getItem(SUSCRIPCIONES_EMAIL_KEY) || "");
               localStorage.setItem("premium", "true");
               localStorage.setItem("planTipo", "premium");
               localStorage.setItem("lastValidationDate", Date.now().toString());
+
+              await sincronizarSuscripcionPaypalKV({
+                subscriptionId,
+                planId: "P-2YM91167P37929048NFO7UQI",
+              });
 
               location.reload();
             },
@@ -2029,17 +2106,28 @@ botonPremium.addEventListener("click", function () {
                 tagline: false,
               },
               createSubscription: function (data, actions) {
-                return actions.subscription.create({
-                  plan_id: "P-40E25374WC496032ENB62ANQ", // TODO: Reemplazar con el ID real del plan básico mensual
-                });
+                return (async () => {
+                  const emailSuscripcion = await obtenerEmailSuscripcionPaypal();
+                  const payload = {
+                    plan_id: "P-40E25374WC496032ENB62ANQ", // TODO: Reemplazar con el ID real del plan básico mensual
+                  };
+                  if (emailSuscripcion) payload.custom_id = emailSuscripcion;
+                  return actions.subscription.create(payload);
+                })();
               },
-              onApprove: function (data, actions) {
+              onApprove: async function (data, actions) {
                 const subscriptionId = data.subscriptionID;
                 alert("✅ ¡Plan Básico activado! Disfruta de películas sin límites.");
                 localStorage.setItem("paypalSubscriptionId", subscriptionId);
+                localStorage.setItem("lastSuscripcionEmail", localStorage.getItem(SUSCRIPCIONES_EMAIL_KEY) || "");
                 localStorage.setItem("planTipo", "basico");
                 localStorage.setItem("premium", "false");
                 localStorage.setItem("lastValidationDate", Date.now().toString());
+
+                await sincronizarSuscripcionPaypalKV({
+                  subscriptionId,
+                  planId: "P-40E25374WC496032ENB62ANQ",
+                });
                 location.reload();
               },
               onCancel: function () {
@@ -2068,17 +2156,27 @@ botonPremium.addEventListener("click", function () {
                 tagline: false,
               },
               createSubscription: function (data, actions) {
-                return actions.subscription.create({
-                  plan_id: "P-4P300126BF854730HNE4GATY", // TODO: Reemplazar con el ID real del plan básico anual
-                });
+                return (async () => {
+                  const emailSuscripcion = await obtenerEmailSuscripcionPaypal();
+                  const payload = {
+                    plan_id: "P-4P300126BF854730HNE4GATY", // TODO: Reemplazar con el ID real del plan básico anual
+                  };
+                  if (emailSuscripcion) payload.custom_id = emailSuscripcion;
+                  return actions.subscription.create(payload);
+                })();
               },
-              onApprove: function (data, actions) {
+              onApprove: async function (data, actions) {
                 const subscriptionId = data.subscriptionID;
                 alert("✅ ¡Plan Básico Anual activado! Disfruta de películas sin límites.");
                 localStorage.setItem("paypalSubscriptionId", subscriptionId);
+                localStorage.setItem("lastSuscripcionEmail", localStorage.getItem(SUSCRIPCIONES_EMAIL_KEY) || "");
                 localStorage.setItem("planTipo", "basico");
                 localStorage.setItem("premium", "false");
                 localStorage.setItem("lastValidationDate", Date.now().toString());
+                await sincronizarSuscripcionPaypalKV({
+                  subscriptionId,
+                  planId: "P-4P300126BF854730HNE4GATY",
+                });
                 location.reload();
 
               },
@@ -2905,6 +3003,7 @@ botonProgramacion.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     ventanaProgramacion.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
@@ -2916,6 +3015,7 @@ botonProgramacion.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -2934,6 +3034,7 @@ botonConexionBiblica.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "flex";
+    ventanaSuscripciones.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
 
     inicializarConexionBiblicaUI();
@@ -2947,6 +3048,7 @@ botonConexionBiblica.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -5073,6 +5175,7 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     ventanaPowerPoint.style.display = "flex";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
@@ -5084,6 +5187,7 @@ botonPowerPoint.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -5109,6 +5213,7 @@ botonBiblia.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -5119,6 +5224,7 @@ botonBiblia.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -5144,6 +5250,7 @@ botonHimnosPro.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -5154,6 +5261,7 @@ botonHimnosPro.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -5182,6 +5290,7 @@ botonYoutube.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
   } else {
     ventanaHimnosPro.style.display = "none";
@@ -5192,6 +5301,7 @@ botonYoutube.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -5220,6 +5330,7 @@ botonPelis.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "flex";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     document.getElementById("contenedor-contador").style.display = "none";
 
     // Mostramos el pop-up al entrar
@@ -5233,6 +5344,7 @@ botonPelis.addEventListener("click", function () {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
   }
 });
@@ -5267,7 +5379,7 @@ function cerrarVentanaReproductor() {
   ventanaProgramacion.style.display = "none";
   ventanaPelis.style.display = "none";
   ventanaConexionBiblica.style.display = "none";
-  himnarioContainer.style.display = "grid";
+  ventanaSuscripciones.style.display = "none";
   
   // Asegurar que los botones se actualicen correctamente
   actualizarEstadoBotones();
@@ -5370,6 +5482,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -5387,6 +5500,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -5403,6 +5517,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -5419,6 +5534,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -5435,6 +5551,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -5451,6 +5568,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -5467,6 +5585,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     document.getElementsByClassName(
       "contenedor-principal",
@@ -5481,6 +5600,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos2.length; i++) {
       // Extraer el número del himno del título (los primeros 3 dígitos)
@@ -5507,6 +5627,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos3.length; i++) {
       const numero = titulos3[i].match(/\d{3}/)[0];
@@ -5530,6 +5651,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos4.length; i++) {
       const numero = titulos4[i].match(/\d{3}/)[0];
@@ -5553,6 +5675,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < titulos5.length; i++) {
       const numero = titulos5[i].match(/\d{3}/)[0];
@@ -5576,6 +5699,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloMusicaParaOrarDeFondo.length; i++) {
       const numero = tituloMusicaParaOrarDeFondo[i].match(/\d{3}/)[0];
@@ -5599,6 +5723,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosPianoPista.length; i++) {
       const numero = tituloHimnosPianoPista[i].match(/\d{3}/)[0];
@@ -5622,6 +5747,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosInfantiles.length; i++) {
       const numero = tituloHimnosInfantiles[i].match(/\d{3}/)[0];
@@ -5645,6 +5771,7 @@ async function mostrarCategoria(categoria) {
     ventanaManual.style.display = "none";
     ventanaPelis.style.display = "none";
     ventanaConexionBiblica.style.display = "none";
+    ventanaSuscripciones.style.display = "none";
     himnarioContainer.style.display = "grid";
     for (let i = 0; i < tituloHimnosAntiguos.length; i++) {
       const numero = tituloHimnosAntiguos[i].match(/\d{3}/)[0];
@@ -7838,6 +7965,7 @@ function activarModoNormal() {
   ventanaProgramacion.style.display = "none";
   ventanaManual.style.display = "none";
   ventanaPelis.style.display = "none";
+  ventanaSuscripciones.style.display = "none";
   if (ventanaConexionBiblica) {
     ventanaConexionBiblica.style.display = "none";
   }
@@ -7934,11 +8062,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-05-03",
+    titulo: "Nuevo apartado de suscripciones para planes de pago y beneficios exclusivos.",
+    mensaje: "Se implementó un panel de suscripciones del usuario para visualizar sus licencias activas, en pausa o canceladas e historial de pagos para una mejor organización y visualización de sus licensias activas. Muchos usuarios a veces activan dos licencias y no se dan cuenta, este apartado mejora el control, además, se puede revocar el id único de máquina de la computadora actual y poder usuarlo en la computadora nueva, esta funcional es muy util cuando quieres usar tu código de suscripción en otra computadora, de forma manual podrá mover el acceso a tu nueva computadora. Recordar que una licencia se activa en una sola máquina, por lo que está funcionalidad llega en el momento perfecto.",
+    version: "1.0.112",
+    tipo: "Mejora",
   },
   {
     fecha: "2026-03-07",
@@ -12426,8 +12554,117 @@ const SUSCRIPCIONES_EMAIL_KEY = "paypalSubscriptionEmail";
 const SUSCRIPCIONES_CACHE_KEY = "paypalSubscriptionCache";
 const SUSCRIPCIONES_TOKEN_KEY = "paypalSubscriptionToken";
 const SUSCRIPCIONES_API_URL = "https://verificador-paypal.vercel.app/api/verificaSuscripcionUsuario";
+const SUSCRIPCIONES_RATE_LIMIT_KEY = "paypalSubscriptionConsultaRateLimit";
+const SUSCRIPCIONES_RATE_LIMIT_MAX = 2;
+const SUSCRIPCIONES_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 
 let observadorSuscripcionesInstalado = false;
+let suscripcionesRateLimitTimer = null;
+let suscripcionesConsultaEnCurso = false;
+
+function obtenerIntentosConsultaSuscripciones() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SUSCRIPCIONES_RATE_LIMIT_KEY) || "[]");
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((item) => Number(item))
+      .filter((item) => Number.isFinite(item) && item > 0);
+  } catch (err) {
+    return [];
+  }
+}
+
+function guardarIntentosConsultaSuscripciones(intentos) {
+  try {
+    localStorage.setItem(SUSCRIPCIONES_RATE_LIMIT_KEY, JSON.stringify(intentos));
+  } catch (err) {
+    console.error("No se pudo guardar el rate limit de suscripciones:", err);
+  }
+}
+
+function limpiarIntentosConsultaSuscripciones() {
+  const ahora = Date.now();
+  const intentos = obtenerIntentosConsultaSuscripciones().filter(
+    (ts) => ahora - ts < SUSCRIPCIONES_RATE_LIMIT_WINDOW_MS,
+  );
+  if (intentos.length !== obtenerIntentosConsultaSuscripciones().length) {
+    guardarIntentosConsultaSuscripciones(intentos);
+  }
+  return intentos;
+}
+
+function registrarIntentoConsultaSuscripciones() {
+  const intentos = limpiarIntentosConsultaSuscripciones();
+  intentos.push(Date.now());
+  guardarIntentosConsultaSuscripciones(intentos);
+  return intentos;
+}
+
+function obtenerEstadoRateLimitSuscripciones() {
+  const intentos = limpiarIntentosConsultaSuscripciones();
+  const restantes = Math.max(0, SUSCRIPCIONES_RATE_LIMIT_MAX - intentos.length);
+  const masAntiguo = intentos.length ? Math.min(...intentos) : null;
+  const desbloqueoEn = masAntiguo ? Math.max(0, SUSCRIPCIONES_RATE_LIMIT_WINDOW_MS - (Date.now() - masAntiguo)) : 0;
+  return {
+    intentos,
+    restantes,
+    bloqueado: intentos.length >= SUSCRIPCIONES_RATE_LIMIT_MAX,
+    desbloqueoEn,
+  };
+}
+
+function formatearTiempoRestante(ms) {
+  const totalSegundos = Math.max(0, Math.ceil(ms / 1000));
+  const minutos = Math.floor(totalSegundos / 60);
+  const segundos = totalSegundos % 60;
+  return `${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`;
+}
+
+function actualizarInterfazRateLimitSuscripciones() {
+  const btnBuscar = document.getElementById("suscripciones-buscar");
+  const contador = document.getElementById("suscripciones-rate-limit");
+  if (!btnBuscar || !contador) return;
+
+  const estado = obtenerEstadoRateLimitSuscripciones();
+  const mensajeBase = `Consultas disponibles: ${estado.restantes}/${SUSCRIPCIONES_RATE_LIMIT_MAX}`;
+
+  if (estado.bloqueado) {
+    btnBuscar.disabled = true;
+    contador.style.display = "block";
+    contador.textContent = `Límite alcanzado. Espera ${formatearTiempoRestante(estado.desbloqueoEn)} para volver a consultar.`;
+
+    if (suscripcionesRateLimitTimer) clearInterval(suscripcionesRateLimitTimer);
+    suscripcionesRateLimitTimer = setInterval(() => {
+      const estadoActual = obtenerEstadoRateLimitSuscripciones();
+      if (!estadoActual.bloqueado) {
+        clearInterval(suscripcionesRateLimitTimer);
+        suscripcionesRateLimitTimer = null;
+        if (!suscripcionesConsultaEnCurso) {
+          btnBuscar.disabled = false;
+          btnBuscar.textContent = "Consultar";
+          contador.style.display = "block";
+          contador.textContent = mensajeBase;
+        }
+        return;
+      }
+
+      contador.textContent = `Límite alcanzado. Espera ${formatearTiempoRestante(estadoActual.desbloqueoEn)} para volver a consultar.`;
+    }, 1000);
+  } else {
+    btnBuscar.disabled = suscripcionesConsultaEnCurso;
+    if (suscripcionesConsultaEnCurso) {
+      btnBuscar.textContent = "Consultando...";
+    } else {
+      btnBuscar.textContent = "Consultar";
+    }
+    contador.style.display = "block";
+    contador.textContent = mensajeBase;
+    if (suscripcionesRateLimitTimer) {
+      clearInterval(suscripcionesRateLimitTimer);
+      suscripcionesRateLimitTimer = null;
+    }
+  }
+}
 
 // ===== FUNCIONES DE AUTENTICACIÓN =====
 // 🚀 SYSTEM SIN TOKENS - Consulta directa a PayPal
@@ -12470,43 +12707,160 @@ function ocultarPanelesSecundarios() {
   if (ventanaManual) ventanaManual.style.display = "none";
   if (ventanaPelis) ventanaPelis.style.display = "none";
   if (ventanaConexionBiblica) ventanaConexionBiblica.style.display = "none";
+  if (ventanaSuscripciones) ventanaSuscripciones.style.display = "none";
   cerrarVentanaSuscripcionesSiAbierta();
 }
 
 function normalizarSuscripcionesRespuesta(data) {
-  const lista =
-    data?.suscripciones ||
-    data?.subscriptions ||
-    data?.results ||
-    data?.items ||
-    [];
+  const raw = data?.suscripciones || data?.subscriptions || data?.results || data?.items || [];
 
-  if (Array.isArray(lista) && lista.length > 0) {
-    return lista;
+  const unwrap = (x) => {
+    if (!x) return null;
+    // If it's an object with a 'value' field that contains a JSON string, try to parse
+    if (typeof x === 'object' && x.value && typeof x.value === 'string') {
+      try {
+        const parsed = JSON.parse(x.value);
+        // If parsed is an array with inner objects that again have 'value', unwrap recursively
+        if (Array.isArray(parsed)) return parsed.map(unwrap).flat();
+        return unwrap(parsed);
+      } catch (e) {
+        // not JSON, return the value as-is
+        return x.value;
+      }
+    }
+    // If it's a JSON string, try parse
+    if (typeof x === 'string') {
+      try { const p = JSON.parse(x); return unwrap(p); } catch(e){ return x; }
+    }
+    return x;
+  };
+
+  let lista = raw;
+  // Normalize: if it's a single object that embeds the useful payload in .value, unwrap
+  try {
+    if (!Array.isArray(raw)) lista = [raw];
+    // unwrap elements
+    lista = lista.map((it) => unwrap(it)).flat().filter(Boolean);
+  } catch (e) {
+    lista = Array.isArray(raw) ? raw : [raw];
   }
 
-  if (
-    data?.paypalSubscriptionId ||
-    data?.subscriptionId ||
-    data?.codigo ||
-    data?.id
-  ) {
+  // If we have a standalone subscription object in 'data', return it
+  if (!lista.length && (data?.paypalSubscriptionId || data?.subscriptionId || data?.codigo || data?.id)) {
     return [data];
   }
 
-  return [];
+  return Array.isArray(lista) ? lista : [lista];
 }
 
 function normalizarHistorialPagos(data) {
-  const lista = data?.historialPagos || data?.paymentHistory || data?.pagos || [];
+  const raw = data?.historialPagos || data?.paymentHistory || data?.pagos || [];
+  const decode = (x) => {
+    if (!x) return null;
+    if (typeof x === 'object' && x.value && typeof x.value === 'string') {
+      try {
+        const p = JSON.parse(x.value);
+        return Array.isArray(p) ? p.map(decode).flat() : decode(p);
+      } catch (e) {
+        return x.value;
+      }
+    }
+    if (typeof x === 'string') {
+      try { const p = JSON.parse(x); return decode(p); } catch(e){ return x; }
+    }
+    return x;
+  };
+
+  let lista = raw;
+  try {
+    if (!Array.isArray(raw)) lista = [raw];
+    lista = lista.map((it) => decode(it)).flat().filter(Boolean);
+  } catch (e) {
+    lista = Array.isArray(raw) ? raw : [raw];
+  }
+
+  // Ensure every history item has a date/dateLabel for UI and parse common stringified shapes
+  lista = lista.map((h) => {
+    if (!h) return null;
+    if (typeof h === 'string') return { date: h, dateLabel: h };
+    if (!h.date && h.when) h.date = h.when;
+    if (!h.dateLabel && h.date) h.dateLabel = new Date(h.date).toLocaleString('es-ES');
+
+    // If amount looks like a stringified JSON array/object, try to extract sensible amount and currency
+    try {
+      if (typeof h.amount === 'string' && (h.amount.trim().startsWith('[') || h.amount.trim().startsWith('{'))) {
+        const parsed = JSON.parse(h.amount);
+        if (Array.isArray(parsed) && parsed.length) {
+          const candidate = parsed.find((p) => p && (p.subscriptionId && String(p.subscriptionId) === String(h.subscriptionId))) || parsed[0];
+          if (candidate) {
+            h.amount = candidate.amount || candidate.monto || candidate.value || h.amount;
+            h.currency = candidate.currency || candidate.currency_code || h.currency;
+            if (!h.date && (candidate.date || candidate.when)) h.date = candidate.date || candidate.when;
+            if (!h.dateLabel && h.date) h.dateLabel = new Date(h.date).toLocaleString('es-ES');
+          }
+        } else if (typeof parsed === 'object') {
+          h.amount = parsed.amount || parsed.monto || parsed.value || h.amount;
+          h.currency = parsed.currency || parsed.currency_code || h.currency;
+        }
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+
+    return h;
+  }).filter(Boolean);
+
   return Array.isArray(lista) ? lista : [];
 }
 
 function formatearValorPago(item) {
-  const monto = item?.amount || item?.monto || item?.value || null;
-  const moneda = item?.currency || item?.moneda || item?.currency_code || "";
+  if (!item) return "";
+  // Monto puede venir en varias formas:
+  // - item.amount = "8.99" y item.currency = "USD"
+  // - item.amount = { value: "8.99", currency_code: "USD" }
+  // - item.amount = { amount: "8.99" , currency: "USD" }
+  let monto = null;
+  let moneda = "";
+
+  if (typeof item.amount === "object" && item.amount !== null) {
+    monto = item.amount.value || item.amount.amount || item.amount.monto || null;
+    moneda = item.amount.currency_code || item.amount.currency || item.currency || item.moneda || "";
+  } else if (typeof item.amount === "string" || typeof item.amount === "number") {
+    monto = String(item.amount);
+    moneda = item.currency || item.moneda || item.currency_code || "";
+  } else {
+    monto = item?.monto || item?.value || null;
+    moneda = item?.currency || item?.moneda || item?.currency_code || "";
+  }
+
+  // If still not found, try payment shapes inside raw or nested arrays
+  if (!monto) {
+    try {
+      const candidate = item?.raw?.billing_info?.last_payment?.amount || item?.billing_info?.last_payment?.amount;
+      if (candidate) {
+        monto = candidate.value || candidate.amount || null;
+        moneda = candidate.currency_code || candidate.currency || moneda || "";
+      }
+    } catch (e) {}
+  }
+
   if (!monto) return "";
   return `${monto}${moneda ? ` ${moneda}` : ""}`;
+}
+
+function formatearEtiquetaPago(item) {
+  if (!item) return "";
+  const partes = [];
+  // posibles campos que describen que es un reporte / tipo de evento
+  if (item.source) partes.push(item.source);
+  if (item.type) partes.push(item.type);
+  if (item.tipo) partes.push(item.tipo);
+  if (item.note) partes.push(item.note);
+  if (item.nota) partes.push(item.nota);
+  if (item.descripcion) partes.push(item.descripcion);
+  // Normalizar etiquetas largas
+  const etiqueta = partes.filter(Boolean).join(' · ');
+  return etiqueta;
 }
 
 function agruparPagosPorSuscripcion(historial) {
@@ -12612,7 +12966,22 @@ function crearTarjetaSuscripcion(item, index, email, pagos = []) {
     item?.producto ||
     item?.provider ||
     "PayPal";
-  const precioPlan = item?.plan_price || item?.price_label || item?.price || item?.amount || "";
+  // Determinar precio del plan buscando en varias ubicaciones posibles,
+  // incluido billing_info.last_payment de respuestas de PayPal.
+  let precioPlan = item?.plan_price || item?.price_label || item?.price || item?.amount || "";
+  try {
+    if (!precioPlan) {
+      // PayPal shape: item.billing_info.last_payment.amount -> { value, currency_code }
+      const lp = item?.billing_info?.last_payment || item?.raw?.billing_info?.last_payment || item?.last_payment;
+      if (lp && lp.amount) {
+        const val = lp.amount.value || lp.amount.amount || lp.amount || null;
+        const cur = lp.amount.currency_code || lp.amount.currency || lp.currency || "";
+        if (val) precioPlan = `${val}${cur ? ` ${cur}` : ""}`;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
   const estadoRaw =
     item?.status ||
     item?.estado ||
@@ -12632,8 +13001,14 @@ function crearTarjetaSuscripcion(item, index, email, pagos = []) {
     item?.lastValidationDate ||
     item?.updatedAt ||
     "No disponible";
+  const pagosCompletados =
+    item?.billing_info?.cycle_executions?.[0]?.cycles_completed ||
+    item?.raw?.billing_info?.cycle_executions?.[0]?.cycles_completed ||
+    item?.cycles_completed ||
+    null;
 
-  const ultimosPagos = (pagos || []).slice(0, 8);
+  // Mostrar hasta 100 pagos históricos para desglose completo
+  const ultimosPagos = (pagos || []).slice(0, 100);
 
   return `
     <div class="suscripcion-item">
@@ -12646,6 +13021,7 @@ function crearTarjetaSuscripcion(item, index, email, pagos = []) {
         <span><strong>Plan:</strong> ${plan}${precioPlan ? ` · ${precioPlan}` : ""}</span>
         <span><strong>PayPal ID:</strong> ${subscriptionId}</span>
         <span><strong>Próxima renovación:</strong> ${fecha}</span>
+        ${pagosCompletados ? `<span><strong>Pagos completados:</strong> ${pagosCompletados}</span>` : ""}
       </div>
       <div class="suscripcion-actions">
         <button class="suscripcion-copy" type="button" data-copy-suscripcion="${encodeURIComponent(String(subscriptionId))}">Copiar ID</button>
@@ -12655,7 +13031,7 @@ function crearTarjetaSuscripcion(item, index, email, pagos = []) {
         <div class="suscripcion-historial-titulo">Historial de pagos</div>
         ${ultimosPagos.length ? ultimosPagos.map((pago) => `
           <div class="suscripcion-pago-item">
-            <span>${formatearFechaHistorico(pago)}</span>
+            <span class="suscripcion-pago-info">${formatearFechaHistorico(pago)}</span>
             <span>${formatearValorPago(pago)}</span>
           </div>
         `).join("") : `
@@ -12692,25 +13068,50 @@ function pintarListaSuscripciones(data, email) {
   const resumen = document.getElementById("suscripciones-resumen");
   if (resumen) {
     const totalPagos = historial.length;
-    resumen.textContent = `${suscripciones.length} suscripción(es) · ${totalPagos} pago(s) histórico(s)`;
+    // Count unique subscription IDs (dedupe)
+    const uniqueSubs = new Set(normalizarSuscripcionesRespuesta(data).map((it) => (it?.paypalSubscriptionId || it?.subscriptionId || it?.id || it?.codigo || it?.sub_id || '').toString()));
+    resumen.textContent = `${[...uniqueSubs].filter(Boolean).length} suscripción(es) · ${totalPagos} pago(s) histórico(s)`;
   }
 
   if (!suscripciones.length) {
     lista.innerHTML = `
       <div class="suscripcion-item suscripcion-vacio">
         <div class="suscripcion-item-header">
-          <div class="suscripcion-item-title">Sin suscripciones activas</div>
+          <div class="suscripcion-item-title">Sin suscripciones registradas</div>
           <div class="suscripcion-badge suscripcion-badge-gris">0</div>
         </div>
         <div class="suscripcion-meta">
-          <span>El correo ${email || "ingresado"} no tiene suscripciones activas registradas.</span>
+          <span>El correo ${email || "ingresado"} no tiene suscripciones registradas.</span>
         </div>
       </div>
     `;
     return;
   }
 
-  lista.innerHTML = suscripciones
+  // Deduplicate by subscriptionId before rendering (merge entries)
+  const mapaSubs = new Map();
+  normalizarSuscripcionesRespuesta(data).forEach((item) => {
+    const subId = (item?.paypalSubscriptionId || item?.subscriptionId || item?.id || item?.codigo || item?.sub_id || "").toString();
+    if (!subId) return;
+    const existing = mapaSubs.get(subId);
+    if (!existing) {
+      mapaSubs.set(subId, Object.assign({}, item));
+    } else {
+      // Merge: prefer non-null fields and latest lastCheck
+      const merged = Object.assign({}, existing, item);
+      merged.lastCheck = Math.max(existing.lastCheck || 0, item.lastCheck || 0);
+      // If any entry shows status CANCELADO, keep that status
+      const stExisting = (existing.status || existing.estado || '').toString().toUpperCase();
+      const stItem = (item.status || item.estado || '').toString().toUpperCase();
+      if (stExisting === 'CANCELADO' || stExisting === 'CANCELED' || stItem === 'CANCELADO' || stItem === 'CANCELED') {
+        merged.status = 'CANCELADO';
+      }
+      mapaSubs.set(subId, merged);
+    }
+  });
+
+  const deduped = Array.from(mapaSubs.values());
+  lista.innerHTML = deduped
     .map((item, index) => {
       const subId = item?.paypalSubscriptionId || item?.subscriptionId || item?.id || item?.codigo || item?.sub_id || "";
       const pagos = pagosPorSuscripcion.get(String(subId)) || pagosPorSuscripcion.get(subId) || [];
@@ -12749,13 +13150,6 @@ function pintarListaSuscripciones(data, email) {
       try {
         const emailActual = (document.getElementById("suscripciones-email")?.value || email || "").trim().toLowerCase();
         const machineIdActual = await getMachineId();
-        
-        // Obtener token
-        let token = obtenerTokenGuardado(emailActual);
-        if (!token) {
-          pintarEstadoSuscripciones("Autenticando para liberar máquina...", "info");
-          token = await obtenerTokenAcceso(emailActual, subscriptionIdDel, modo);
-        }
 
         const query = new URLSearchParams({
           accion: "releaseMachineId",
@@ -12764,13 +13158,26 @@ function pintarListaSuscripciones(data, email) {
           machineId: machineIdActual,
           modo: modo,
         });
+
         const res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           timeout: 12000,
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        // Manejar errores con más detalle para informar al usuario
+        if (!res.ok) {
+          let body = null;
+          try { body = await res.json(); } catch (e) { body = null; }
+          const msg = (body && (body.message || body.error)) || `HTTP ${res.status}`;
+          if (res.status === 404) {
+            pintarEstadoSuscripciones("No se encontró la licencia para este subscriptionId.", "error");
+          } else if (res.status === 409) {
+            pintarEstadoSuscripciones("El ID de máquina registrado no coincide con este equipo.", "error");
+          } else {
+            pintarEstadoSuscripciones(`No se pudo liberar el ID de máquina: ${msg}`, "error");
+          }
+          return;
+        }
+
         pintarEstadoSuscripciones("ID de máquina liberado correctamente para esta licencia.", "exito");
         await consultarSuscripcionesPayPal();
       } catch (err) {
@@ -12785,6 +13192,7 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
   if (!ventanaSuscripciones) return;
 
   const input = document.getElementById("suscripciones-email");
+  const btnBuscar = document.getElementById("suscripciones-buscar");
   const email = (input?.value || "").trim().toLowerCase();
 
   if (!email) {
@@ -12801,6 +13209,36 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
       "error",
     );
     return;
+  }
+
+  const estadoRateLimit = obtenerEstadoRateLimitSuscripciones();
+  if (estadoRateLimit.bloqueado) {
+    pintarEstadoSuscripciones(
+      `Límite alcanzado. Espera ${formatearTiempoRestante(estadoRateLimit.desbloqueoEn)} para volver a consultar.`,
+      "alerta",
+    );
+    actualizarInterfazRateLimitSuscripciones();
+    return;
+  }
+
+  try {
+    localStorage.setItem(SUSCRIPCIONES_EMAIL_KEY, email);
+    localStorage.setItem("lastSuscripcionEmail", email);
+  } catch (err) {
+    console.error("No se pudo guardar el correo de suscripción:", err);
+  }
+
+  if (btnBuscar && btnBuscar.disabled) {
+    return;
+  }
+
+  registrarIntentoConsultaSuscripciones();
+  suscripcionesConsultaEnCurso = true;
+  actualizarInterfazRateLimitSuscripciones();
+
+  if (btnBuscar) {
+    btnBuscar.disabled = true;
+    btnBuscar.textContent = "Consultando...";
   }
 
   pintarEstadoSuscripciones(
@@ -12834,20 +13272,6 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
     let res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
       timeout: 20000,
     });
-
-    // Reintentar si es 503 (PayPal temporalmente no disponible)
-    if (res.status === 503) {
-      await new Promise((r) => setTimeout(r, 800));
-      res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
-        timeout: 20000,
-      });
-      if (res.status === 503) {
-        await new Promise((r) => setTimeout(r, 1600));
-        res = await fetchWithTimeout(`${SUSCRIPCIONES_API_URL}?${query.toString()}`, {
-          timeout: 20000,
-        });
-      }
-    }
 
     if (!res.ok) {
       let detalle = "";
@@ -12904,6 +13328,10 @@ async function consultarSuscripcionesPayPal({ auto = false } = {}) {
         </div>
       `;
     }
+  } finally {
+    suscripcionesConsultaEnCurso = false;
+    actualizarInterfazRateLimitSuscripciones();
+    if (btnBuscar) btnBuscar.textContent = "Consultar";
   }
 }
 
@@ -12919,12 +13347,13 @@ function prepararPanelSuscripciones() {
       <div class="suscripciones-card">
         <h2>Mis suscripciones</h2>
         <p class="suscripciones-ayuda">
-          El acceso se carga al pulsar este botón. No se completa ni se guarda automáticamente.
+          Ingresa el correo electrónico que usaste para comprar la licencia y consulta el estado de tu suscripción directamente con PayPal.
         </p>
         <div class="suscripciones-form">
           <label for="suscripciones-email">Correo de compra</label>
           <input id="suscripciones-email" type="email" placeholder="correo@dominio.com" autocomplete="off" autocapitalize="none" spellcheck="false" />
           <button id="suscripciones-buscar" type="button">Consultar</button>
+          <div class="suscripciones-rate-limit" id="suscripciones-rate-limit"></div>
           <div class="suscripciones-ayuda">
             Escribe el correo que deseas consultar y presiona "Consultar".
           </div>
@@ -12946,23 +13375,30 @@ function prepararPanelSuscripciones() {
 
   const input = document.getElementById("suscripciones-email");
   const btnBuscar = document.getElementById("suscripciones-buscar");
-  const emailGuardado = "";
+  const emailGuardado = (() => {
+    try {
+      return String(localStorage.getItem(SUSCRIPCIONES_EMAIL_KEY) || "").trim().toLowerCase();
+    } catch {
+      return "";
+    }
+  })();
   const cacheGuardado = null;
 
   try {
-    localStorage.removeItem(SUSCRIPCIONES_EMAIL_KEY);
     localStorage.removeItem(SUSCRIPCIONES_CACHE_KEY);
   } catch (err) {
     console.error("No se pudo limpiar cache local de suscripciones:", err);
   }
 
   if (input) {
-    input.value = "";
+    input.value = emailGuardado || "";
   }
 
   if (btnBuscar) {
     btnBuscar.addEventListener("click", () => consultarSuscripcionesPayPal());
   }
+
+  actualizarInterfazRateLimitSuscripciones();
 
   if (input) {
     input.addEventListener("keydown", (e) => {
@@ -13029,6 +13465,7 @@ if (botonManual) {
       ventanaManual.style.display = "flex";
       ventanaPelis.style.display = "none";
       ventanaConexionBiblica.style.display = "none";
+      ventanaSuscripciones.style.display = "none";
       cargarManual();
       document.getElementById("contenedor-contador").style.display = "none";
     } else {
@@ -13040,6 +13477,7 @@ if (botonManual) {
       ventanaManual.style.display = "none";
       ventanaPelis.style.display = "none";
       ventanaConexionBiblica.style.display = "none";
+      ventanaSuscripciones.style.display = "none";
       himnarioContainer.style.display = "grid";
     }
   });

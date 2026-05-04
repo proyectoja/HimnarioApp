@@ -73,11 +73,11 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: true,
       webSecurity: false,
-      devTools: true, // Desactiva devTools
+      devTools: false, // Desactiva devTools
     },
   });
 
-  win.webContents.openDevTools({ mode: "undocked" });
+  //win.webContents.openDevTools({ mode: "undocked" });
 
   setMainWindow(win);
   global.mainWindow = win; // para compatibilidad con módulos que usen global
