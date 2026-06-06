@@ -1,4 +1,4 @@
-﻿//Variables Globales
+//Variables Globales
 let player = null;
 let playerYouTube = null;
 let playerWindow = null;
@@ -992,35 +992,108 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
   }
 
   // Actualizar URL y PIN del control remoto
-  if (datosExtra.url) {
-    infoUrl.textContent = `Control remoto corriendo en: ${datosExtra.url}`;
+  const urlSSL = datosExtra.url || null;
+  const urlSinSSL = datosExtra.urlSinSSL || datosExtra.urlNoSSL || null;
+    if (urlSSL || urlSinSSL) {
+      // Construir secciones separadas para SSL y sin certificado
+      const parts = [];
+      if (urlSSL) {
+        parts.push(`
+          <div style="padding:0; margin-bottom:14px;">
+            <div style="display:inline-block; background:#b51d1d; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; margin-bottom:8px;">SSL</div>
+            <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
+              <div style="align-self:center; background:#fff; border-radius:12px; padding:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                <img id="img-qr-remoto-ssl" style="width:110px; height:110px; display:block; margin:0 auto;" />
+              </div>
+              <div style="font-size:12px; line-height:1.45; word-break:break-all; overflow-wrap:anywhere; background:transparent; border:none; padding:0 2px; font-family:Consolas, 'Courier New', monospace; color:#fff; width:100%;">${urlSSL}</div>
+              <button id="copiar-remoto-ssl" style="width:100%; padding:8px 10px; font-size:12px; border-radius:8px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.35); cursor:pointer; color:#fff; font-weight:700;">📋 Copiar SSL</button>
+            </div>
+          </div>
+        `);
+      }
+      if (urlSinSSL) {
+        parts.push(`
+          <div style="padding:0; margin-bottom:10px;">
+            <div style="display:inline-block; background:#8d3a3a; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; margin-bottom:8px;">Sin certificado</div>
+            <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch;">
+              <div style="align-self:center; background:#fff; border-radius:12px; padding:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                <img id="img-qr-remoto-nosssl" style="width:110px; height:110px; display:block; margin:0 auto;" />
+              </div>
+              <div style="font-size:12px; line-height:1.45; word-break:break-all; overflow-wrap:anywhere; background:transparent; border:none; padding:0 2px; font-family:Consolas, 'Courier New', monospace; color:#fff; width:100%;">${urlSinSSL}</div>
+              <button id="copiar-remoto-nosssl" style="width:100%; padding:8px 10px; font-size:12px; border-radius:8px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.35); cursor:pointer; color:#fff; font-weight:700;">📋 Copiar sin certificado</button>
+            </div>
+          </div>
+        `);
+      }
 
-    // Generar QR y mostrarlo
-    const imgQr = document.getElementById("img-qr-remoto");
-    const containerQr = document.getElementById("contenedor-qr-remoto");
+      infoUrl.innerHTML = parts.join("");
 
-    if (
-      imgQr &&
-      containerQr &&
-      window.electronAPI &&
-      window.electronAPI.generateQRCodeDataURL
-    ) {
-      // Agregar PIN a la URL para autoconexión
-      const urlConPin = datosExtra.pin
-        ? `${datosExtra.url}?pin=${datosExtra.pin}`
-        : datosExtra.url;
+      // Generar QRs para cada sección si es posible
+      const imgSsl = document.getElementById("img-qr-remoto-ssl");
+      const imgNoSsl = document.getElementById("img-qr-remoto-nosssl");
+      const containerQr = document.getElementById("contenedor-qr-remoto");
 
-      window.electronAPI
-        .generateQRCodeDataURL(urlConPin)
-        .then((url) => {
-          imgQr.src = url;
-          containerQr.style.display = "block";
-        })
-        .catch((err) => {
-          console.error("Error generando QR:", err);
-          containerQr.style.display = "none";
-        });
-    }
+      if (containerQr) containerQr.style.display = "block";
+
+      if (window.electronAPI && window.electronAPI.generateQRCodeDataURL) {
+        if (imgSsl && urlSSL) {
+          try {
+            const sep = urlSSL.includes("?") ? "&" : "?";
+            const q = datosExtra.pin ? `${urlSSL}${sep}pin=${encodeURIComponent(datosExtra.pin)}` : urlSSL;
+            window.electronAPI.generateQRCodeDataURL(q).then((d) => (imgSsl.src = d)).catch((e) => console.error(e));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        if (imgNoSsl && urlSinSSL) {
+          try {
+            const sep2 = urlSinSSL.includes("?") ? "&" : "?";
+            const q2 = datosExtra.pin ? `${urlSinSSL}${sep2}pin=${encodeURIComponent(datosExtra.pin)}` : urlSinSSL;
+            window.electronAPI.generateQRCodeDataURL(q2).then((d) => (imgNoSsl.src = d)).catch((e) => console.error(e));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+
+      // Copiar botones
+      setTimeout(() => {
+        const btnSsl = document.getElementById("copiar-remoto-ssl");
+        if (btnSsl) {
+          btnSsl.addEventListener("click", () => {
+            navigator.clipboard.writeText(urlSSL).then(() => {
+              const original = btnSsl.textContent;
+              btnSsl.textContent = "✅ Copiado";
+              btnSsl.style.background = "#2e7d32";
+              btnSsl.style.color = "#ffffff";
+              setTimeout(() => {
+                btnSsl.textContent = original;
+                btnSsl.style.background = "rgba(255,255,255,0.12)";
+                btnSsl.style.color = "#ffffff";
+              }, 2000);
+            });
+          });
+        }
+
+        const btnNo = document.getElementById("copiar-remoto-nosssl");
+        if (btnNo) {
+          btnNo.addEventListener("click", () => {
+            navigator.clipboard.writeText(urlSinSSL).then(() => {
+              const original = btnNo.textContent;
+              btnNo.textContent = "✅ Copiado";
+              btnNo.style.background = "#2e7d32";
+              btnNo.style.color = "#ffffff";
+              setTimeout(() => {
+                btnNo.textContent = original;
+                btnNo.style.background = "rgba(255,255,255,0.12)";
+                btnNo.style.color = "#ffffff";
+              }, 2000);
+            });
+          });
+        }
+      }, 50);
+
   } else if (!esPremiumGlobal) {
     infoUrl.innerHTML =
       "🔒 <span style='opacity:0.7'>Control remoto: Solo Premium</span>";
@@ -1080,6 +1153,7 @@ function actualizarInformacionUsuarioMenu(datosExtra = {}) {
               // Actualizar UI con nuevos datos
               actualizarInformacionUsuarioMenu({
                 url: result.url,
+                urlSinSSL: result.urlSinSSL,
                 pin: result.pin,
               });
               alert(
@@ -1906,6 +1980,97 @@ botonPremium.addEventListener("click", function () {
     mensajeMonto.appendChild(textoMonto);
     contenedorInterno.appendChild(mensajeMonto);
 
+    const customPrompt = (mensaje) => {
+      return new Promise((resolve) => {
+        const overlay = document.createElement("div");
+        overlay.style.position = "fixed";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.width = "100%";
+        overlay.style.height = "100%";
+        overlay.style.backgroundColor = "rgba(0,0,0,0.7)";
+        overlay.style.zIndex = "99999";
+        overlay.style.display = "flex";
+        overlay.style.justifyContent = "center";
+        overlay.style.alignItems = "center";
+
+        const dialog = document.createElement("div");
+        dialog.style.backgroundColor = "#2c3e50";
+        dialog.style.padding = "20px";
+        dialog.style.borderRadius = "8px";
+        dialog.style.boxShadow = "0 4px 15px rgba(0,0,0,0.5)";
+        dialog.style.minWidth = "300px";
+        dialog.style.textAlign = "center";
+        dialog.style.color = "white";
+        dialog.style.fontFamily = "sans-serif";
+
+        const text = document.createElement("p");
+        text.innerText = mensaje;
+        text.style.marginBottom = "15px";
+
+        const input = document.createElement("input");
+        input.type = "email";
+        input.style.width = "100%";
+        input.style.padding = "10px";
+        input.style.marginBottom = "15px";
+        input.style.borderRadius = "4px";
+        input.style.border = "1px solid #ccc";
+        input.style.boxSizing = "border-box";
+
+        const buttonContainer = document.createElement("div");
+        buttonContainer.style.display = "flex";
+        buttonContainer.style.justifyContent = "flex-end";
+        buttonContainer.style.gap = "10px";
+
+        const btnCancel = document.createElement("button");
+        btnCancel.innerText = "Cancelar";
+        btnCancel.style.padding = "8px 15px";
+        btnCancel.style.border = "none";
+        btnCancel.style.borderRadius = "4px";
+        btnCancel.style.backgroundColor = "#e74c3c";
+        btnCancel.style.color = "white";
+        btnCancel.style.cursor = "pointer";
+
+        const btnOk = document.createElement("button");
+        btnOk.innerText = "Aceptar";
+        btnOk.style.padding = "8px 15px";
+        btnOk.style.border = "none";
+        btnOk.style.borderRadius = "4px";
+        btnOk.style.backgroundColor = "#2ecc71";
+        btnOk.style.color = "white";
+        btnOk.style.cursor = "pointer";
+
+        btnCancel.onclick = () => {
+          document.body.removeChild(overlay);
+          resolve(null);
+        };
+
+        btnOk.onclick = () => {
+          document.body.removeChild(overlay);
+          resolve(input.value);
+        };
+
+        input.onkeydown = (e) => {
+          if (e.key === "Enter") {
+             btnOk.click();
+          } else if (e.key === "Escape") {
+             btnCancel.click();
+          }
+        };
+
+        buttonContainer.appendChild(btnCancel);
+        buttonContainer.appendChild(btnOk);
+        
+        dialog.appendChild(text);
+        dialog.appendChild(input);
+        dialog.appendChild(buttonContainer);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        input.focus();
+      });
+    };
+
     const obtenerEmailSuscripcionPaypal = async () => {
       const emailGuardado = String(
         localStorage.getItem(SUSCRIPCIONES_EMAIL_KEY) ||
@@ -1917,9 +2082,8 @@ botonPremium.addEventListener("click", function () {
         return emailGuardado;
       }
 
-      const emailIngresado = String(
-        prompt("Ingresa el correo para asociar la suscripción PayPal:") || "",
-      ).trim().toLowerCase();
+      const inputVal = await customPrompt("Ingresa el correo para asociar la suscripción PayPal:");
+      const emailIngresado = String(inputVal || "").trim().toLowerCase();
 
       if (emailIngresado && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailIngresado)) {
         localStorage.setItem(SUSCRIPCIONES_EMAIL_KEY, emailIngresado);
@@ -8055,11 +8219,11 @@ const actualizaciones = [
     tipo: "",
   },
   {
-    fecha: "",
-    titulo: "",
-    mensaje: "",
-    version: "",
-    tipo: "",
+    fecha: "2026-06-05",
+    titulo: "Mejoras en qr",
+    mensaje: "Se mejoró la visualización del qr para tener acceso ya sea con certificado o sin certificado que usualmente piden los navegadores; con certificado SSL se usa más que todo cuando hay permisos como de micrófono, está opción está vigente en el control remoto en chat de audio en tiempo real, pero no se utiliza mucho está opción, por lo que se puso dos qr y dos url, una con certificado y la otra sin certificado. Con los códigos qr se conecta directamente sin poner el pin. Además, se arregló un error a la hora de obtener una licencia, si ocurre un error o sale un error nos avisan por medio del chat de la aplicación, o bien, más abajo está la opción de abrir paypal en la web que también es seguro y válido. Vendrán muchas más actualizaciones muy funcionales próximamente (funciones de ayuda para estudio y teología)",
+    version: "1.0.113",
+    tipo: "Mejora",
   },
   {
     fecha: "2026-05-03",
@@ -10531,8 +10695,8 @@ function syncSecondaryWindow() {
 
       if (fileNameMatch) {
         const fileName = fileNameMatch[0];
-        // Construir URL simple: http://localhost:3000/ppt-temp/ppt-cache/slide_001.png
-        const simpleUrl = `http://localhost:3000/ppt-temp/ppt-cache/${fileName}`;
+        // Construir URL simple: http://localhost:38555/ppt-temp/ppt-cache/slide_001.png
+        const simpleUrl = `http://localhost:38555/ppt-temp/ppt-cache/${fileName}`;
         console.log("[PPT] URL simplificada:", simpleUrl);
         return simpleUrl;
       }
@@ -10549,7 +10713,7 @@ function syncSecondaryWindow() {
           const normalizedPath = relativePath
             .replace(/\\\\/g, "/")
             .replace(/\\/g, "/");
-          const httpUrl = `http://localhost:3000/ppt-temp/${normalizedPath}`;
+          const httpUrl = `http://localhost:38555/ppt-temp/${normalizedPath}`;
           console.log("[PPT] URL construida:", httpUrl);
           return httpUrl;
         }

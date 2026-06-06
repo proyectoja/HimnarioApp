@@ -403,7 +403,7 @@
         function probarServidorExpress() {
           return new Promise((resolve) => {
             const testReq = new XMLHttpRequest();
-            testReq.open('GET', 'http://localhost:3000/', true);
+            testReq.open('GET', 'http://localhost:38555/', true);
             testReq.timeout = 3000;
 
             testReq.onload = function () {
@@ -448,7 +448,7 @@
               const match = powerpointData.slideUrl.match(/slide_\d+\.png/i);
               if (match) {
                 const fileName = match[0];
-                const simpleUrl = `http://localhost:3000/ppt-temp/ppt-cache/${fileName}`;
+                const simpleUrl = `http://localhost:38555/ppt-temp/ppt-cache/${fileName}`;
                 console.log('DEBUG [VS]: Intentando URL simple:', simpleUrl);
 
                 const altImage = new Image();

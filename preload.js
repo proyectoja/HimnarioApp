@@ -125,7 +125,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getMachineId: () => ipcRenderer.invoke("get-machine-id"),
 
   // Generar QR
-  generateQRCodeDataURL: (text) => QRCode.toDataURL(text),
+  generateQRCodeDataURL: (text, options = {}) =>
+    QRCode.toDataURL(text, {
+      width: 260,
+      margin: 2,
+      errorCorrectionLevel: "H",
+      ...options,
+    }),
 
   // Notificación de estado de reproducción
   updatePlaybackStatus: (status) =>

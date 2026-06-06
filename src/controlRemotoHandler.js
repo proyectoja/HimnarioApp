@@ -4,6 +4,7 @@
 
 // Variable global para guardar la URL del control remoto
 let controlRemotoURL = null;
+let controlRemotoURLSinSSL = null;
 
 //Escuchar cuando el control remoto se inicia
 if (window.electronAPI && window.electronAPI.onControlRemotoIniciado) {
@@ -11,14 +12,22 @@ if (window.electronAPI && window.electronAPI.onControlRemotoIniciado) {
 
   window.electronAPI.onControlRemotoIniciado(async (data) => {
     controlRemotoURL = data.url;
+    controlRemotoURLSinSSL = data.urlSinSSL || null;
     const pin = data.pin || "------";
 
     console.log(`📱 Control Remoto iniciado en: ${data.url}`);
+    if (controlRemotoURLSinSSL) {
+      console.log(`📱 Control Remoto sin certificado en: ${controlRemotoURLSinSSL}`);
+    }
     console.log(`🔐 PIN: ${pin}`);
 
     // 📌 Actualizar información en el menú de configuración
     if (typeof actualizarInformacionUsuarioMenu === "function") {
-      actualizarInformacionUsuarioMenu({ url: data.url, pin: pin });
+      actualizarInformacionUsuarioMenu({
+        url: data.url,
+        urlSinSSL: controlRemotoURLSinSSL,
+        pin: pin,
+      });
     }
 
     // 🔐 Verificar si el usuario es premium antes de mostrar la notificación
@@ -35,7 +44,7 @@ if (window.electronAPI && window.electronAPI.onControlRemotoIniciado) {
         );
 
         if (esPremiumAhora) {
-          mostrarNotificacionControlRemoto(data.url, pin);
+          mostrarNotificacionControlRemoto(data.url, pin, controlRemotoURLSinSSL);
         } else {
           console.log("⚠️ Usuario ya no es premium, notificación cancelada");
         }
@@ -62,6 +71,7 @@ if (window.electronAPI && window.electronAPI.obtenerEstadoControlRemoto) {
         if (typeof actualizarInformacionUsuarioMenu === "function") {
           actualizarInformacionUsuarioMenu({
             url: estado.url,
+            urlSinSSL: estado.urlSinSSL || null,
             pin: estado.pin,
           });
         }
@@ -80,7 +90,7 @@ if (window.electronAPI && window.electronAPI.obtenerEstadoControlRemoto) {
             );
 
             if (esPremiumAhora) {
-              mostrarNotificacionControlRemoto(estado.url, estado.pin);
+              mostrarNotificacionControlRemoto(estado.url, estado.pin, estado.urlSinSSL || null);
             } else {
               console.log(
                 "⚠️ Usuario ya no es premium, notificación cancelada",
@@ -106,9 +116,14 @@ if (window.electronAPI && window.electronAPI.obtenerEstadoControlRemoto) {
 }
 
 // Función para mostrar la notificación del control remoto
-function mostrarNotificacionControlRemoto(url, pin) {
+function mostrarNotificacionControlRemoto(url, pin, urlSinSSL = null) {
   // Crear elemento de notificación si no existe
   let notif = document.getElementById("control-remoto-notificacion");
+
+  if (notif) {
+    notif.remove();
+    notif = null;
+  }
 
   if (!notif) {
     notif = document.createElement("div");
@@ -123,7 +138,10 @@ function mostrarNotificacionControlRemoto(url, pin) {
       border-radius: 10px;
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
       z-index: 10000;
-      max-width: 300px;
+      width: min(360px, calc(100vw - 24px));
+      max-height: calc(100vh - 30px);
+      overflow-y: auto;
+      overflow-x: hidden;
       font-family: 'Segoe UI', sans-serif;
       animation: slideIn 0.5s ease;
     `;
@@ -134,69 +152,117 @@ function mostrarNotificacionControlRemoto(url, pin) {
         <strong style="flex: 1;">Control Remoto Activo</strong>
         <button id="cerrar-notif-control" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px;">×</button>
       </div>
-      <p style="margin: 5px 0; font-size: 14px;">Conéctate desde tu celular:</p>
+      <p style="margin: 5px 0 10px; font-size: 14px;">Conéctate desde tu celular:</p>
       
-      <!-- QR Code Section -->
-      <div style="background: white; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center;">
-         <img id="img-qr-notif" style="width: 120px; height: 120px; display: block; margin: 0 auto;" />
+      <!-- SSL Section -->
+      <div style="padding: 0; border-radius: 12px; margin: 10px 0 14px; text-align: center;">
+         <div style="display:inline-block; background:#b51d1d; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; margin-bottom:8px;">SSL</div>
+        <div style="background:#fff; border-radius:12px; padding:8px 8px 6px; box-shadow:0 2px 8px rgba(0,0,0,0.12); margin:0 auto 10px; width:fit-content; max-width:100%;">
+          <img id="img-qr-notif-ssl" style="width: 124px; height: 124px; display: block; margin: 0 auto;" />
+        </div>
+        <div style="font-size:12px; line-height:1.45; word-break:break-all; overflow-wrap:anywhere; text-align:left; font-family:Consolas, 'Courier New', monospace; color:#ffffff; padding:0 2px; width:100%;">${url}</div>
+        <button id="copiar-url-ssl" style="margin-top:8px; width:100%; padding:8px 10px; font-size:12px; border-radius:8px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.35); cursor:pointer; color:#fff; font-weight:700;">📋 Copiar SSL</button>
       </div>
 
-      <p style="margin: 5px 0; font-size: 16px; font-weight: bold; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 5px; word-break: break-all;">${url}</p>
+      ${urlSinSSL ? `
+      <!-- No-SSL Section -->
+      <div style="padding: 0; border-radius: 12px; margin: 10px 0; text-align: center;">
+         <div style="display:inline-block; background:#8d3a3a; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; margin-bottom:8px;">Sin certificado</div>
+        <div style="background:#fff; border-radius:12px; padding:8px 8px 6px; box-shadow:0 2px 8px rgba(0,0,0,0.12); margin:0 auto 10px; width:fit-content; max-width:100%;">
+          <img id="img-qr-notif-nosssl" style="width: 124px; height: 124px; display: block; margin: 0 auto;" />
+        </div>
+        <div style="font-size:12px; line-height:1.45; word-break:break-all; overflow-wrap:anywhere; text-align:left; font-family:Consolas, 'Courier New', monospace; color:#ffffff; padding:0 2px; width:100%;">${urlSinSSL}</div>
+        <button id="copiar-url-nosssl" style="margin-top:8px; width:100%; padding:8px 10px; font-size:12px; border-radius:8px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.35); cursor:pointer; color:#fff; font-weight:700;">📋 Copiar sin certificado</button>
+      </div>
+      ` : ""}
+
       <p style="margin: 5px 0; font-size: 12px; opacity: 0.9;">🔐 PIN: <strong style="font-size: 20px; letter-spacing: 2px;">${pin}</strong></p>
-      <button id="copiar-url-control" style="
-        margin-top: 10px;
-        width: 100%;
-        padding: 8px;
-        background: rgba(255,255,255,0.3);
-        border: 1px solid rgba(255,255,255,0.5);
-        color: white;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: bold;
-      ">📋 Copiar URL</button>
     `;
 
     document.body.appendChild(notif);
 
-    // Generar QR para la notificación
+    // Generar QRs independientes y asignar botones de copia
     if (window.electronAPI && window.electronAPI.generateQRCodeDataURL) {
-      // Agregar PIN a la URL para autoconexión
-      const urlConPin = pin ? `${url}?pin=${pin}` : url;
+      // SSL QR
+      try {
+        const baseSsl = url;
+        const sepSsl = baseSsl && baseSsl.includes("?") ? "&" : "?";
+        const urlSslConPin = pin ? `${baseSsl}${sepSsl}pin=${encodeURIComponent(pin)}` : baseSsl;
+        window.electronAPI
+          .generateQRCodeDataURL(urlSslConPin)
+          .then((qrUrl) => {
+            const imgSsl = document.getElementById("img-qr-notif-ssl");
+            if (imgSsl) imgSsl.src = qrUrl;
+          })
+          .catch((err) => console.error("Error generando QR SSL:", err));
+      } catch (e) {
+        console.error("Error preparando QR SSL:", e);
+      }
 
-      window.electronAPI
-        .generateQRCodeDataURL(urlConPin)
-        .then((qrUrl) => {
-          const img = document.getElementById("img-qr-notif");
-          if (img) img.src = qrUrl;
-        })
-        .catch((err) => console.error("Error generando QR notificación:", err));
+      // No-SSL QR (si existe)
+      if (urlSinSSL) {
+        try {
+          const baseNo = urlSinSSL;
+          const sepNo = baseNo && baseNo.includes("?") ? "&" : "?";
+          const urlNoConPin = pin ? `${baseNo}${sepNo}pin=${encodeURIComponent(pin)}` : baseNo;
+          window.electronAPI
+            .generateQRCodeDataURL(urlNoConPin)
+            .then((qrUrl) => {
+              const imgNo = document.getElementById("img-qr-notif-nosssl");
+              if (imgNo) imgNo.src = qrUrl;
+            })
+            .catch((err) => console.error("Error generando QR no-SSL:", err));
+        } catch (e) {
+          console.error("Error preparando QR no-SSL:", e);
+        }
+      }
     }
 
     // Botón para cerrar
-    document
-      .getElementById("cerrar-notif-control")
-      .addEventListener("click", () => {
+    const btnCerrar = document.getElementById("cerrar-notif-control");
+    if (btnCerrar) {
+      btnCerrar.addEventListener("click", () => {
         notif.style.animation = "slideOut 0.5s ease";
         setTimeout(() => notif.remove(), 500);
       });
+    }
 
-    // Botón para copiar URL
-    document
-      .getElementById("copiar-url-control")
-      .addEventListener("click", () => {
+    // Botones de copia por separado
+    const copiarSsl = document.getElementById("copiar-url-ssl");
+    if (copiarSsl) {
+      copiarSsl.addEventListener("click", () => {
         navigator.clipboard.writeText(url).then(() => {
-          const btn = document.getElementById("copiar-url-control");
-          const textoOriginal = btn.textContent;
-          btn.textContent = "✅ Copiado!";
-          btn.style.background = "rgba(76, 175, 80, 0.8)";
+          const textoOriginal = copiarSsl.textContent;
+          copiarSsl.textContent = "✅ Copiado";
+          copiarSsl.style.background = "#2e7d32";
+          copiarSsl.style.color = "#ffffff";
           setTimeout(() => {
-            btn.textContent = textoOriginal;
-            btn.style.background = "rgba(255,255,255,0.3)";
+            copiarSsl.textContent = textoOriginal;
+            copiarSsl.style.background = "#eee";
+            copiarSsl.style.color = "#3c1f1f";
           }, 2000);
         });
       });
+    }
 
-    // Auto-cerrar después de 60 segundos (antes era 10 min, mejor menos para no estorbar tanto si ya escanearon)
+    const copiarNo = document.getElementById("copiar-url-nosssl");
+    if (copiarNo) {
+      copiarNo.addEventListener("click", () => {
+        navigator.clipboard.writeText(urlSinSSL).then(() => {
+          const textoOriginal = copiarNo.textContent;
+          copiarNo.textContent = "✅ Copiado";
+          copiarNo.style.background = "#2e7d32";
+          copiarNo.style.color = "#ffffff";
+          setTimeout(() => {
+            copiarNo.textContent = textoOriginal;
+            copiarNo.style.background = "#eee";
+            copiarNo.style.color = "#3c1f1f";
+          }, 2000);
+        });
+      });
+    }
+
+    // Auto-cerrar después de 60 segundos
     setTimeout(() => {
       if (notif && notif.parentNode) {
         notif.style.animation = "slideOut 0.5s ease";

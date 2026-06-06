@@ -1545,7 +1545,7 @@
         if (currentImg && status.slideUrl) {
           const urlObj = new URL(status.slideUrl);
           urlObj.hostname = window.location.hostname;
-          urlObj.port = "3000";
+          urlObj.port = "38555";
 
           currentImg.onload = () => {
             currentImg.style.display = "block";
@@ -1561,7 +1561,7 @@
         if (nextImg && status.nextSlideUrl) {
           const urlObj = new URL(status.nextSlideUrl);
           urlObj.hostname = window.location.hostname;
-          urlObj.port = "3000";
+          urlObj.port = "38555";
 
           nextImg.src = urlObj.href;
           nextImg.style.display = "block";

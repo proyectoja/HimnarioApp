@@ -8,6 +8,7 @@ const path = require("path");
 const fs = require("fs");
 const si = require("systeminformation"); // Para obtener info de monitores
 const https = require("https");
+const http = require("http");
 const selfsigned = require("selfsigned");
 const { app } = require("electron");
 
@@ -15,6 +16,7 @@ let mainWindow = null;
 // let app = null; // Conflict with electron app variable name, so we rename express app variable locally or use a different name for the import
 let expressApp = null;
 let remoteServer = null;
+let remoteServerHttp = null;
 
 function getLocalIP() {
   const ifaces = os.networkInterfaces();
@@ -76,7 +78,7 @@ function getLocalIP() {
 }
 
 async function iniciarControlRemoto(win) {
-  if (remoteServer) {
+  if (remoteServer || remoteServerHttp) {
     console.log("📱 Control remoto ya está activo");
     return;
   }
@@ -84,6 +86,7 @@ async function iniciarControlRemoto(win) {
   mainWindow = win;
   expressApp = express();
   const PORT = 3555;
+  const PORT_HTTP = 3556;
 
   // Generar PIN aleatorio de 6 dígitos
   const PIN = Math.floor(100000 + Math.random() * 900000).toString();
@@ -93,8 +96,10 @@ async function iniciarControlRemoto(win) {
   global.controlRemotoEstado = {
     activo: false,
     url: null,
+    urlSinSSL: null,
     pin: PIN,
     puerto: PORT,
+    puertoSinSSL: PORT_HTTP,
   };
 
   // Limpiar archivos temporales antiguos al iniciar
@@ -852,6 +857,35 @@ async function iniciarControlRemoto(win) {
   }
 
   try {
+    const localIP = getLocalIP();
+    const urlSSL = `https://${localIP}:${PORT}`;
+    const urlNoSSL = `http://${localIP}:${PORT_HTTP}`;
+
+    const publicarEstado = () => {
+      // Actualizar estado global
+      global.controlRemotoEstado = {
+        activo: true,
+        url: urlSSL,
+        urlSinSSL: remoteServerHttp ? urlNoSSL : null,
+        pin: PIN,
+        puerto: PORT,
+        puertoSinSSL: remoteServerHttp ? PORT_HTTP : null,
+        ip: localIP,
+      };
+
+      // Enviar la IP y PIN al renderer para mostrarla en la UI
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("control-remoto-iniciado", {
+          ip: localIP,
+          puerto: PORT,
+          puertoSinSSL: remoteServerHttp ? PORT_HTTP : null,
+          url: urlSSL,
+          urlSinSSL: remoteServerHttp ? urlNoSSL : null,
+          pin: PIN,
+        });
+      }
+    };
+
     const serverInstance = https.createServer(certOptions, expressApp);
 
     serverInstance.on("error", (e) => {
@@ -864,31 +898,26 @@ async function iniciarControlRemoto(win) {
     });
 
     remoteServer = serverInstance.listen(PORT, "0.0.0.0", () => {
-      const localIP = getLocalIP();
-      console.log(
-        `📱 Control remoto seguro activo en: https://${localIP}:${PORT}`,
-      );
+      console.log(`📱 Control remoto seguro activo en: ${urlSSL}`);
       console.log(`🔐 PIN de acceso: ${PIN}`);
       console.log(`🌐 Accesible desde la red local`);
 
-      // Actualizar estado global
-      global.controlRemotoEstado = {
-        activo: true,
-        url: `https://${localIP}:${PORT}`,
-        pin: PIN,
-        puerto: PORT,
-        ip: localIP,
-      };
+      publicarEstado();
+    });
 
-      // Enviar la IP y PIN al renderer para mostrarla en la UI
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send("control-remoto-iniciado", {
-          ip: localIP,
-          puerto: PORT,
-          url: `https://${localIP}:${PORT}`,
-          pin: PIN,
-        });
+    const httpServerInstance = http.createServer(expressApp);
+
+    httpServerInstance.on("error", (e) => {
+      if (e.code === "EADDRINUSE") {
+        console.warn(`⚠️ Puerto HTTP ${PORT_HTTP} ocupado, URL sin certificado no disponible.`);
+      } else {
+        console.error("❌ Error del servidor HTTP remoto:", e);
       }
+    });
+
+    remoteServerHttp = httpServerInstance.listen(PORT_HTTP, "0.0.0.0", () => {
+      console.log(`📱 Control remoto sin certificado activo en: ${urlNoSSL}`);
+      publicarEstado();
     });
   } catch (err) {
     console.error("❌ Error fatal iniciando servidor https:", err);
@@ -896,20 +925,45 @@ async function iniciarControlRemoto(win) {
 }
 
 function detenerControlRemoto() {
-  if (remoteServer) {
-    remoteServer.close(() => {
-      console.log("📱 Control remoto detenido");
-      remoteServer = null;
-
-      // Actualizar estado global
-      global.controlRemotoEstado = {
-        activo: false,
-        url: null,
-        pin: null,
-        puerto: null,
-      };
-    });
+  const servidores = [remoteServer, remoteServerHttp].filter(Boolean);
+  if (!servidores.length) {
+    global.controlRemotoEstado = {
+      activo: false,
+      url: null,
+      urlSinSSL: null,
+      pin: null,
+      puerto: null,
+      puertoSinSSL: null,
+    };
+    return;
   }
+
+  let pendientes = servidores.length;
+  const finalizar = () => {
+    pendientes -= 1;
+    if (pendientes > 0) return;
+    console.log("📱 Control remoto detenido");
+    remoteServer = null;
+    remoteServerHttp = null;
+
+    // Actualizar estado global
+    global.controlRemotoEstado = {
+      activo: false,
+      url: null,
+      urlSinSSL: null,
+      pin: null,
+      puerto: null,
+      puertoSinSSL: null,
+    };
+  };
+
+  servidores.forEach((srv) => {
+    try {
+      srv.close(finalizar);
+    } catch (err) {
+      finalizar();
+    }
+  });
 }
 
 module.exports = {
@@ -917,5 +971,13 @@ module.exports = {
   detenerControlRemoto,
   startRemoteServer: iniciarControlRemoto, // Exponer alias para main.js
   getRemoteStatus: () => global.controlRemotoEstado, // Exponer estado
-  getServerInstance: () => remoteServer, // Exponer instancia del servidor para cerrarlo desde fuera
+  getServerInstance: () => ({
+    close: (cb) => {
+      try {
+        detenerControlRemoto();
+      } finally {
+        if (typeof cb === "function") cb();
+      }
+    },
+  }), // Exponer close compatible para reinicios desde main.js
 };

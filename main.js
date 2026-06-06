@@ -51,8 +51,8 @@ server.use(express.static(path.join(app.getPath("userData"), "src")));
 console.log("[EXPRESS] Sirviendo archivos temporales desde:", os.tmpdir());
 server.use("/ppt-temp", express.static(os.tmpdir()));
 
-server.listen(3000, () => {
-  console.log("Servidor corriendo en http://localhost:3000");
+server.listen(38555, () => {
+  console.log("Servidor corriendo en http://localhost:38555");
 });
 
 function createWindow() {
@@ -84,7 +84,7 @@ function createWindow() {
   flushBuffer();
   // Maximizar la ventana al iniciar
   win.maximize();
-  win.loadURL("http://localhost:3000/index.html"); // Archivo HTML del himnario
+  win.loadURL("http://localhost:38555/index.html"); // Archivo HTML del himnario
 
   // Cambiar el título una vez que el contenido esté completamente cargado
   win.webContents.on("did-finish-load", () => {
@@ -507,7 +507,7 @@ function abrirVentanaSecundaria(monitorIndex) {
     },
   });
 
-  playerWindow.loadURL("http://localhost:3000/ventanaSecundaria.html");
+  playerWindow.loadURL("http://localhost:38555/ventanaSecundaria.html");
   playerWindow.setFullScreen(true);
   //playerWindow.webContents.openDevTools({ mode: 'undocked' });
 
@@ -1854,7 +1854,12 @@ ipcMain.handle("reset-remote-connection", async () => {
             "[CONTROL REMOTO] ✅ Reiniciado correctamente. Nuevo PIN:",
             estado.pin,
           );
-          resolve({ success: true, pin: estado.pin, url: estado.url });
+          resolve({
+            success: true,
+            pin: estado.pin,
+            url: estado.url,
+            urlSinSSL: estado.urlSinSSL || null,
+          });
         } else {
           resolve({
             success: false,
