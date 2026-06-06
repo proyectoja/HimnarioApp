@@ -16,6 +16,40 @@ let posicionActual = {
   versiculoIndex: 0
 };
 
+const abreviacionesVersiones = {
+  'EnglishEasyToReadVersionBible': 'ETR',
+  'EnglishKingJames2000Bible': 'KJV',
+  'EnglishModernKingJamesVersionBible': 'KJV',
+  'HebreoTanakh': 'Tanakh',
+  'Spanish1569Bible': 'RV1569',
+  'Spanish1909Bible': 'RVR1909',
+  'Spanish1989Bible': 'RV1989',
+  'SpanishBibliaJerusalenBible': 'BJ',
+  'SpanishBibliaLatinoamericana95Bible': 'BLA',
+  'SpanishBibliaLatinoamericanadeHoyBible': 'BLA',
+  'SpanishBLaPalabra-VersionEspanola-Bible': 'BLP',
+  'SpanishBTI-Traduccion-Interconfesional-version espanola-Bible': 'BTI',
+  'SpanishBTX-Hebraica-Stuttgartensia1999Bible': 'BTX',
+  'SpanishDHH1996Bible': 'DHH',
+  'SpanishDiosHablaHoyBible': 'DHH',
+  'SpanishLBLABible': 'LBLA',
+  'SpanishNuevaBibliadeJerusalenBible': 'NBJ',
+  'SpanishNuevaBibliadelosHispanosBible': 'NBLH',
+  'SpanishNuevaTraduccionVivienteBible': 'NTV',
+  'SpanishNVIBible': 'NVI',
+  'SpanishPalabradeDiosparaTodosBible': 'PDT',
+  'SpanishRevisedRVR1960Bible': 'RVR1960',
+  'SpanishRV2020Bible': 'RV2020',
+  'SpanishRVGBible': 'RVG',
+  'SpanishRVR1960Bible': 'RVR1960',
+  'SpanishRVR1995Bible': 'RVR1995',
+  'SpanishTraduccionEnLenguajeActualBible': 'TLA'
+};
+
+function obtenerAbreviacion() {
+  return abreviacionesVersiones[versionSeleccionada] || 'RV';
+}
+
 // Función para cargar el archivo JSON de la versión seleccionada
 async function cargarVersion() {
   const versionSelect = document.getElementById("selector-versiones");
@@ -99,7 +133,7 @@ function renderLibros(versionData) {
           capituloIndex: 0,
           versiculoIndex: 0
         };
-        cargarLibro(libroNombre, libro, versionData.translation, testamentoIndex, libroIndex);
+        cargarLibro(libroNombre, libro, obtenerAbreviacion(), testamentoIndex, libroIndex);
       };
       listaLibros.appendChild(li);
       libroIndexGlobal++;
@@ -198,7 +232,7 @@ function navegarAnterior() {
     posicionActual.versiculoIndex--;
     const versiculo = capitulo.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libro.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
     return;
@@ -211,7 +245,7 @@ function navegarAnterior() {
     posicionActual.versiculoIndex = capituloAnterior.verses.length - 1; // Último versículo del capítulo anterior
     const versiculo = capituloAnterior.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libro.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
     return;
@@ -226,7 +260,7 @@ function navegarAnterior() {
     posicionActual.versiculoIndex = capituloAnterior.verses.length - 1; // Último versículo
     const versiculo = capituloAnterior.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libroAnterior.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
     return;
@@ -243,7 +277,7 @@ function navegarAnterior() {
     posicionActual.versiculoIndex = capituloAnterior.verses.length - 1; // Último versículo
     const versiculo = capituloAnterior.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libroAnterior.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
   }
@@ -262,7 +296,7 @@ function navegarSiguiente() {
     posicionActual.versiculoIndex++;
     const versiculo = capitulo.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libro.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
     return;
@@ -275,7 +309,7 @@ function navegarSiguiente() {
     const capituloSiguiente = libro.chapters[posicionActual.capituloIndex];
     const versiculo = capituloSiguiente.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libro.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
     return;
@@ -290,7 +324,7 @@ function navegarSiguiente() {
     posicionActual.versiculoIndex = 0; // Primer versículo
     const versiculo = capituloSiguiente.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libroSiguiente.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
     return;
@@ -307,7 +341,7 @@ function navegarSiguiente() {
     posicionActual.versiculoIndex = 0; // Primer versículo
     const versiculo = capituloSiguiente.verses[posicionActual.versiculoIndex];
     const nombreLibro = librosPorNumero[libroSiguiente.number - 1];
-    mostrarVistaPrevia(versiculo, bibliaData.translation, nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
+    mostrarVistaPrevia(versiculo, obtenerAbreviacion(), nombreLibro, posicionActual.capituloIndex + 1, posicionActual.versiculoIndex + 1);
     // Enviar automáticamente a pantalla secundaria
     if (typeof window.enviarVersiculo === 'function') window.enviarVersiculo();
   }
